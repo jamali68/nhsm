@@ -1,0 +1,386 @@
+/* ============================================
+   📦 STOCK MANAGER — MOBILE-FIRST MODERN (PHASE 3)
+   ============================================ */
+:root {
+    --primary: #2c3e50;
+    --accent: #27ae60;
+    --share: #3498db;
+    --bg: #f4f7f6;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    padding: 12px;
+    padding-bottom: 40px;
+}
+
+/* ============================================
+   📊 TOP BAR
+   ============================================ */
+.panel-topbar {
+    background: var(--primary);
+    color: #fff;
+    padding: 14px 16px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo-mini {
+    background: var(--accent);
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+}
+.brand-name { font-size: 17px; font-weight: bold; }
+.brand-sub { font-size: 11px; opacity: 0.8; }
+.top-actions { display: flex; gap: 8px; }
+
+.btn {
+    padding: 9px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+.btn-back { background: var(--share); color: #fff; }
+.btn-logout { background: var(--danger); color: #fff; }
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+    padding: 13px;
+    font-size: 15px;
+    width: 100%;
+}
+.btn-primary:hover { background: #219150; }
+.btn-primary:disabled { background: #95a5a6; }
+
+/* ============================================
+   📊 STATS CARDS (5 cards grid)
+   ============================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    max-width: 1000px;
+    margin: 0 auto 15px;
+}
+.stat-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+    transition: transform 0.15s ease;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+.stat-icon {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 6px;
+    font-size: 17px;
+    color: #fff;
+}
+.stat-value { font-size: 20px; font-weight: 800; color: var(--primary); }
+.stat-label { font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase; margin-top: 3px; }
+
+/* ============================================
+   🔍 SEARCH + FILTERS (Sticky!)
+   ============================================ */
+.search-filter-bar {
+    max-width: 1000px;
+    margin: 0 auto 15px;
+    position: sticky;
+    top: 65px;
+    z-index: 40;
+    background: var(--bg);
+    padding: 6px 0;
+}
+.search-box {
+    position: relative;
+    margin-bottom: 8px;
+}
+.search-box i {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: #95a5a6;
+}
+.search-box input {
+    width: 100%;
+    padding: 12px 14px 12px 40px;
+    border: 2px solid #e0e6e8;
+    border-radius: 12px;
+    font-size: 14px;
+    outline: none;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.search-box input:focus { border-color: var(--share); }
+
+.filter-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+.filter-chip {
+    background: #fff;
+    border: 2px solid #e0e6e8;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    color: #64748b;
+    transition: all 0.2s;
+}
+.filter-chip:hover { border-color: var(--share); }
+.filter-chip.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* ============================================
+   ➕ ADD ITEM PANEL
+   ============================================ */
+.panel-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    max-width: 1000px;
+    margin: 0 auto 15px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+}
+.add-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+.add-item-header h2 { font-size: 16px; color: var(--primary); }
+.toggle-arrow {
+    font-size: 14px;
+    color: var(--primary);
+    transition: transform 0.3s;
+}
+.toggle-arrow.open { transform: rotate(180deg); }
+
+.panel-form { margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.form-group { display: flex; flex-direction: column; }
+.form-group label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #475569;
+    margin-bottom: 5px;
+}
+.form-group input, .form-group select {
+    padding: 10px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    background: #fff;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--share); }
+
+/* ============================================
+   📋 ITEMS LIST & ITEM CARDS
+   ============================================ */
+.card-header h2 { font-size: 16px; color: var(--primary); }
+#itemsList {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.item-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #10b981;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    transition: all 0.2s;
+}
+.item-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.item-card.low-stock {
+    border-left-color: var(--warning);
+    background: #fffdf5;
+}
+.item-card.out-stock {
+    border-left-color: var(--danger);
+    background: #fff5f5;
+}
+
+.item-info { flex: 1; min-width: 260px; }
+.item-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.item-code-tag {
+    font-size: 11px;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+.item-cat-tag {
+    font-size: 11px;
+    background: #e0e7ff;
+    color: #4338ca;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+.item-details {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+.item-rates-row {
+    margin-top: 5px;
+    font-size: 12px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.rate-tag {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+.rate-retail { background: #dcfce7; color: #15803d; }
+.rate-wholesale { background: #e0f2fe; color: #0369a1; }
+.rate-cost { background: #f1f5f9; color: #475569; }
+
+.item-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+}
+.badge-ok { background: #dcfce7; color: #15803d; }
+.badge-low { background: #fef3c7; color: #b45309; }
+.badge-out { background: #fee2e2; color: #b91c1c; }
+
+/* Item Action Buttons */
+.item-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+}
+.btn-icon:hover { transform: scale(1.08); }
+.btn-in { background: #27ae60; color: #fff; }
+.btn-out { background: #e67e22; color: #fff; }
+.btn-history { background: #3498db; color: #fff; }
+.btn-edit { background: #f1c40f; color: #333; }
+.btn-del { background: #e74c3c; color: #fff; }
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+}
+.empty-state .big-icon {
+    font-size: 44px;
+    margin-bottom: 10px;
+}
+.loading-inline {
+    text-align: center;
+    padding: 25px;
+    color: #64748b;
+    font-weight: bold;
+}
+.error-inline {
+    color: var(--danger);
+    text-align: center;
+    padding: 15px;
+    font-weight: bold;
+}
+
+/* ============================================
+   🖨️ PRINT STYLES FOR INVENTORY REPORT
+   ============================================ */
+@media print {
+    body { background: #fff; padding: 0; }
+    .panel-topbar, .search-filter-bar, #addItemSection, .item-actions,
+    .filter-chips, #syncStockBtn, #exportStockBtn, #printStockBtn,
+    #cacheStatusBadge, .toggle-arrow {
+        display: none !important;
+    }
+    .panel-card { box-shadow: none; border: none; padding: 0; }
+    .item-card { border: 1px solid #ccc; break-inside: avoid; margin-bottom: 6px; }
+}

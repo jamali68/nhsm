@@ -1,0 +1,6 @@
+{
+  "name": "Easy Bill Generator & Customer Ledger",
+  "description": "Multi-tenant POS and Billing system with Customer Khata Ledger, Stock Inventory, Invoice Templates, and Payment History tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

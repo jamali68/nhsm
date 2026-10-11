@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Easy Bill Generator & Customer Ledger</title>
+    <meta name="description" content="Multi-tenant POS and Billing system with Customer Khata Ledger, Stock Inventory, Invoice Templates, and Payment History tracking." />
+    <meta property="og:title" content="Easy Bill Generator & Customer Ledger" />
+    <meta property="og:description" content="Multi-tenant POS and Billing system with Customer Khata Ledger, Stock Inventory, Invoice Templates, and Payment History tracking." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <script>
+      // 🚀 Auto-route for GitHub Pages, Netlify or static web hosting:
+      (function() {
+        var isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '0.0.0.0';
+        var isAISPreview = window.location.hostname.indexOf('run.app') !== -1;
+        if (!isLocalDev && !isAISPreview) {
+          if (window.location.hostname.indexOf('github.io') !== -1) {
+            window.location.replace('public/auth.html');
+          } else {
+            window.location.replace('auth.html');
+          }
+        }
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

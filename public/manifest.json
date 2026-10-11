@@ -1,0 +1,63 @@
+{
+  "id": "/",
+  "name": "Easy Bill Generator — Wholesale ERP & POS",
+  "short_name": "EasyBill",
+  "description": "Smart Business & Inventory Management, Offline Billing, Stock Tracking & Order Booker Portal",
+  "start_url": "/dashboard.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "categories": ["business", "finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create New Bill",
+      "short_name": "New Bill",
+      "description": "Create instant customer invoice or POS sale",
+      "url": "/bills.html",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Booker Orders",
+      "short_name": "Orders",
+      "description": "Field Booker Orders & Delivery Dispatch",
+      "url": "/booker-orders.html",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Customers Khata",
+      "short_name": "Khata",
+      "description": "Manage Khata Ledgers & Customer Credit",
+      "url": "/customers.html",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Stock & Inventory",
+      "short_name": "Stock",
+      "description": "View inventory, warehouse items and reorders",
+      "url": "/stock.html",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

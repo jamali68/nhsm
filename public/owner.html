@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Owner Panel</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+</head>
+<body>
+<span id="agencyName" style="display:none;"></span>
+<span id="ownerEmail" style="display:none;"></span>
+
+<div class="panel-container" style="margin-top: 8px;">
+    
+    <!-- 🚚 DELIVERY & VAN STOCK RETURN LINK -->
+    <div class="panel-card" style="border-top-color: #8b5cf6; cursor: pointer;" onclick="window.location.href='delivery-returns.html'">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div style="font-size:36px;">🚚</div>
+            <div style="flex:1;">
+                <h2 style="font-size:18px; color:var(--primary); margin-bottom:4px;">Delivery &amp; Van Stock Return Hub (مال واپسی مینیجر)</h2>
+                <p style="font-size:13px; color:#7f8c8d;">Van dispatch challan, delivery suppliers &amp; unsold return inward (0 profit/loss)</p>
+            </div>
+            <i class="fas fa-arrow-right" style="font-size:20px; color:#8b5cf6;"></i>
+        </div>
+    </div>
+
+    <!-- ===== ➕ ADD STAFF (BOOKER OR SUPPLIER) ===== -->
+    <div class="panel-card">
+        <div class="card-header">
+            <h2><i class="fas fa-user-plus"></i> Add New Field Staff (بکر یا ڈلیوری سپلائر)</h2>
+            <small class="header-note">Booker field se order le ga aur Supplier mall dukanon par deliver/wapas laye ga!</small>
+        </div>
+        <form id="addBookerForm" class="panel-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Staff Role (عہدہ) *</label>
+                    <select id="bkRole" required style="width:100%; padding:10px; border:2px solid #e0e6e8; border-radius:8px; font-size:14px; background:#fff;">
+                        <option value="booker">📕 Order Booker (فیلڈ آرڈر بکر)</option>
+                        <option value="supplier">🚚 Delivery Supplier / Salesman (ڈلیوری سپلائر)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Staff Name *</label>
+                    <input type="text" id="bkName" placeholder="e.g. Ali Ahmed" required maxlength="40">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📧 Email (Login ID) *</label>
+                    <input type="email" id="bkEmail" placeholder="staff@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>📱 Mobile / WhatsApp *</label>
+                    <input type="tel" id="bkMobile" placeholder="e.g. 03001234567" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🔑 Password * (min 6 — aap baad mein change kar sakte hain!)</label>
+                    <input type="text" id="bkPassword" placeholder="Password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>📍 Assigned Area / Route (مقررہ علاقہ)</label>
+                    <input type="text" id="bkRoute" placeholder="e.g. Main Bazaar, Sadiqabad">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="width:100%;">
+                    <label>⚡ Permissions (Granular Controls) *</label>
+                    <div class="perm-checks">
+                        <label class="perm-check"><input type="checkbox" id="permStock" checked> 📦 Stock Bill &amp; Orders</label>
+                        <label class="perm-check"><input type="checkbox" id="permCustomers" checked> 👥 Customer Khata</label>
+                        <label class="perm-check"><input type="checkbox" id="permReports"> 📊 Reports</label>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="addBookerBtn">
+                <i class="fas fa-user-plus"></i> ADD STAFF MEMBER
+            </button>
+        </form>
+    </div>
+
+    <!-- ===== 📋 STAFF LIST ===== -->
+    <div class="panel-card" id="bookersSection">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-users"></i> Agency Field Staff (<span id="bookerCount">0</span>)</h2>
+                <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                    پیکیج لمٹ: <b id="bookerLimitBadge" style="color:#0284c7;">--</b> • لمٹ بڑھانے کے لیے رابطہ: <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Please%20increase%20order%20booker%20limits" target="_blank" style="color:#16a34a; font-weight:bold; text-decoration:none;"><i class="fab fa-whatsapp" style="color:#25d366;"></i> +923346800959</a>
+                </div>
+            </div>
+            <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Staff%20Limit%20Support" target="_blank" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                <i class="fab fa-whatsapp"></i> WhatsApp Developer
+            </a>
+        </div>
+        <div style="margin-bottom: 12px;">
+            <input type="text" id="bookerSearchInput" placeholder="🔍 Search by name, role, email or route..." style="width: 100%; padding: 10px 14px; border: 2px solid #e0e6e8; border-radius: 8px; font-size: 14px; outline:none;">
+        </div>
+        <div id="bookersList">
+            <div class="loading-inline">Loading staff...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- 🔗 SHARE CREDENTIALS MODAL -->
+<div id="shareModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; padding:15px;">
+    <div style="background:#fff; border-radius:16px; padding:22px; width:100%; max-width:480px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h3 style="margin:0; color:#1e293b; font-size:17px;"><i class="fas fa-share-alt" style="color:#0284c7;"></i> Staff Login Credentials &amp; Link</h3>
+            <button onclick="closeShareModal()" style="background:#f1f5f9; border:none; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button>
+        </div>
+        <div id="shareCredentialCard" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; font-size:13px; line-height:1.6; margin-bottom:16px;">
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button id="copyCredentialsBtn" class="btn" style="flex:1; background:#0284c7; color:#fff; padding:10px; border-radius:8px; font-weight:bold;">
+                <i class="fas fa-copy"></i> Copy Link &amp; Details
+            </button>
+            <button id="whatsappCredentialsBtn" class="btn" style="flex:1; background:#10b981; color:#fff; padding:10px; border-radius:8px; font-weight:bold;">
+                <i class="fab fa-whatsapp"></i> Share on WhatsApp
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ✏️ EDIT STAFF MODAL -->
+<div id="editStaffModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; padding:15px;">
+    <div style="background:#fff; border-radius:16px; padding:22px; width:100%; max-width:480px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h3 style="margin:0; color:#1e293b; font-size:17px;"><i class="fas fa-edit" style="color:#0284c7;"></i> Edit Staff Member</h3>
+            <button onclick="closeEditStaffModal()" style="background:#f1f5f9; border:none; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button>
+        </div>
+        <form id="editStaffForm">
+            <input type="hidden" id="editStaffId">
+            <div style="margin-bottom:10px;">
+                <label style="font-size:12px; font-weight:bold;">Staff Role</label>
+                <select id="editStaffRole" style="width:100%; padding:8px 10px; border:2px solid #e0e6e8; border-radius:8px;">
+                    <option value="booker">📕 Order Booker</option>
+                    <option value="supplier">🚚 Delivery Supplier</option>
+                </select>
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-size:12px; font-weight:bold;">Full Name</label>
+                <input type="text" id="editStaffName" required style="width:100%; box-sizing:border-box; padding:8px 10px; border:2px solid #e0e6e8; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-size:12px; font-weight:bold;">Mobile / WhatsApp</label>
+                <input type="tel" id="editStaffMobile" required style="width:100%; box-sizing:border-box; padding:8px 10px; border:2px solid #e0e6e8; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="font-size:12px; font-weight:bold;">Assigned Route / Area</label>
+                <input type="text" id="editStaffRoute" style="width:100%; box-sizing:border-box; padding:8px 10px; border:2px solid #e0e6e8; border-radius:8px;">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn" onclick="closeEditStaffModal()" style="background:#e2e8f0; color:#475569;">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="background:#0284c7; color:#fff;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+    // ⚠️ AAP KA CONFIG
+    const firebaseConfig = {
+        apiKey: "AIzaSyDDwKWcixoUThCJQqiVoBcUVsJZI60h43Q",
+        authDomain: "multipos-ed91a.firebaseapp.com",
+        projectId: "multipos-ed91a",
+        storageBucket: "multipos-ed91a.firebasestorage.app",
+        messagingSenderId: "862649586987",
+        appId: "1:862649586987:web:599772124e4e29404ca16e",
+        measurementId: "G-QPCP7S5Q5L"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // ============================================
+    // 🛡️ GUARD: Sirf OWNER andar
+    // ============================================
+    let myUid = null;
+    let myAgencyId = null;
+    let myAgency = null;
+    let myLimits = null;
+
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            window.location.href = 'auth.html';
+            return;
+        }
+        myUid = user.uid;
+        document.getElementById('ownerEmail').innerText = user.email;
+
+        const doc = await db.collection('users').doc(user.uid).get();
+        
+        if (!doc.exists) {
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        const me = doc.data();
+
+        // Allow BOTH owner AND super-admin
+        if (me.role !== 'owner' && me.role !== 'super-admin') {
+            window.location.href = 'dashboard.html';
+            return;
+        }
+
+        // Agency load
+        if (!me.agencyId || me.agencyId === 'super-admin-hq') {
+            try {
+                const agSnap = await db.collection('agencies').limit(1).get();
+                if (!agSnap.empty) {
+                    myAgencyId = agSnap.docs[0].id;
+                    myAgency = agSnap.docs[0].data();
+                } else {
+                    myAgencyId = 'agency_default';
+                    myAgency = { name: 'My Business Agency' };
+                }
+            } catch(e) {
+                myAgencyId = 'agency_default';
+                myAgency = { name: 'My Business Agency' };
+            }
+        } else {
+            myAgencyId = me.agencyId;
+            const agDoc = await db.collection('agencies').doc(myAgencyId).get();
+            myAgency = agDoc.exists ? agDoc.data() : {};
+        }
+        document.getElementById('agencyName').innerText = myAgency.name || 'My Agency';
+
+        // Limits load (package se + customLimits priority)
+        let pkgId = myAgency.packageId || 'free';
+        try {
+            const pkgDoc = await db.collection('packages').doc(pkgId).get();
+            myLimits = pkgDoc.exists ? pkgDoc.data().limits : null;
+        } catch (e) {}
+        if (!myLimits) {
+            myLimits = { monthlyBills: 150, weeklyBills: 50, maxBookers: 2, maxAdmins: 1, dailyOrdersPerBooker: 30 };
+        }
+        if (myAgency.customLimits) {
+            myLimits = { ...myLimits, ...myAgency.customLimits };
+        }
+
+        loadBookers();
+    });
+
+    // ============================================
+    // 📋 STAFF LOAD (Bookers & Delivery Suppliers)
+    // ============================================
+    let allAgencyBookers = [];
+
+    async function loadBookers() {
+        const container = document.getElementById('bookersList');
+        try {
+            // Single equality query - no composite index needed!
+            const snap = await db.collection('users')
+                .where('agencyId', '==', myAgencyId)
+                .get();
+
+            allAgencyBookers = [];
+            let activeCount = 0;
+            snap.forEach(d => {
+                const data = d.data();
+                data.id = d.id;
+                if (data.status !== 'deleted' && (data.role === 'booker' || data.role === 'supplier' || data.role === 'delivery')) {
+                    allAgencyBookers.push(data);
+                    activeCount++;
+                }
+            });
+            const maxAllowed = (myAgency && myAgency.customLimits && myAgency.customLimits.maxBookers) || (myLimits && myLimits.maxBookers) || 2;
+            document.getElementById('bookerCount').innerText = activeCount;
+            const badgeEl = document.getElementById('bookerLimitBadge');
+            if (badgeEl) badgeEl.innerText = `${activeCount} / ${maxAllowed} Active (Max Limit: ${maxAllowed})`;
+
+            renderBookersList('');
+
+        } catch (e) {
+            container.innerHTML = '<div class="error-inline">⚠️ Staff load failed: ' + e.message + '</div>';
+            console.error(e);
+        }
+    }
+
+    function renderBookersList(query) {
+        const container = document.getElementById('bookersList');
+        const filtered = allAgencyBookers.filter(bk => {
+            if (bk.status === 'deleted') return false;
+            if (!query) return true;
+            const q = query.toLowerCase();
+            return (bk.name && bk.name.toLowerCase().includes(q)) ||
+                   (bk.email && bk.email.toLowerCase().includes(q)) ||
+                   (bk.route && bk.route.toLowerCase().includes(q)) ||
+                   (bk.role && bk.role.toLowerCase().includes(q));
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = query 
+                ? '<div class="empty-state">🔍 Koi staff member match nahi hua!</div>'
+                : '<div class="empty-state">👥 Abhi koi field staff nahi hai.<br>Upar se pehla BOOKER ya DELIVERY SUPPLIER shamil karein!</div>';
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(bk => {
+            const isSupplier = bk.role === 'supplier' || bk.role === 'delivery';
+            const roleBadge = isSupplier
+                ? '<span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold;">🚚 Delivery Supplier</span>'
+                : '<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold;">📕 Order Booker</span>';
+
+            const statusHtml = bk.status === 'blocked'
+                ? '<span class="st-inactive">🚫 Blocked</span>'
+                : '<span class="st-active">✅ Active</span>';
+
+            const p = bk.permissions || {};
+            const permStock = p.stock !== false;
+            const permCustomers = p.customers !== false;
+            const permReports = !!p.reports;
+
+            html += `
+            <div class="agency-item" data-id="${bk.id}">
+                <div class="agency-main" style="flex: 1; min-width: 250px;">
+                    <div class="agency-name">
+                        ${isSupplier ? '🚚' : '📕'} ${bk.name || bk.email}
+                        ${roleBadge}
+                    </div>
+                    <div class="agency-meta">
+                        📧 ${bk.email} | ${statusHtml} ${bk.mobile ? `| 📱 ${bk.mobile}` : ''}<br>
+                        🔑 Password: <span style="font-family: monospace; background:#e2e8f0; padding:2px 6px; border-radius:4px;">${bk.tempPassword || '******'}</span>
+                        | 📍 Route: <b>${bk.route || 'General Depot'}</b>
+                        <div style="margin-top: 5px; display:flex; gap:6px; flex-wrap:wrap;">
+                            <span style="font-size:11px; padding:2px 7px; border-radius:10px; background:${permStock ? '#dcfce7; color:#15803d;' : '#f1f5f9; color:#94a3b8;'} font-weight:bold;">📦 Stock: ${permStock ? 'ON' : 'OFF'}</span>
+                            <span style="font-size:11px; padding:2px 7px; border-radius:10px; background:${permCustomers ? '#dcfce7; color:#15803d;' : '#f1f5f9; color:#94a3b8;'} font-weight:bold;">👥 Khata: ${permCustomers ? 'ON' : 'OFF'}</span>
+                            <span style="font-size:11px; padding:2px 7px; border-radius:10px; background:${permReports ? '#dcfce7; color:#15803d;' : '#f1f5f9; color:#94a3b8;'} font-weight:bold;">📊 Reports: ${permReports ? 'ON' : 'OFF'}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="agency-actions" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <button class="btn-sm" style="background:#10b981; color:#fff;" onclick="shareStaffCredentials('${bk.id}')" title="Share login details via WhatsApp or copy link">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                    <button class="btn-sm" style="background:#0284c7; color:#fff;" onclick="openEditStaffModal('${bk.id}')" title="Edit Staff Details">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn-sm btn-pass" onclick="changeBookerPassword('${bk.id}')" title="Change Password">🔑 Pass</button>
+                    <button class="btn-sm ${permStock ? 'btn-perm-on' : 'btn-perm-off'}" onclick="togglePerm('${bk.id}', 'stock', ${permStock})">📦 Stock</button>
+                    <button class="btn-sm ${permCustomers ? 'btn-perm-on' : 'btn-perm-off'}" onclick="togglePerm('${bk.id}', 'customers', ${permCustomers})">👥 Khata</button>
+                    <button class="btn-sm ${bk.status === 'blocked' ? 'btn-activate' : 'btn-toggle'}" onclick="toggleBlock('${bk.id}', '${bk.status || 'active'}')">
+                        ${bk.status === 'blocked' ? '✅ Unblock' : '🚫 Block'}
+                    </button>
+                    <button class="btn-sm btn-delete" onclick="deleteBooker('${bk.id}', '${bk.name || bk.email}')">🗑️</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    const searchInput = document.getElementById('bookerSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            renderBookersList(this.value.trim());
+        });
+    }
+
+    // ============================================
+    // 🔘 BUTTON LOADING HELPER
+    // ============================================
+    function btnLoading(btnId, isLoading, text = '') {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.disabled = !!isLoading;
+        if (isLoading) {
+            if (!btn.dataset.prevHtml) btn.dataset.prevHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text || 'Adding Staff...'}`;
+        } else {
+            if (btn.dataset.prevHtml) {
+                btn.innerHTML = btn.dataset.prevHtml;
+            } else {
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> ADD STAFF MEMBER';
+            }
+        }
+    }
+
+    // ============================================
+    // ➕ ADD STAFF MEMBER (BOOKER OR SUPPLIER)
+    // ============================================
+    async function handleAddStaff(e) {
+        if (e) e.preventDefault();
+
+        const role = document.getElementById('bkRole').value;
+        const name = document.getElementById('bkName').value.trim();
+        const rawEmail = document.getElementById('bkEmail').value.trim().toLowerCase();
+        const mobile = document.getElementById('bkMobile').value.trim();
+        const password = document.getElementById('bkPassword').value;
+        const route = document.getElementById('bkRoute').value.trim();
+        const permStock = document.getElementById('permStock').checked;
+        const permCustomers = document.getElementById('permCustomers').checked;
+        const permReports = document.getElementById('permReports').checked;
+
+        // Validations
+        if (!name) { Swal.fire('⚠️', 'Staff ka naam lazmi hai!', 'warning'); return; }
+        if (!rawEmail) { Swal.fire('⚠️', 'Email ya login ID lazmi hai!', 'warning'); return; }
+        if (password.length < 6) { Swal.fire('⚠️', 'Password min 6 characters!', 'warning'); return; }
+
+        // 👥 Check Booker / Staff Limit from Package or Super Admin Custom Limits
+        const allowedBookers = (myAgency && myAgency.customLimits && myAgency.customLimits.maxBookers) || (myLimits && myLimits.maxBookers) || 2;
+        const currentActiveCount = allAgencyBookers.filter(b => b.status !== 'deleted').length;
+        if (currentActiveCount >= allowedBookers) {
+            Swal.fire({
+                icon: 'warning',
+                title: '👥 Order Booker / Staff Limit Reached',
+                html: `Aap کے موجودہ پیکیج میں زیادہ سے زیادہ <b>${allowedBookers} Staff / Order Bookers</b> کی اجازت ہے۔<br><br>
+                       مزید بکرز یا ڈلیوری سپلائر شامل کرنے کے لیے <b>Super Admin</b> یا <b>Developer</b> سے لمٹ بڑھوائیں:
+                       <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:10px; margin-top:10px; font-size:13px; font-weight:bold; color:#166534;">
+                           <i class="fab fa-whatsapp"></i> Developer WhatsApp: +923346800959
+                       </div>`,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fab fa-whatsapp"></i> رابطہ ڈویلپر (+923346800959)',
+                confirmButtonColor: '#25D366',
+                cancelButtonText: 'Theek Hai'
+            }).then(r => {
+                if (r.isConfirmed) {
+                    window.open('https://wa.me/923346800959?text=' + encodeURIComponent(`السلام علیکم ڈویلپر صاحب!\nمیری ایجنسی: *${myAgency.name || ''}*\nمجھے آرڈر بکر / اسٹاف کی لمٹ بڑھوانی ہے (موجودہ لمٹ: ${allowedBookers})۔`), '_blank');
+                }
+            });
+            return;
+        }
+
+        // Ensure Agency ID is resolved
+        if (!myAgencyId || myAgencyId === 'super-admin-hq') {
+            try {
+                const agSnap = await db.collection('agencies').limit(1).get();
+                if (!agSnap.empty) {
+                    myAgencyId = agSnap.docs[0].id;
+                    myAgency = agSnap.docs[0].data();
+                } else {
+                    myAgencyId = 'main_agency';
+                }
+            } catch (err) {
+                myAgencyId = 'main_agency';
+            }
+        }
+
+        // Normalize email: If user typed phone or simple username without @, make valid system email
+        let email = rawEmail;
+        if (!email.includes('@')) {
+            const cleanUser = email.replace(/[^a-zA-Z0-9]/g, '');
+            email = (cleanUser || 'staff' + Date.now().toString().slice(-4)) + '@tajkaryana.com';
+        }
+
+        btnLoading('addBookerBtn', true, 'Creating Staff Account...');
+
+        try {
+            // Secondary App creation with NONE persistence so Owner session is never touched!
+            const secAppName = 'SecStaff-' + Date.now();
+            const secondaryApp = firebase.initializeApp(firebaseConfig, secAppName);
+            const secondaryAuth = secondaryApp.auth();
+            await secondaryAuth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+
+            let bookerUid = null;
+            try {
+                const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+                bookerUid = cred.user.uid;
+                await secondaryAuth.signOut();
+            } catch (authErr) {
+                console.warn('Auth create note:', authErr.code, authErr.message);
+                if (authErr.code === 'auth/email-already-in-use') {
+                    try {
+                        const exCred = await secondaryAuth.signInWithEmailAndPassword(email, password);
+                        bookerUid = exCred.user.uid;
+                        await secondaryAuth.signOut();
+                    } catch (signInErr) {
+                        bookerUid = 'staff_' + Date.now();
+                    }
+                } else {
+                    bookerUid = 'staff_' + Date.now();
+                }
+            }
+            try { await secondaryApp.delete(); } catch(e) {}
+
+            const staffObj = {
+                email: email,
+                name: name,
+                mobile: mobile,
+                role: role,
+                route: route || 'General Area',
+                loginMethod: 'password',
+                agencyId: myAgencyId,
+                permissions: {
+                    instant: false,
+                    stock: permStock,
+                    customers: permCustomers,
+                    reports: permReports
+                },
+                status: 'active',
+                tempPassword: password,
+                createdAt: new Date().toISOString(),
+                createdBy: myUid || 'owner'
+            };
+
+            // Save in both 'users' and 'bookers' collections for seamless compatibility across panels
+            await db.collection('users').doc(bookerUid).set(staffObj);
+            try {
+                await db.collection('bookers').doc(bookerUid).set(staffObj);
+            } catch(bErr) {
+                console.warn('Bookers collection sync note:', bErr);
+            }
+
+            btnLoading('addBookerBtn', false);
+            document.getElementById('addBookerForm').reset();
+            document.getElementById('permStock').checked = true;
+            document.getElementById('permCustomers').checked = true;
+            await loadBookers();
+
+            // Open Share Dialog immediately so owner can copy or WhatsApp!
+            staffObj.id = bookerUid;
+            openShareModal(staffObj);
+
+            Swal.fire({
+                icon: 'success',
+                title: '✅ Staff Member Created!',
+                text: `${name} (${role === 'supplier' ? 'Delivery Supplier' : 'Order Booker'}) successfully created!`,
+                timer: 2500,
+                showConfirmButton: false
+            });
+
+        } catch (error) {
+            btnLoading('addBookerBtn', false);
+            console.error('Staff creation error:', error);
+            let msg = 'Staff add nahi hua: ' + (error.message || error.code);
+            Swal.fire('❌ Error', msg, 'error');
+        }
+    }
+
+    const formEl = document.getElementById('addBookerForm');
+    if (formEl) {
+        formEl.addEventListener('submit', handleAddStaff);
+    }
+    const addStaffBtn = document.getElementById('addBookerBtn');
+    if (addStaffBtn) {
+        addStaffBtn.addEventListener('click', (e) => {
+            if (formEl && formEl.checkValidity && !formEl.checkValidity()) {
+                formEl.reportValidity();
+                return;
+            }
+            handleAddStaff(e);
+        });
+    }
+
+    // ============================================
+    // 🔗 SHARE CREDENTIALS & LOGIN LINK
+    // ============================================
+    window.shareStaffCredentials = function(staffId, directObj) {
+        const staffObj = directObj || allAgencyBookers.find(x => x.id === staffId);
+        if (!staffObj) return;
+        openShareModal(staffObj);
+    };
+
+    function openShareModal(staffObj) {
+        const appUrl = window.location.origin + '/auth.html';
+        const isSupplier = staffObj.role === 'supplier' || staffObj.role === 'delivery';
+        const roleTitle = isSupplier ? '🚚 Delivery Supplier / Salesman' : '📕 Order Booker';
+
+        const card = document.getElementById('shareCredentialCard');
+        card.innerHTML = `
+            <div style="font-weight:800; font-size:15px; color:#0f172a; margin-bottom:6px;">${staffObj.name || staffObj.email}</div>
+            <div style="margin-bottom:4px;"><b>عہدہ (Role):</b> ${roleTitle}</div>
+            <div style="margin-bottom:4px;"><b>🏢 Agency:</b> ${(myAgency && myAgency.name) || 'Our Agency'}</div>
+            <div style="margin-bottom:4px;"><b>📧 Email / Login ID:</b> <span style="color:#0284c7; font-weight:bold;">${staffObj.email}</span></div>
+            <div style="margin-bottom:4px;"><b>📱 Mobile:</b> <span style="font-weight:bold;">${staffObj.mobile || '—'}</span></div>
+            <div style="margin-bottom:4px;"><b>🔑 Password:</b> <span style="font-family:monospace; background:#e2e8f0; padding:2px 6px; border-radius:4px;">${staffObj.tempPassword || '******'}</span></div>
+            <div style="margin-bottom:4px;"><b>📍 Assigned Route:</b> ${staffObj.route || 'General Depot'}</div>
+            <div style="margin-top:8px; word-break:break-all; font-size:12px; color:#64748b;">
+                <b>🔗 Login Link:</b> <a href="${appUrl}" target="_blank" style="color:#0284c7;">${appUrl}</a>
+            </div>
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 10px; margin-top:8px; font-size:11px; color:#1e40af;">
+                💡 <b>نوٹ:</b> اسٹاف اوپر دی گئی ای میل یا موبائل اور پاسورڈ درج کر کے لاگ اِن کرے، گوگل بٹن نہ دبائے۔
+            </div>
+        `;
+
+        let waText = `Assalam-o-Alaikum ${staffObj.name}!\n`;
+        waText += `Aap ko *${(myAgency && myAgency.name) || 'Our Agency'}* mein *${roleTitle}* ke tor par add kar diya gaya hai.\n\n`;
+        waText += `🔗 *Login Portal:* ${appUrl}\n`;
+        waText += `📧 *Email / Login ID:* ${staffObj.email}\n`;
+        waText += `📱 *Mobile (یا Login ID):* ${staffObj.mobile || '—'}\n`;
+        waText += `🔑 *Password:* ${staffObj.tempPassword || '******'}\n`;
+        waText += `📍 *Assigned Route:* ${staffObj.route || 'General Depot'}\n\n`;
+        waText += `💡 *ہدایت:* لاگ اِن لنک کھولیں، ای میل یا موبائل اور پاسورڈ درج کر کے سبز بٹن Login دبائیں (گوگل والا بٹن نہ دبائیں)۔ Shukriya!`;
+
+        document.getElementById('whatsappCredentialsBtn').onclick = () => {
+            const cleanPhone = (staffObj.mobile || '').replace(/\D/g, '');
+            const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}` : `https://wa.me/?text=${encodeURIComponent(waText)}`;
+            window.open(url, '_blank');
+        };
+
+        document.getElementById('copyCredentialsBtn').onclick = async () => {
+            try {
+                await navigator.clipboard.writeText(waText);
+                Swal.fire({ toast: true, position: 'top-end', timer: 1800, icon: 'success', title: '📋 Login details copied to clipboard!' });
+            } catch (e) {
+                Swal.fire('Error', 'Clipboard copy failed', 'error');
+            }
+        };
+
+        document.getElementById('shareModalOverlay').style.display = 'flex';
+    }
+
+    window.closeShareModal = () => {
+        document.getElementById('shareModalOverlay').style.display = 'none';
+    };
+
+    // ============================================
+    // ✏️ EDIT STAFF MEMBER (Name, Mobile, Route, Role)
+    // ============================================
+    window.openEditStaffModal = function(staffId) {
+        const st = allAgencyBookers.find(x => x.id === staffId);
+        if (!st) return;
+
+        document.getElementById('editStaffId').value = staffId;
+        document.getElementById('editStaffRole').value = (st.role === 'supplier' || st.role === 'delivery') ? 'supplier' : 'booker';
+        document.getElementById('editStaffName').value = st.name || '';
+        document.getElementById('editStaffMobile').value = st.mobile || '';
+        document.getElementById('editStaffRoute').value = st.route || '';
+
+        document.getElementById('editStaffModalOverlay').style.display = 'flex';
+    };
+
+    window.closeEditStaffModal = () => {
+        document.getElementById('editStaffModalOverlay').style.display = 'none';
+    };
+
+    document.getElementById('editStaffForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const staffId = document.getElementById('editStaffId').value;
+        const role = document.getElementById('editStaffRole').value;
+        const name = document.getElementById('editStaffName').value.trim();
+        const mobile = document.getElementById('editStaffMobile').value.trim();
+        const route = document.getElementById('editStaffRoute').value.trim();
+
+        try {
+            await db.collection('users').doc(staffId).update({
+                role: role,
+                name: name,
+                mobile: mobile,
+                route: route,
+                updatedAt: new Date().toISOString()
+            });
+
+            closeEditStaffModal();
+            await loadBookers();
+            Swal.fire({ toast: true, position: 'top-end', timer: 1600, icon: 'success', title: '✅ Staff member updated!' });
+        } catch (err) {
+            Swal.fire('Error', 'Update failed: ' + err.message, 'error');
+        }
+    });
+
+    // ============================================
+    // 🔑 CHANGE BOOKER PASSWORD (Adjustable!)
+    // ============================================
+    async function changeBookerPassword(bookerId) {
+        // Purana password Firestore se lo (owner ke paas stored hai)
+        const doc = await db.collection('users').doc(bookerId).get();
+        if (!doc.exists) return;
+        const bk = doc.data();
+        const oldPass = bk.tempPassword || '';
+
+        const result = await Swal.fire({
+            title: '🔑 Change Password',
+            text: `Booker: ${bk.email}`,
+            input: 'text',
+            inputPlaceholder: 'Naya Password (min 6)',
+            showCancelButton: true,
+            confirmButtonColor: '#f39c12',
+            confirmButtonText: '🔑 Change',
+            cancelButtonText: 'Cancel',
+            inputValidator: (value) => {
+                if (!value || value.length < 6) return 'Min 6 characters!';
+            }
+        });
+
+        if (!result.isConfirmed) return;
+        const newPass = result.value;
+
+        try {
+            // 🔧 SECONDARY APP: booker ki identity se login → password update!
+            const secApp = firebase.initializeApp(firebaseConfig, 'PassChg-' + Date.now());
+            const secAuth = secApp.auth();
+
+            const cred = await secAuth.signInWithEmailAndPassword(bk.email, oldPass);
+            await cred.user.updatePassword(newPass);
+            await secAuth.signOut();
+            secApp.delete();
+
+            // Firestore mein stored password update
+            await db.collection('users').doc(bookerId).update({
+                tempPassword: newPass,
+                passwordChangedAt: new Date().toISOString()
+            });
+
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 2200, icon: 'success',
+                title: '✅ Password changed!'
+            });
+        } catch (e) {
+            console.error(e);
+            let msg = 'Password change fail: ' + e.code;
+            if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+                msg = 'Purana password match nahi hua! Booker ne shayad khud change kiya hai.';
+            }
+            Swal.fire('❌ Error', msg, 'error');
+        }
+    }
+
+    // ============================================
+    // ⚡📦 PERMISSION TOGGLE (Instant, Stock, Khata, Reports)
+    // ============================================
+    async function togglePerm(bookerId, perm, currentVal) {
+        try {
+            const doc = await db.collection('users').doc(bookerId).get();
+            const perms = doc.data().permissions || {};
+            perms[perm] = !currentVal;
+            
+            // Kam az kam 1 bill permission honi chahiye (Instant ya Stock)!
+            if (!perms.instant && !perms.stock) {
+                Swal.fire({
+                    toast: true, position: 'top-end', showConfirmButton: false,
+                    timer: 2000, icon: 'warning',
+                    title: '⚠️ Kam az kam 1 bill permission (Instant ya Stock) zaroori hai!'
+                });
+                return;
+            }
+
+            const labelMap = {
+                'instant': '⚡ Instant Bill',
+                'stock': '📦 Stock Bill',
+                'customers': '👥 Customer Khata',
+                'reports': '📊 Reports'
+            };
+
+            await db.collection('users').doc(bookerId).update({ permissions: perms });
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 1500, icon: 'success',
+                title: `✅ ${labelMap[perm] || perm} ${perms[perm] ? 'ON' : 'OFF'}!`
+            });
+            loadBookers();
+        } catch (e) {
+            Swal.fire('Error', e.code, 'error');
+        }
+    }
+
+    // ============================================
+    // 🚫 BLOCK / UNBLOCK
+    // ============================================
+    async function toggleBlock(bookerId, currentStatus) {
+        const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
+        try {
+            await db.collection('users').doc(bookerId).update({
+                status: newStatus,
+                statusChangedAt: new Date().toISOString()
+            });
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 1800, icon: 'success',
+                title: newStatus === 'blocked' ? '🚫 Booker blocked!' : '✅ Booker unblocked!'
+            });
+            loadBookers();
+        } catch (e) {
+            Swal.fire('Error', e.code, 'error');
+        }
+    }
+
+    // ============================================
+    // 🗑️ DELETE BOOKER (soft delete)
+    // ============================================
+    async function deleteBooker(bookerId, name) {
+        const result = await Swal.fire({
+            title: '🗑️ Delete Booker?',
+            html: `<b>${name}</b> ko delete karna hai?<br>
+                   <small style="color:#e74c3c;">Booker login NAHI kar payega.</small>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#c0392b',
+            confirmButtonText: '🗑️ Delete',
+            cancelButtonText: 'Cancel'
+        });
+        if (!result.isConfirmed) return;
+
+        try {
+            await db.collection('users').doc(bookerId).update({
+                status: 'deleted',
+                deletedAt: new Date().toISOString()
+            });
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 1800, icon: 'success',
+                title: '🗑️ Booker deleted!'
+            });
+            loadBookers();
+        } catch (e) {
+            Swal.fire('Error', e.code, 'error');
+        }
+    }
+
+    const oLogout = document.getElementById('logoutBtn');
+    if (oLogout) {
+        oLogout.addEventListener('click', async () => {
+            const result = await Swal.fire({
+                title: 'Logout?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: 'Haan',
+                cancelButtonText: 'Cancel'
+            });
+            if (result.isConfirmed) {
+                await auth.signOut();
+                window.location.href = 'auth.html';
+            }
+        });
+    }
+</script>
+
+    <!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+    
+</body>
+</html>

@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — My Profile</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 🏢 Business Categories Registry -->
+    <script src="business-categories.js"></script>
+
+    <!-- 💎 SaaS Modules Registry & Paywall Guard -->
+    <script src="saas-modules.js"></script>
+</head>
+<body>
+<span id="myEmail" style="display:none;"></span>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 👤 PERSONAL INFO ===== -->
+    <div class="panel-card">
+        <div class="card-header">
+            <h2><i class="fas fa-user"></i> Personal Information</h2>
+        </div>
+        <form id="personalForm" class="panel-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>👤 Full Name</label>
+                    <input type="text" id="pfName" maxlength="40" placeholder="Your Name">
+                </div>
+                <div class="form-group">
+                    <label>📱 Mobile Number</label>
+                    <input type="tel" id="pfMobile" maxlength="15" placeholder="03xx-xxxxxxx">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📧 Email (fixed)</label>
+                    <input type="email" id="pfEmail" disabled style="background:#eef2f7; color:#7f8c8d;">
+                </div>
+                <div class="form-group">
+                    <label>🎭 My Role</label>
+                    <input type="text" id="pfRole" disabled style="background:#eef2f7; color:#7f8c8d;">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="savePersonalBtn">
+                💾 Save Personal Info
+            </button>
+        </form>
+    </div>
+
+    <!-- ===== 💎 SUBSCRIPTION & SAAS MODULE LOCK STATUS ===== -->
+    <div class="panel-card" id="subscriptionCard" style="border-top-color:#10b981; display:none;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+                <h2><i class="fas fa-crown"></i> Subscription &amp; Package Status</h2>
+                <small class="header-note">پیکیج کی تفصیلات، فیس اسٹیٹس اور ماڈیولز لاک/ان لاک کنٹرول</small>
+            </div>
+            <button type="button" class="btn btn-sm" id="btnProfileUpgrade" style="background:#10b981; color:#fff; font-weight:bold; cursor:pointer;">
+                <i class="fas fa-unlock"></i> Upgrade / Pay Fee (ان لاک کریں)
+            </button>
+        </div>
+
+        <!-- 📲 Developer WhatsApp Contact Banner -->
+        <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fab fa-whatsapp" style="font-size:22px; color:#25D366;"></i>
+                <div>
+                    <div style="font-size:12px; font-weight:800; color:#14532d;">ڈویلپر واٹس ایپ رابطہ (Developer Official WhatsApp): <span style="color:#15803d;">+923346800959</span></div>
+                    <div style="font-size:11px; color:#64748b;">پیکیج لمٹس (بلز، آئٹمز، آرڈر بکرز) اور ماہانہ فیس کے حوالے سے فوری رابطہ کریں۔</div>
+                </div>
+            </div>
+            <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Easy%20Bill%20Package%20Support" target="_blank" style="background:#25D366; color:#fff; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                <i class="fab fa-whatsapp"></i> Chat Developer
+            </a>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:14px;">
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                <div style="font-size:11px; color:#64748b; font-weight:bold;">CURRENT PACKAGE</div>
+                <div style="font-size:15px; font-weight:800; color:#0f172a; margin-top:3px;" id="subPkgName">—</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                <div style="font-size:11px; color:#64748b; font-weight:bold;">STATUS</div>
+                <div style="font-size:14px; font-weight:800; margin-top:3px;" id="subStatusBadge">—</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                <div style="font-size:11px; color:#64748b; font-weight:bold;">VALIDITY EXPIRY</div>
+                <div style="font-size:15px; font-weight:800; color:#0f172a; margin-top:3px;" id="subExpiryDate">—</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                <div style="font-size:11px; color:#64748b; font-weight:bold;">MONTHLY FEE</div>
+                <div style="font-size:15px; font-weight:800; color:#0284c7; margin-top:3px;" id="subMonthlyFee">—</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px;">
+                <div style="font-size:11px; color:#64748b; font-weight:bold;">PACKAGE LIMITS</div>
+                <div style="font-size:12px; font-weight:800; color:#475569; margin-top:3px;" id="subLimitsText">—</div>
+            </div>
+        </div>
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <b style="color:#0f172a;">🔒 System Modules &amp; Feature Access:</b>
+                <span style="font-size:11px; color:#64748b;">(Lock 🔒 means package upgrade / renewal required)</span>
+            </div>
+            <div id="subModulesGrid" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+    </div>
+
+    <!-- ===== 🏢 BUSINESS INFO (Sirf OWNER ke liye!) ===== -->
+    <div class="panel-card" id="businessCard" style="display:none;">
+        <div class="card-header">
+            <h2><i class="fas fa-building"></i> My Business / Agency</h2>
+            <small class="header-note">Ye details aap ke bills par aur reports mein use hongi!</small>
+        </div>
+        <form id="businessForm" class="panel-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🏢 Business Name *</label>
+                    <input type="text" id="pfBizName" maxlength="50" required>
+                </div>
+                <div class="form-group">
+                    <label>🏪 Business Type *</label>
+                    <select id="pfBizType" class="select-input" required>
+                        <option value="books">📚 Book Depot &amp; Stationery (بک ڈپو، اسٹیشنری و بک پوائنٹ)</option>
+                        <option value="mobile">📱 Mobile Shop &amp; Accessories (موبائل اور ایسیسریز)</option>
+                        <option value="medical">💊 Medical Store &amp; Pharmacy (میڈیکل اسٹور و فارمیسی)</option>
+                        <option value="shoes">👟 Shoe Store &amp; Footwear (جوتے و فٹ ویئر)</option>
+                        <option value="garments">👕 Garments &amp; Clothing (گارمنٹس و ملبوسات)</option>
+                        <option value="general">🛒 General Store &amp; Kiryana (جنرل اسٹور و کریانہ)</option>
+                        <option value="wholesaler">📦 Wholesaler &amp; Bulk Distribution (تھوک ڈیلر)</option>
+                        <option value="confectionery">🍪 Confectionery &amp; Biscuits (کنفیکشنری و بسکٹ)</option>
+                        <option value="hardware">🔧 Hardware, Sanitary &amp; Paint (ہارڈویئر و سینیٹری)</option>
+                        <option value="electronics">💻 Electronics &amp; Home Appliances (الیکٹرانکس)</option>
+                        <option value="cosmetics">💄 Cosmetics &amp; Beauty (کاسمیٹکس)</option>
+                        <option value="auto_parts">🚗 Auto Parts &amp; Spare Parts (آٹو پارٹس)</option>
+                        <option value="bakery">🍞 Bakery, Sweets &amp; Cafe (بیکری و مٹھائی)</option>
+                        <option value="furniture">🪑 Furniture &amp; Decor (فرنیچر)</option>
+                        <option value="other">💼 Other Business (دیگر کاروبار)</option>
+                    </select>
+                </div>
+            </div>
+            <!-- ✅ SIRF 2 MOBILES (Mobile 3 REMOVE!) -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📱 Mobile 1 *</label>
+                    <input type="tel" id="pfBizMobile" maxlength="15" placeholder="03xx-xxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label>📱 Mobile 2 (optional)</label>
+                    <input type="tel" id="pfBizMobile2" maxlength="15" placeholder="03xx-xxxxxxx">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📍 Business Address (optional)</label>
+                    <input type="text" id="pfBizAddress" maxlength="100" placeholder="Street, Area, City">
+                </div>
+                <div class="form-group">
+                    <label>🏙️ City (optional)</label>
+                    <input type="text" id="pfBizCity" maxlength="30" placeholder="City">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🔢 NTN Number (optional — likha to bill par show)</label>
+                    <input type="text" id="pfBizNTN" maxlength="20" placeholder="1234567-8">
+                </div>
+                <div class="form-group">
+                    <label>📋 Licence No (optional — likha to bill par show)</label>
+                    <input type="text" id="pfBizLic" maxlength="30" placeholder="Licence No">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🖼️ Agency Logo (optional — bill left side par)</label>
+                    <input type="file" id="pfBizLogo" accept="image/*" style="padding:8px; background:#fff; border:2px solid #e0e6e8; border-radius:10px;">
+                    <small id="logoStatus" style="color:#27ae60; font-weight:bold; display:none;">✅ Logo selected — Save dabayen!</small>
+                </div>
+                <div class="form-group">
+                    <label>💳 Pay Type Default (CASH / CREDIT)</label>
+                    <select id="pfPayType" class="select-input">
+                        <option value="CASH">💵 CASH</option>
+                        <option value="CREDIT">💳 CREDIT</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>🎨 Default Bill Template (Print design)</label>
+                <select id="pfTemplate" class="select-input">
+                    <option value="template4">⚡ Modern Minimal (Default)</option>
+                    <option value="template1">🇵🇰 Urdu Classic (Nastaliq)</option>
+                    <option value="template2">📋 Traders English (Big Header)</option>
+                    <option value="template3">🇵🇰 Urdu + English Mix</option>
+                    <option value="template5">💎 Premium Full (All Boxes)</option>
+                    <option value="template6">🧾 Thermal Slip (58mm / 80mm POS)</option>
+                    <option value="template7">📦 FMCG Distribution Invoice (Market Format 1 & 3)</option>
+                    <option value="template8">🇵🇰 Classic Wholesale Urdu Grid (Market Format 2, 4, 5, 6, 7)</option>
+                </select>
+                <small id="templatePackageNote" style="color:#7f8c8d; font-size:11px; margin-top:4px; display:block;">
+                    💡 Super Admin allows specific templates according to agency package.
+                </small>
+            </div>
+
+            <!-- 🔢 BILL NUMBER PREFIX & RATE SWITCH SETTINGS -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🔢 Custom Bill Serial Prefix (اختیاری انگلش الفاظ مثلاً A1 یا INV)</label>
+                    <input type="text" id="pfBillPrefix" maxlength="15" placeholder="خالی = صرف نمبر (مثلاً 1, 2, 42)">
+                    <small style="color:#64748b; font-size:11px;">خالی چھوڑنے پر بل نمبر صرف خالص نمبر (1, 2, 42) بنے گا۔ اگر کچھ لکھیں گے جیسے "A-" تو "A-42" بنے گا۔</small>
+                </div>
+                <div class="form-group">
+                    <label>👁️ Wholesale / Retail Rate Bar (بل پر ریٹ بٹن کا شو / ہائیڈ)</label>
+                    <select id="pfAllowRateSwitch" class="select-input">
+                        <option value="yes">👁️ Show Rate Switcher (ظاہر رکھیں — ڈیفالٹ)</option>
+                        <option value="no">🙈 Hide Rate Switcher (بل اسکرین سے مکمل چھپا دیں)</option>
+                    </select>
+                    <small style="color:#64748b; font-size:11px;">ہائیڈ کرنے پر بل پیج سے یہ بٹن غائب ہو جائے گا اور کسٹمر کی ٹائپ کے مطابق ریٹ خودکار لگے گا۔</small>
+                </div>
+            </div>
+
+            <!-- 🆕🖨️ PRINT BOXES & FIELDS CHECKBOXES (Kon kon si info print ho!) -->
+            <div class="form-group" style="margin-top:15px; background: rgba(0,0,0,0.02); border: 1px solid #e0e6e8; border-radius: 10px; padding: 15px;">
+                <label style="font-weight:bold; color:var(--primary); font-size:14px; margin-bottom:10px; display:block;">
+                    🖨️ Print Information &amp; Boxes (Check / Uncheck to Show on Bill)
+                </label>
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; font-size: 13px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowLogo" checked> 🖼️ Show Agency Logo
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowOwnerName" checked> 👤 Show Owner Name
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowAddress" checked> 📍 Show Shop Address
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowMobiles" checked> 📱 Show Mobile Numbers
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowNTN" checked> 🔢 Show NTN &amp; Licence
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowCustomerPhone" checked> 📞 Customer Mobile
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowCustomerAddress" checked> 🏠 Customer Address
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowDiscount" checked> 🏷️ Discount Row
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowTax" checked> 🧾 Tax Rate &amp; Amount
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowPreviousBalance" checked> 💰 Previous Balance
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowReceivedAmount" checked> 💵 Cash Received
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowBalance" checked> ⚖️ Remaining Balance
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowThankYouNote" checked> 🙏 Thank You Message
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowSignatureAuthorized" checked> ✍️ Authorized Signature
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowSignatureCustomer" checked> ✍️ Customer Signature
+                    </label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="saveBizBtn">
+                💾 Save Business Info
+            </button>
+        </form>
+    </div>
+
+    <!-- ===== 🔑 CHANGE PASSWORD ===== -->
+    <div class="panel-card">
+        <div class="card-header">
+            <h2><i class="fas fa-key"></i> Change My Password</h2>
+        </div>
+        <form id="passwordForm" class="panel-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🔒 Current Password *</label>
+                    <input type="password" id="curPass" required minlength="6" autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <label>🆕 New Password * (min 6)</label>
+                    <input type="password" id="newPass" required minlength="6" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label>🔄 Confirm New Password *</label>
+                    <input type="password" id="confPass" required minlength="6">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="savePassBtn">
+                🔑 Change Password
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- ⚙️ PRINT ENGINE & CHECKBOX CONTROLS -->
+<script src="print-settings.js"></script>
+
+<script>
+    // ⚠️ AAP KA CONFIG
+    const firebaseConfig = {
+        apiKey: "AIzaSyDDwKWcixoUThCJQqiVoBcUVsJZI60h43Q",
+        authDomain: "multipos-ed91a.firebaseapp.com",
+        projectId: "multipos-ed91a",
+        storageBucket: "multipos-ed91a.firebasestorage.app",
+        messagingSenderId: "862649586987",
+        appId: "1:862649586987:web:599772124e4e29404ca16e",
+        measurementId: "G-QPCP7S5Q5L"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // ============================================
+    // 📋 MAPS
+    // ============================================
+    const BUSINESS_TYPES = {
+        'medical': '🏪 Medical Store',
+        'general': '🏪 General Store',
+        'mobile': '📱 Mobile Shop',
+        'garments': '👔 Garments',
+        'shoes': '👟 Shoes Store',
+        'electric': '⚡ Electric/Electronics',
+        'hardware': '🔧 Hardware',
+        'cosmetics': '💄 Cosmetics',
+        'repair': '📱 Computer/Mobile Repair',
+        'autoparts': '🚗 Auto Parts',
+        'sabzi': '🥬 Sabzi/Fruit Mandi',
+        'chicken': '🍗 Chicken/Meat Shop',
+        'bakery': '🍞 Bakery/Food',
+        'books': '📚 Book Store',
+        'gift': '🎁 Gift Shop',
+        'furniture': '🏠 Furniture',
+        'workshop': '🛠️ Workshop',
+        'wholesaler': '📦 Wholesaler',
+        'other': '💼 Other'
+    };
+
+    const ROLE_NAMES = {
+        'super-admin': '👑 Super Admin',
+        'owner': '🏢 Agency Owner',
+        'booker': '📕 Booker'
+    };
+
+    // ============================================
+    // 🛡️ GUARD + LOAD PROFILE
+    // ============================================
+    let myUid = null;
+    let myRole = null;
+    let myAgencyId = null;
+    let myEmail = null;
+    let pendingLogoBase64 = null;   // 🆕 Naya logo (save par update hoga!)
+
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            window.location.href = 'auth.html';
+            return;
+        }
+        myUid = user.uid;
+        myEmail = user.email;
+
+        try {
+            // Self-heal
+            let doc = await db.collection('users').doc(myUid).get();
+            if (!doc.exists) {
+                let role = 'owner';
+                const snap = await db.collection('users').limit(1).get();
+                if (snap.empty) role = 'super-admin';
+
+                await db.collection('users').doc(myUid).set({
+                    email: myEmail,
+                    name: user.displayName || myEmail.split('@')[0],
+                    role: role,
+                    agencyId: null,
+                    permissions: { instant: true, stock: true },
+                    createdAt: new Date().toISOString(),
+                    repairedBy: 'profile-self-heal'
+                });
+                doc = await db.collection('users').doc(myUid).get();
+            }
+
+            const data = doc.data();
+            myRole = data.role;
+            myAgencyId = data.agencyId || null;
+
+            // Blocked guard
+            if (data.status === 'blocked' || data.status === 'deleted') {
+                await auth.signOut();
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            // Personal fill
+            document.getElementById('myEmail').innerText = myEmail;
+            document.getElementById('pfEmail').value = myEmail;
+            document.getElementById('pfRole').value = ROLE_NAMES[myRole] || myRole;
+            document.getElementById('pfName').value = data.name || '';
+            document.getElementById('pfMobile').value = data.mobile || '';
+
+            // 🏢 Business — SIRF OWNER
+            if (myRole === 'owner') {
+                if (!myAgencyId) {
+                    const agencyRef = await db.collection('agencies').add({
+                        name: data.name || (myEmail.split('@')[0] + ' Business'),
+                        businessType: 'other',
+                        packageId: 'free',
+                        status: 'active',
+                        ownerUid: myUid,
+                        ownerEmail: myEmail,
+                        createdAt: new Date().toISOString(),
+                        createdBy: 'profile-auto-repair'
+                    });
+                    myAgencyId = agencyRef.id;
+                    await db.collection('users').doc(myUid).update({
+                        agencyId: myAgencyId,
+                        agencyRepaired: true
+                    });
+                }
+
+                document.getElementById('businessCard').style.display = 'block';
+                const agDoc = await db.collection('agencies').doc(myAgencyId).get();
+                if (agDoc.exists) {
+                    const ag = agDoc.data();
+                    document.getElementById('pfBizName').value = ag.name || '';
+                    document.getElementById('pfBizType').value = ag.businessType || 'other';
+                    document.getElementById('pfBizMobile').value = ag.mobile || '';
+                    document.getElementById('pfBizMobile2').value = ag.mobile2 || '';
+                    // ✅ Mobile 3 REMOVE — ab load nahi hota
+                    document.getElementById('pfBizCity').value = ag.city || '';
+                    document.getElementById('pfBizAddress').value = ag.address || '';
+                    document.getElementById('pfBizNTN').value = ag.ntn || '';
+                    document.getElementById('pfBizLic').value = ag.licenceNo || '';
+                    document.getElementById('pfPayType').value = ag.payType || 'CASH';
+                    document.getElementById('pfTemplate').value = ag.template || 'template4';
+                    document.getElementById('pfBillPrefix').value = ag.billPrefix || '';
+                    document.getElementById('pfAllowRateSwitch').value = ag.allowRateSwitch || 'yes';
+
+                    // 🖨️ Checkboxes load karo
+                    const pSet = ag.printSettings || (window.ebPrintEngine ? window.ebPrintEngine.DEFAULT_PRINT_SETTINGS : {});
+                    if (document.getElementById('chkShowLogo')) document.getElementById('chkShowLogo').checked = pSet.showLogo !== false;
+                    if (document.getElementById('chkShowOwnerName')) document.getElementById('chkShowOwnerName').checked = pSet.showOwnerName !== false;
+                    if (document.getElementById('chkShowAddress')) document.getElementById('chkShowAddress').checked = pSet.showAddress !== false;
+                    if (document.getElementById('chkShowMobiles')) document.getElementById('chkShowMobiles').checked = pSet.showMobiles !== false;
+                    if (document.getElementById('chkShowNTN')) document.getElementById('chkShowNTN').checked = pSet.showNTN !== false;
+                    if (document.getElementById('chkShowCustomerPhone')) document.getElementById('chkShowCustomerPhone').checked = pSet.showCustomerPhone !== false;
+                    if (document.getElementById('chkShowCustomerAddress')) document.getElementById('chkShowCustomerAddress').checked = pSet.showCustomerAddress !== false;
+                    if (document.getElementById('chkShowDiscount')) document.getElementById('chkShowDiscount').checked = pSet.showDiscount !== false;
+                    if (document.getElementById('chkShowTax')) document.getElementById('chkShowTax').checked = pSet.showTax !== false;
+                    if (document.getElementById('chkShowPreviousBalance')) document.getElementById('chkShowPreviousBalance').checked = pSet.showPreviousBalance !== false;
+                    if (document.getElementById('chkShowReceivedAmount')) document.getElementById('chkShowReceivedAmount').checked = pSet.showReceivedAmount !== false;
+                    if (document.getElementById('chkShowBalance')) document.getElementById('chkShowBalance').checked = pSet.showBalance !== false;
+                    if (document.getElementById('chkShowThankYouNote')) document.getElementById('chkShowThankYouNote').checked = pSet.showThankYouNote !== false;
+                    if (document.getElementById('chkShowSignatureAuthorized')) document.getElementById('chkShowSignatureAuthorized').checked = pSet.showSignatureAuthorized !== false;
+                    if (document.getElementById('chkShowSignatureCustomer')) document.getElementById('chkShowSignatureCustomer').checked = pSet.showSignatureCustomer !== false;
+
+                    // 📦 Package-based templates highlight/filter
+                    const allowedTemplates = (window.ebPrintEngine) 
+                        ? window.ebPrintEngine.getAllowedTemplatesForPackage(ag.packageId, ag.allowedTemplates)
+                        : ['template4', 'template1'];
+                    
+                    const tSelect = document.getElementById('pfTemplate');
+                    Array.from(tSelect.options).forEach(opt => {
+                        if (!allowedTemplates.includes(opt.value)) {
+                            opt.text = opt.text + ' 🔒 (Upgrade package to unlock)';
+                            opt.disabled = true;
+                        }
+                    });
+                    const pkgNote = document.getElementById('templatePackageNote');
+                    if (pkgNote) {
+                        pkgNote.innerText = `Package: ${(ag.packageId || 'Free').toUpperCase()} — Allowed Templates: ${allowedTemplates.length} of 6`;
+                    }
+
+                    // 💎 Populate Subscription & SaaS Modules Card
+                    const subCard = document.getElementById('subscriptionCard');
+                    if (subCard && window.SaaSModules) {
+                        subCard.style.display = 'block';
+                        const state = window.SaaSModules.evaluateAgency(ag);
+                        const pkgs = window.SaaSModules.SAAS_PACKAGES;
+                        const currentPkg = pkgs[state.tier] || { nameEn: state.tier.toUpperCase() };
+
+                        document.getElementById('subPkgName').innerText = currentPkg.nameEn;
+                        document.getElementById('subExpiryDate').innerText = state.expiry;
+                        document.getElementById('subMonthlyFee').innerText = `Rs ${state.fee.toLocaleString()} / mo`;
+                        
+                        const lim = (ag && ag.customLimits) || (currentPkg && currentPkg.limits) || {};
+                        const limBillsStr = (lim.monthlyBills && lim.monthlyBills >= 90000) ? 'Unlimited' : (lim.monthlyBills || 150);
+                        const limItemsStr = (lim.maxItems && lim.maxItems >= 90000) ? 'Unlimited' : (lim.maxItems || 50);
+                        const limBookersStr = lim.maxBookers || 1;
+                        const limitsEl = document.getElementById('subLimitsText');
+                        if (limitsEl) {
+                            limitsEl.innerText = `${limBillsStr} Bills • ${limItemsStr} Items • ${limBookersStr} Bookers`;
+                        }
+                        
+                        const statusEl = document.getElementById('subStatusBadge');
+                        if (state.isSuspended) {
+                            statusEl.innerHTML = '<span style="color:#ef4444;">⛔ SUSPENDED</span>';
+                        } else if (state.isExpired) {
+                            statusEl.innerHTML = '<span style="color:#ef4444;">🔴 EXPIRED (LOCKED)</span>';
+                        } else {
+                            statusEl.innerHTML = `<span style="color:#10b981;">🟢 ACTIVE (${state.daysLeft}d left)</span>`;
+                        }
+
+                        // Render Modules Badges
+                        const gridEl = document.getElementById('subModulesGrid');
+                        if (gridEl) {
+                            gridEl.innerHTML = '';
+                            const mods = window.SaaSModules.MODULES;
+                            Object.values(mods).forEach(m => {
+                                const acc = window.SaaSModules.checkModuleAccess(m.id, ag, myRole, ag.permissions);
+                                const pill = document.createElement('span');
+                                pill.style.cssText = `padding:3px 8px; border-radius:6px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:4px; ${acc.locked ? 'background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;' : 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;'}`;
+                                pill.innerHTML = acc.locked 
+                                    ? `<i class="fas fa-lock"></i> ${m.nameEn} <small style="opacity:0.8;">(${acc.badgeText || 'Locked'})</small>`
+                                    : `<i class="fas fa-check"></i> ${m.nameEn}`;
+                                gridEl.appendChild(pill);
+                            });
+                        }
+
+                        document.getElementById('btnProfileUpgrade').onclick = () => {
+                            window.SaaSModules.showUpgradeModal('profit', ag, data);
+                        };
+                    }
+                }
+            }
+
+        } catch (error) {
+            Swal.fire('Error', 'Profile load fail: ' + (error.code || error.message), 'error');
+        }
+    });
+
+    // ============================================
+    // 💾 SAVE PERSONAL INFO
+    // ============================================
+    document.getElementById('personalForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('pfName').value.trim();
+        const mobile = document.getElementById('pfMobile').value.trim();
+
+        if (!name) {
+            Swal.fire('⚠️', 'Naam khali nahi ho sakta!', 'warning');
+            return;
+        }
+
+        document.getElementById('savePersonalBtn').disabled = true;
+
+        try {
+            await db.collection('users').doc(myUid).update({
+                name: name,
+                mobile: mobile,
+                updatedAt: new Date().toISOString()
+            });
+
+            document.getElementById('savePersonalBtn').disabled = false;
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 2000, icon: 'success',
+                title: '✅ Personal info saved!'
+            });
+        } catch (error) {
+            document.getElementById('savePersonalBtn').disabled = false;
+            Swal.fire('Error', 'Save fail: ' + (error.code || error.message), 'error');
+        }
+    });
+
+    // ============================================
+    // 🖼️ LOGO UPLOAD (compress → base64 ready!)
+    // ============================================
+    document.getElementById('pfBizLogo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            // 🗜️ Compress: 200px max (chota base64 = Firestore safe!)
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(200 / img.width, 200 / img.height, 1);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                pendingLogoBase64 = canvas.toDataURL('image/png');
+
+                // Status + preview
+                const status = document.getElementById('logoStatus');
+                status.style.display = 'inline';
+                status.innerText = '✅ Logo ready — Save dabayen!';
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // ============================================
+    // 💾 SAVE BUSINESS INFO (Owner only) — ✅ SIRF 2 MOBILES!
+    // ============================================
+    document.getElementById('businessForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const bizName = document.getElementById('pfBizName').value.trim();
+        const bizType = document.getElementById('pfBizType').value;
+
+        if (!bizName) {
+            Swal.fire('⚠️', 'Business Name khali nahi ho sakta!', 'warning');
+            return;
+        }
+
+        document.getElementById('saveBizBtn').disabled = true;
+
+        try {
+            const updateData = {
+                name: bizName,
+                businessType: bizType,
+                mobile: document.getElementById('pfBizMobile').value.trim(),
+                mobile2: document.getElementById('pfBizMobile2').value.trim(),
+                // ✅ Mobile 3 REMOVE — DB mein purana mobile3 ho to bhi update nahi hoga
+                city: document.getElementById('pfBizCity').value.trim(),
+                address: document.getElementById('pfBizAddress').value.trim(),
+                ntn: document.getElementById('pfBizNTN').value.trim(),
+                licenceNo: document.getElementById('pfBizLic').value.trim(),
+                payType: document.getElementById('pfPayType').value,
+                template: document.getElementById('pfTemplate').value,
+                billPrefix: document.getElementById('pfBillPrefix').value.trim(),
+                allowRateSwitch: document.getElementById('pfAllowRateSwitch').value,
+                printSettings: {
+                    showLogo: document.getElementById('chkShowLogo') ? document.getElementById('chkShowLogo').checked : true,
+                    showOwnerName: document.getElementById('chkShowOwnerName') ? document.getElementById('chkShowOwnerName').checked : true,
+                    showAddress: document.getElementById('chkShowAddress') ? document.getElementById('chkShowAddress').checked : true,
+                    showMobiles: document.getElementById('chkShowMobiles') ? document.getElementById('chkShowMobiles').checked : true,
+                    showNTN: document.getElementById('chkShowNTN') ? document.getElementById('chkShowNTN').checked : true,
+                    showCustomerPhone: document.getElementById('chkShowCustomerPhone') ? document.getElementById('chkShowCustomerPhone').checked : true,
+                    showCustomerAddress: document.getElementById('chkShowCustomerAddress') ? document.getElementById('chkShowCustomerAddress').checked : true,
+                    showDiscount: document.getElementById('chkShowDiscount') ? document.getElementById('chkShowDiscount').checked : true,
+                    showTax: document.getElementById('chkShowTax') ? document.getElementById('chkShowTax').checked : true,
+                    showPreviousBalance: document.getElementById('chkShowPreviousBalance') ? document.getElementById('chkShowPreviousBalance').checked : true,
+                    showReceivedAmount: document.getElementById('chkShowReceivedAmount') ? document.getElementById('chkShowReceivedAmount').checked : true,
+                    showBalance: document.getElementById('chkShowBalance') ? document.getElementById('chkShowBalance').checked : true,
+                    showThankYouNote: document.getElementById('chkShowThankYouNote') ? document.getElementById('chkShowThankYouNote').checked : true,
+                    showSignatureAuthorized: document.getElementById('chkShowSignatureAuthorized') ? document.getElementById('chkShowSignatureAuthorized').checked : true,
+                    showSignatureCustomer: document.getElementById('chkShowSignatureCustomer') ? document.getElementById('chkShowSignatureCustomer').checked : true
+                },
+                updatedAt: new Date().toISOString()
+            };
+
+            // 🖼️ Logo sirf tab update ho jab naya select ho!
+            if (pendingLogoBase64) {
+                updateData.logoBase64 = pendingLogoBase64;
+                pendingLogoBase64 = null;
+                document.getElementById('logoStatus').style.display = 'none';
+            }
+
+            await db.collection('agencies').doc(myAgencyId).update(updateData);
+
+            document.getElementById('saveBizBtn').disabled = false;
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 2000, icon: 'success',
+                title: '✅ Business info saved!'
+            });
+        } catch (error) {
+            document.getElementById('saveBizBtn').disabled = false;
+            Swal.fire('Error', 'Save fail: ' + (error.code || error.message), 'error');
+        }
+    });
+
+    // ============================================
+    // 🔑 CHANGE PASSWORD
+    // ============================================
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const curPass = document.getElementById('curPass').value;
+        const newPass = document.getElementById('newPass').value;
+        const confPass = document.getElementById('confPass').value;
+
+        if (newPass.length < 6) {
+            Swal.fire('⚠️', 'Naya password min 6 characters ka ho!', 'warning');
+            return;
+        }
+        if (newPass !== confPass) {
+            Swal.fire('⚠️', 'Naye password match nahi ho rahe!', 'warning');
+            return;
+        }
+        if (newPass === curPass) {
+            Swal.fire('⚠️', 'Naya password purana jaisa nahi ho sakta!', 'warning');
+            return;
+        }
+
+        document.getElementById('savePassBtn').disabled = true;
+
+        try {
+            const cred = firebase.auth.EmailAuthProvider.credential(myEmail, curPass);
+            await auth.currentUser.reauthenticateWithCredential(cred);
+            await auth.currentUser.updatePassword(newPass);
+
+            try {
+                await db.collection('users').doc(myUid).update({
+                    tempPassword: newPass,
+                    passwordChangedAt: new Date().toISOString()
+                });
+            } catch (e) { /* optional */ }
+
+            document.getElementById('savePassBtn').disabled = false;
+            document.getElementById('passwordForm').reset();
+
+            await Swal.fire({
+                icon: 'success',
+                title: '✅ Password Changed!',
+                text: 'Naya password ab se active hai!',
+                timer: 2500,
+                showConfirmButton: false
+            });
+
+        } catch (error) {
+            document.getElementById('savePassBtn').disabled = false;
+            let msg = 'Password change fail!';
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                msg = 'Current password GHALAT hai!';
+            } else if (error.code === 'auth/weak-password') {
+                msg = 'Naya password kamzor hai (min 6)!';
+            }
+            Swal.fire('❌ Error', msg, 'error');
+        }
+    });
+
+    const pLogout = document.getElementById('logoutBtn');
+    if (pLogout) {
+        pLogout.addEventListener('click', async () => {
+            const result = await Swal.fire({
+                title: 'Logout?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                confirmButtonText: 'Haan',
+                cancelButtonText: 'Cancel'
+            });
+            if (result.isConfirmed) {
+                await auth.signOut();
+                window.location.href = 'auth.html';
+            }
+        });
+    }
+</script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+    
+</body>
+</html>

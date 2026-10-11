@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Stock Manager (Phase 3)</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Stock CSS -->
+    <link rel="stylesheet" href="stock.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 🏢 Business Categories Registry -->
+    <script src="business-categories.js"></script>
+
+    <!-- Z-INDEX FIX (SweetAlert & Modals) -->
+    <style>
+        .swal2-container {
+            z-index: 999999 !important;
+        }
+        #stockModalOverlay,
+        #historyModalOverlay,
+        #valuationModalOverlay {
+            z-index: 999995 !important;
+        }
+        .cache-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #e0f2fe;
+            color: #0369a1;
+            font-weight: 700;
+        }
+        .profit-badge {
+            background: #dcfce7;
+            color: #15803d;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel-container">
+
+    <!-- ===== 📊 TOP ACTIONS & CACHE BAR ===== -->
+    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1000px; margin:0 auto 12px; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="cache-badge" id="bizCategoryBadge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;">
+                <i class="fas fa-store"></i> <span id="bizCategoryText">Mode: 📚 Book Depot</span>
+            </span>
+            <span class="cache-badge" id="cacheStatusBadge">
+                <i class="fas fa-shield-alt"></i> Quota Shield Active
+            </span>
+            <span style="font-size:12px; color:#64748b;" id="lastSyncTime">Synced</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-sm" id="syncStockBtn" style="background:#0284c7; color:#fff;" title="Fetch fresh stock from cloud">
+                <i class="fas fa-sync-alt"></i> Sync Live
+            </button>
+            <button class="btn btn-sm" id="exportStockBtn" style="background:#10b981; color:#fff;" title="Export Stock to CSV / Excel">
+                <i class="fas fa-file-excel"></i> Export CSV
+            </button>
+            <button class="btn btn-sm" id="printStockBtn" style="background:#6366f1; color:#fff;" title="Print Inventory Report">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 📊 STATS CARDS (5x Valuation & Quantities) ===== -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#3498db;">📦</div>
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total Items</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;" id="valuationCard" title="Click to view full inventory profit breakdown">
+            <div class="stat-icon" style="background:#27ae60;">💰</div>
+            <div class="stat-value" id="statValue">Rs 0</div>
+            <div class="stat-label">Retail Value</div>
+            <div style="font-size:10px; color:#15803d; font-weight:bold; margin-top:2px;" id="statProfitEst">Est. Profit: Rs 0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#64748b;">🏷️</div>
+            <div class="stat-value" id="statCostValue">Rs 0</div>
+            <div class="stat-label">Purchase Cost</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#f39c12;">⚠️</div>
+            <div class="stat-value" id="statLow">0</div>
+            <div class="stat-label">Low Stock</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#e74c3c;">💥</div>
+            <div class="stat-value" id="statOut">0</div>
+            <div class="stat-label">Out of Stock</div>
+        </div>
+    </div>
+
+    <!-- ===== 🔍 SEARCH + CATEGORY + FILTERS (Sticky) ===== -->
+    <div class="search-filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search by item name, code or barcode...">
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <select id="categoryFilter" style="padding:7px 12px; border:2px solid #e0e6e8; border-radius:18px; font-size:13px; font-weight:bold; background:#fff; outline:none; color:var(--primary);">
+                <option value="all">📂 All Categories</option>
+            </select>
+            <div class="filter-chips">
+                <button class="filter-chip active" data-filter="all">All Items</button>
+                <button class="filter-chip" data-filter="low">⚠️ Low Stock</button>
+                <button class="filter-chip" data-filter="out">💥 Out of Stock</button>
+                <button class="filter-chip" data-filter="instock">✅ In Stock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ➕ ADD ITEM (Collapsible Form — Owner / Super Admin only) ===== -->
+    <div class="panel-card" id="addItemSection">
+        <div class="add-item-header" id="addItemToggle">
+            <h2><i class="fas fa-plus-circle"></i> Add New Product / Stock Item</h2>
+            <i class="fas fa-chevron-down toggle-arrow" id="toggleArrow"></i>
+        </div>
+        <form id="addItemForm" class="panel-form" style="display:none;">
+            <!-- 📸 PRODUCT PHOTO (Image Upload & Preview) -->
+            <div class="form-row" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px; margin-bottom:12px; align-items:center;">
+                <div style="width:70px; height:70px; border-radius:10px; border:2px dashed #86efac; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff; flex-shrink:0;">
+                    <img id="itemPhotoPreview" src="" alt="Photo" style="display:none; width:100%; height:100%; object-fit:cover;">
+                    <span id="itemPhotoPlaceholder" style="font-size:26px; color:#86efac;">📸</span>
+                </div>
+                <div style="flex:1; margin-left:12px;">
+                    <label style="font-size:12px; font-weight:bold; color:#166534; display:block; margin-bottom:4px;">Product Photo / Image (تصویر)</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <label class="btn" style="background:#16a34a; color:#fff; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer;">
+                            <i class="fas fa-camera"></i> Upload Photo
+                            <input type="file" id="itemPhotoFile" accept="image/*" style="display:none;">
+                        </label>
+                        <input type="url" id="itemPhotoUrl" placeholder="Or paste image URL..." style="flex:1; min-width:180px; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+                        <button type="button" class="btn" id="itemRemovePhotoBtn" style="display:none; background:#fee2e2; color:#b91c1c; font-size:11px; padding:6px 10px; border-radius:6px;">Remove</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📝 Product Name *</label>
+                    <input type="text" id="itemName" placeholder="e.g. Shan Biryani Masala 50g" required maxlength="80">
+                </div>
+                <div class="form-group">
+                    <label>🔖 Item Code / Barcode (optional)</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="text" id="itemBarcode" placeholder="e.g. 8964000123" maxlength="40">
+                        <button type="button" class="btn" id="generateCodeBtn" style="background:#e2e8f0; color:#334155; padding:8px 12px;" title="Auto generate code">⚡</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📂 Category</label>
+                    <input type="text" id="itemCategory" placeholder="e.g. Spices, Grocery, Drinks" list="categorySuggestions">
+                    <datalist id="categorySuggestions">
+                        <option value="Grocery">
+                        <option value="Spices">
+                        <option value="Beverages">
+                        <option value="Snacks">
+                        <option value="Dairy">
+                        <option value="Cosmetics">
+                        <option value="Confectionery">
+                        <option value="General">
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label>📏 Unit *</label>
+                    <select id="itemUnit" required>
+                        <option value="unit">Unit / Piece</option>
+                        <optgroup label="📦 Packing & Bulk">
+                            <option value="carton">Carton (ctn)</option>
+                            <option value="box">Box</option>
+                            <option value="packet">Packet (pkt)</option>
+                            <option value="set">Set (سیٹ - مکمل کتب سیٹ)</option>
+                            <option value="bundle">Bundle (بنڈل)</option>
+                            <option value="bag">Bag / Bora</option>
+                            <option value="dozen">Dozen</option>
+                            <option value="pcs">Piece (pcs)</option>
+                            <option value="pair">Pair (جوڑا)</option>
+                            <option value="suit">Suit (سوٹ)</option>
+                            <option value="bottle">Bottle</option>
+                            <option value="can">Can</option>
+                        </optgroup>
+                        <optgroup label="⚖️ Weight">
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="g">Gram (g)</option>
+                            <option value="pound">Pound (lb)</option>
+                            <option value="maund">Maund (40kg)</option>
+                        </optgroup>
+                        <optgroup label="🧴 Volume">
+                            <option value="liter">Liter (L)</option>
+                            <option value="gallon">Gallon</option>
+                        </optgroup>
+                        <optgroup label="📏 Length">
+                            <option value="meter">Meter (m)</option>
+                            <option value="feet">Feet (ft)</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 🏢 INDUSTRY DYNAMIC CUSTOM FIELDS (Book Depot, Mobile, Shoes, Garments, etc.) -->
+            <div id="customIndustryFieldsContainer" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:12px; margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                    <span style="font-size:12px; font-weight:bold; color:#0369a1;" id="customFieldsHeader">
+                        <i class="fas fa-layer-group"></i> Category Details (کاروبار کے مخصوص خانے)
+                    </span>
+                    <span id="customFieldsCategoryTag" style="font-size:11px; background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:12px; font-weight:bold;">
+                        📚 Book Depot Mode
+                    </span>
+                </div>
+                <div id="customFieldsGrid" class="form-row" style="margin-bottom:0; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;"></div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🔢 Quantity in Stock *</label>
+                    <input type="number" id="itemQty" placeholder="0" required min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>⚠️ Low Stock Alert Limit</label>
+                    <input type="number" id="itemLimit" placeholder="10" min="0" step="1">
+                </div>
+            </div>
+
+            <!-- DUAL PRICING: Wholesale & Retail + Purchase Cost for Profit Tracking -->
+            <div class="form-row" style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid #e2e8f0;">
+                <div class="form-group">
+                    <label>💵 Purchase Rate (خریداری قیمت) *</label>
+                    <input type="number" id="itemPurchase" placeholder="Cost price" required min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>🏪 Wholesale Rate (ہول سیل ریٹ) *</label>
+                    <input type="number" id="itemWholesale" placeholder="Wholesale rate" required min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>🏷️ Retail Rate (پرچون ریٹ) *</label>
+                    <input type="number" id="itemRate" placeholder="Retail rate (MRP)" required min="0" step="0.01">
+                </div>
+            </div>
+
+            <!-- 🎁 WHOLESALE TRADE SCHEME & PROMOTIONAL OFFERS (User Requirement) -->
+            <div class="form-row" style="background:#fdf4ff; border:1px solid #f0abfc; padding:12px; border-radius:10px; margin-top:10px;">
+                <div style="width:100%;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; color:#86198f; font-size:13px; margin-bottom:8px;">
+                        <input type="checkbox" id="itemHasScheme"> 🎁 Active Trade Scheme / Promotion (اسکیم فعال کریں)
+                    </label>
+                    <div id="schemeDetailsContainer" style="display:none; border-top:1px dashed #e879f9; padding-top:10px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px;">
+                            <div>
+                                <label style="font-size:11px; font-weight:bold; color:#701a75; display:block; margin-bottom:2px;">Scheme Type (اسکیم کی قسم)</label>
+                                <select id="itemSchemeType" style="width:100%; padding:6px 8px; border:1px solid #d946ef; border-radius:6px; font-size:12px; background:#fff;">
+                                    <option value="buy_x_get_y">🎁 Buy X Get Y Free (مثلاً 12 پر 1 مفت)</option>
+                                    <option value="cash_discount">💰 Flat Cash Discount (مثلاً 10 پر 100 روپے رعایت)</option>
+                                    <option value="percent_discount">🏷️ Percent Discount (مثلاً 5 پر 5% رعایت)</option>
+                                    <option value="promo_note">📝 Promotional Note (خصوصی پیشکش نوٹس)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:11px; font-weight:bold; color:#701a75; display:block; margin-bottom:2px;">Min Quantity to Qualify (کم از کم تعداد)</label>
+                                <input type="number" id="itemSchemeMinQty" placeholder="e.g. 12" min="1" step="any" style="width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid #d946ef; border-radius:6px; font-size:12px;">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                            <div>
+                                <label style="font-size:11px; font-weight:bold; color:#701a75; display:block; margin-bottom:2px;">Free Qty / Discount Value (مفت تعداد یا رعایت رقم)</label>
+                                <input type="number" id="itemSchemeValue" placeholder="e.g. 1 (Free) or 150 (Rs)" min="0" step="any" style="width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid #d946ef; border-radius:6px; font-size:12px;">
+                            </div>
+                            <div>
+                                <label style="font-size:11px; font-weight:bold; color:#701a75; display:block; margin-bottom:2px;">Scheme Badge Label (واٹس ایپ اور انوائس نوٹس)</label>
+                                <input type="text" id="itemSchemeLabel" placeholder="e.g. 12 + 1 FREE Scheme" style="width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid #d946ef; border-radius:6px; font-size:12px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:14px;">
+                <button type="submit" class="btn btn-primary" id="saveItemBtn">
+                    <i class="fas fa-save"></i> SAVE ITEM TO INVENTORY
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== 📋 ITEMS LIST ===== -->
+    <div class="panel-card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <h2><i class="fas fa-boxes"></i> Inventory Items (<span id="itemCount">0</span>/<span id="itemLimitMax">50</span>)</h2>
+            <div id="bookerNotice" style="display:none; font-size:12px; color:#64748b; font-weight:bold;">
+                <i class="fas fa-eye"></i> Booker Mode: View & Movement Only
+            </div>
+        </div>
+        <div id="itemsList">
+            <div class="loading-inline">Loading inventory items...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 📥📤 STOCK IN/OUT RESTOCK MODAL -->
+<div id="stockModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; padding:15px;">
+    <div style="background:#fff; border-radius:16px; padding:25px; width:100%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <h3 id="stockModalTitle" style="color:var(--primary); margin-bottom:5px;">📥 Stock IN</h3>
+        <p id="stockModalItem" style="color:#7f8c8d; font-size:13px; margin-bottom:15px; font-weight:600;"></p>
+        
+        <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-weight:bold; font-size:13px;">🔢 Quantity *</label>
+            <input type="number" id="modalQty" min="0.01" step="0.01" placeholder="0" required style="width:100%; padding:10px; border:2px solid #e0e6e8; border-radius:8px;">
+        </div>
+
+        <!-- Optional: Purchase Rate Update during IN -->
+        <div class="form-group" id="modalPurchaseGroup" style="margin-bottom:12px;">
+            <label style="font-weight:bold; font-size:13px;">💵 New Purchase Rate (optional update)</label>
+            <input type="number" id="modalNewPurchase" min="0" step="0.01" placeholder="Current cost rate" style="width:100%; padding:10px; border:2px solid #e0e6e8; border-radius:8px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-weight:bold; font-size:13px;">📝 Reason *</label>
+            <select id="modalReason" style="width:100%; padding:10px; border:2px solid #e0e6e8; border-radius:8px; background:#fff;">
+                <!-- Filled dynamically by JS -->
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:15px;">
+            <label style="font-weight:bold; font-size:13px;">📝 Note / Invoice # (optional)</label>
+            <input type="text" id="modalNote" maxlength="100" placeholder="e.g. Invoice # 412 from supplier" style="width:100%; padding:10px; border:2px solid #e0e6e8; border-radius:8px;">
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+            <button class="btn" style="flex:1; background:#95a5a6; color:#fff;" onclick="closeStockModal()">Cancel</button>
+            <button class="btn" style="flex:1; background:var(--accent); color:#fff;" id="modalConfirmBtn">✅ Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- 📜 MOVEMENT HISTORY MODAL -->
+<div id="historyModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; padding:15px;">
+    <div style="background:#fff; border-radius:16px; padding:25px; width:100%; max-width:440px; max-height:85vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <h3 id="historyTitle" style="color:var(--primary); margin-bottom:15px;"><i class="fas fa-history"></i> Movement History</h3>
+        <div id="historyContent"></div>
+        <button class="btn" style="width:100%; background:#95a5a6; color:#fff; margin-top:15px;" onclick="closeHistoryModal()">Close</button>
+    </div>
+</div>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- ⚡ CLOUD SYNC & FIREBASE QUOTA SAVER -->
+<script src="sync-engine.js"></script>
+<script src="stock.js"></script>
+</body>
+</html>

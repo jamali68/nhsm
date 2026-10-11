@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 🔒 HELPER FUNCTIONS FOR SECURITY ENFORCEMENT
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        getUserData().role == 'super-admin' ||
+        request.auth.token.email == 'admin@easybill.com'
+      );
+    }
+
+    // 👤 USERS COLLECTION
+    // Authenticated users can read/write their own record, or agency staff can be created/managed
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isSuperAdmin() ||
+        getUserData().role == 'owner'
+      );
+    }
+    
+    // 🏢 AGENCIES
+    match /agencies/{agencyId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isSuperAdmin();
+    }
+    
+    // 💳 PACKAGES (Subscription Plans & Feature Limits)
+    // All authenticated users can view package plans; only Super Admin can edit limits and prices!
+    match /packages/{pkgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        isSuperAdmin() ||
+        !exists(/databases/$(database)/documents/packages/$(pkgId))
+      );
+    }
+    
+    // 🔢 COUNTERS (Sequential Bill & Invoice numbers)
+    match /counters/{counterId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // 📦 STOCK (Products inventory)
+    match /stock/{itemId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // 👥 CUSTOMERS (Khata Ledgers & Balances)
+    match /customers/{customerId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // 📜 MOVEMENTS (Inventory audit logs)
+    match /movements/{movementId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // 🧾 BILLS (Sales orders & invoices)
+    match /bills/{billId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 🔄 STOCK RETURNS (Van Return Inward - مال واپسی)
+    match /stock_returns/{returnId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ⚙️ SETTINGS (Thermal Print & Agency Configurations)
+    match /settings/{settingId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 📕 BOOKERS (Staff credentials)
+    match /bookers/{bookerId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 💸 EXPENSES & EXPENSE CATEGORIES
+    match /expenses/{expenseId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /expense_categories/{catId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 🛡️ DEFAULT ACCESS RULE: Strict Authentication Required Everywhere
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

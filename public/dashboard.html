@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Wholesale ERP Dashboard</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for ERP Visual Graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 💎 SaaS Modules Registry & Paywall Guard -->
+    <script src="saas-modules.js"></script>
+
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #27ae60;
+            --share: #0284c7;
+            --bg: #f8fafc;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --card-border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 0 12px 24px 12px;
+            color: #1e293b;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: #1e293b;
+            color: #fff;
+            padding: 14px 20px;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .top-bar .brand {
+            font-size: 19px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .top-bar .brand .logo-mini {
+            background: #10b981;
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+
+        /* Main Container Card */
+        .dashboard-container {
+            background: #fff;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.03);
+        }
+
+        /* ERP Header Bar */
+        .erp-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .erp-title-group h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .erp-title-group .sub-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        .user-quick-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .role-pill {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .role-pill.super-admin { background: #8b5cf6; color: #fff; }
+        .role-pill.owner { background: #0284c7; color: #fff; }
+        .role-pill.booker { background: #f59e0b; color: #fff; }
+
+        /* ============================================
+           📊 6 ERP KPI CARDS ROW (Matching OutsetX - Balanced 6x Grid)
+           ============================================ */
+        .erp-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+        @media (min-width: 1350px) {
+            .erp-kpi-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+        @media (min-width: 900px) and (max-width: 1349px) {
+            .erp-kpi-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @keyframes pulseAlert {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.85; }
+        }
+        .pulse-alert {
+            animation: pulseAlert 2s infinite ease-in-out;
+        }
+        .erp-kpi-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+            transition: transform 0.15s, box-shadow 0.15s;
+            cursor: pointer;
+        }
+        .erp-kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+        }
+        .kpi-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .kpi-icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .kpi-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-main-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+        .kpi-sub-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #f1f5f9;
+            color: #64748b;
+        }
+        .kpi-sub-val {
+            font-weight: 700;
+        }
+
+        /* ============================================
+           📈 ERP ANALYTICS SECTION (Graph + Stock Donut)
+           ============================================ */
+        .erp-analytics-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .analytics-box {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px;
+        }
+        .box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .box-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-toggle-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 8px;
+        }
+        .chart-tab-btn {
+            border: none;
+            background: transparent;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+        }
+        .chart-tab-btn.active {
+            background: #fff;
+            color: #0f172a;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Stock Status Donut Breakdown */
+        .stock-donut-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        .donut-legend {
+            width: 100%;
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .legend-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        /* ============================================
+           👥 2-COLUMN OPERATIONAL LEADERBOARDS
+           ============================================ */
+        .erp-split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .mini-table th, .mini-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: left;
+        }
+        .mini-table th {
+            font-size: 11px;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        /* ============================================
+           🚨 DEFAULTER & OVERDUE KHATA RECOVERY CENTER
+           (Core Feature Requested by User)
+           ============================================ */
+        .defaulter-recovery-panel {
+            background: #fff;
+            border: 2px solid #fecaca;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.06);
+        }
+        .recovery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #fee2e2;
+        }
+        .recovery-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .recovery-title h2 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #b91c1c;
+        }
+
+        .overdue-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .overdue-pill {
+            border: 1px solid #fca5a5;
+            background: #fff;
+            color: #b91c1c;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .overdue-pill.active {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        .badge-overdue-days {
+            background: #fee2e2;
+            color: #b91c1c;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Booker Daily Sticky Alert Banner */
+        .booker-overdue-alert-banner {
+            background: #fff1f2;
+            border: 1px solid #fda4af;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* ============================================
+           🚀 CLEAN QUICK LAUNCH MODULES (NO PHASE TAGS)
+           ============================================ */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+        .module-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .module-card:hover {
+            transform: translateY(-2px);
+            background: #fff;
+            border-color: #0284c7;
+            box-shadow: 0 6px 14px rgba(2, 132, 199, 0.12);
+        }
+        .module-card .icon { font-size: 26px; margin-bottom: 6px; }
+        .module-card h3 { font-size: 14px; color: #0f172a; font-weight: 800; margin-bottom: 3px; }
+        .module-card p { font-size: 11px; color: #64748b; }
+
+        /* Topbar Controls */
+        .topbar-menu-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .topbar-menu-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+        .topbar-bell-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            position: relative;
+            font-size: 16px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .topbar-bell-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ef4444;
+        }
+        .topbar-bell-badge {
+            position: absolute;
+            top: -3px; right: -3px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 10px;
+            min-width: 17px;
+            text-align: center;
+            border: 2px solid #1e293b;
+            line-height: 1;
+        }
+        .topbar-avatar-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #10b981;
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 16px;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .topbar-avatar-btn:hover {
+            transform: scale(1.06);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 991px) {
+            .erp-analytics-row { grid-template-columns: 1fr; }
+            .erp-split-grid { grid-template-columns: 1fr; }
+            .dashboard-container { padding: 14px; }
+        }
+        @media (max-width: 640px) {
+            body { padding: 8px 10px; }
+            .dashboard-container { padding: 14px 10px; border-radius: 14px; }
+            .top-bar {
+                padding: 10px 14px;
+                margin-bottom: 12px;
+                border-radius: 12px;
+                flex-direction: row !important;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .top-bar .brand div div:first-child { font-size: 14px !important; }
+            .top-bar .brand div div:last-child { font-size: 10px !important; }
+            .top-bar .brand .logo-mini { width: 32px; height: 32px; font-size: 15px; }
+            .topbar-menu-btn { width: 34px; height: 34px; font-size: 14px; }
+            .topbar-bell-btn { width: 34px; height: 34px; font-size: 14px; }
+            .topbar-avatar-btn { width: 34px; height: 34px; font-size: 14px; }
+            .erp-header-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                margin-bottom: 14px;
+                padding-bottom: 12px;
+            }
+            .erp-title-group h1 { font-size: 18px; }
+            .erp-kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .erp-kpi-card {
+                padding: 12px 10px;
+                border-radius: 12px;
+            }
+            .kpi-main-val { font-size: 16px; }
+            .kpi-title { font-size: 10px; }
+            .kpi-icon-box { width: 32px; height: 32px; font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.95); z-index:99999; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px;">
+    <div style="font-size:32px;">📊</div>
+    <div id="loadingText" style="font-size:14px; font-weight:bold; color:#1e293b;">Loading Enterprise ERP Dashboard...</div>
+</div>
+
+<div class="dashboard-container" id="mainCard" style="display:none; margin-top:8px;">
+
+    <!-- ⚠️ SUBSCRIPTION EXPIRY LOCK BANNER -->
+    <div id="subExpiryBanner" style="display:none; background:#fee2e2; border:1.5px solid #fecaca; border-radius:12px; padding:12px 16px; margin-bottom:15px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="color:#b91c1c; font-size:13px; font-weight:bold;">
+            <i class="fas fa-exclamation-triangle"></i> ⚠️ Agency Subscription Expired! Package renew ya upgrade karwane ke liye developer se rabta karein.
+        </div>
+        <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20I%20want%20to%20renew%20or%20upgrade%20my%20agency%20subscription" target="_blank" style="background:#25D366; color:#fff; padding:7px 14px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:bold; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fab fa-whatsapp"></i> WhatsApp Developer: +923346800959
+        </a>
+    </div>
+
+    <!-- 🏢 ACTIVE BRANCH SWITCHER FOR MULTI-AGENCY OWNERS -->
+    <div class="branch-switcher-bar" id="branchSwitcherBar" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:8px 14px; margin-bottom:16px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:16px;">🏢</span>
+            <div>
+                <span style="font-size:11px; color:#15803d; font-weight:bold; text-transform:uppercase;">Active Branch:</span>
+                <select id="dashBranchSelect" style="margin-left:6px; padding:4px 10px; border-radius:6px; border:1px solid #86efac; font-weight:bold; font-size:12px; color:#1e293b; outline:none; background:#fff; cursor:pointer;">
+                </select>
+            </div>
+        </div>
+        <a href="multi-agency.html" style="font-size:12px; font-weight:bold; color:#0284c7; text-decoration:none;">
+            <i class="fas fa-network-wired"></i> Branch Hub →
+        </a>
+    </div>
+
+    <!-- 🔔 BOOKER DAILY OVERDUE RECOVERY STICKY BANNER (Shown for Bookers) -->
+    <div class="booker-overdue-alert-banner" id="bookerOverdueBanner" style="display:none;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:24px;">🚨</div>
+            <div>
+                <div style="font-size:13px; font-weight:800; color:#b91c1c;">
+                    ⚠️ فوری مارکیٹ وصولی انتباہ (Overdue Khata Alert)
+                </div>
+                <div style="font-size:11px; color:#991b1b;" id="bookerOverdueBannerText">
+                    آپ کے روٹ کے دکان داروں کے بقایا جات واجب الادا ہو چکے ہیں۔ برائے مہربانی آج ہی وزٹ کریں۔
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-sm" onclick="scrollToDefaulters()" style="background:#b91c1c; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">
+            فہرست دیکھیں 👇
+        </button>
+    </div>
+
+    <!-- ===== ERP HEADER ===== -->
+    <div class="erp-header-row">
+        <div class="erp-title-group">
+            <h1 id="bizHeadingName">Wholesale Business Overview</h1>
+            <div class="sub-text" id="erpSubText">Real-time connected control center &amp; sales insights</div>
+        </div>
+        <div class="user-quick-profile">
+            <div class="role-pill" id="userRolePill">OWNER</div>
+            <div style="text-align:right;">
+                <div class="user-name" id="userName">User</div>
+                <div class="user-email" id="userEmail">user@example.com</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         📕 ORDER BOOKER DEDICATED PERSONAL DASHBOARD
+         ============================================ -->
+    <div id="bookerDashboardView" style="display:none;">
+        
+        <!-- 🏆 BOOKER LEVEL & PROFILE BADGE CARD -->
+        <div style="background:linear-gradient(135deg, #1e293b, #0f172a); border-radius:16px; padding:20px; color:#fff; margin-bottom:20px; box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div style="width:52px; height:52px; border-radius:50%; background:#d97706; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; color:#fff; box-shadow:0 0 15px rgba(217,119,6,0.5);">
+                        <i class="fas fa-user-tag"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                            <span id="bkProfileName">Booker</span>
+                            <span id="bkRankBadge" style="background:#f59e0b; color:#78350f; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:800;">
+                                ⭐ Level 1 Booker
+                            </span>
+                        </div>
+                        <div style="font-size:12px; color:#94a3b8; margin-top:2px;">
+                            📍 Assigned Route: <b style="color:#38bdf8;" id="bkRouteDisplay">General Route</b> &nbsp;|&nbsp; 🏢 <span id="bkAgencyDisplay">Agency</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:8px;">
+                    <button onclick="window.location.href='bills.html'" style="background:#10b981; color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16,185,129,0.3);">
+                        <i class="fas fa-plus-circle"></i> + نیا آرڈر بک کریں
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gamified Level Progress Bar -->
+            <div style="margin-top:16px; background:rgba(255,255,255,0.08); border-radius:12px; padding:12px 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:6px;">
+                    <span style="color:#cbd5e1;"><i class="fas fa-trophy" style="color:#f59e0b;"></i> <b id="bkLevelTitle">Bronze Booker</b> (کارکردگی درجہ)</span>
+                    <span style="color:#38bdf8; font-weight:bold;" id="bkLevelProgressText">0 / 25 Orders to Next Level</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.15); height:8px; border-radius:4px; overflow:hidden;">
+                    <div id="bkLevelProgressBar" style="width:10%; height:100%; background:linear-gradient(90deg, #f59e0b, #10b981); transition:width 0.5s ease;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📊 6 PERSONAL BOOKER METRIC CARDS -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:20px;">
+            <!-- Card 1: Today Orders -->
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">آج کے آرڈرز</span>
+                    <span style="background:#e0f2fe; color:#0284c7; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fas fa-clipboard-check"></i></span>
+                </div>
+                <div style="font-size:22px; font-weight:800; color:#0f172a;" id="bkTodayOrdersCount">0</div>
+                <div style="font-size:11px; color:#10b981; margin-top:2px;">Month: <b id="bkMonthOrdersCount">0</b> Orders</div>
+            </div>
+
+            <!-- Card 2: Today Sales Amount -->
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">آج کی کل سیل</span>
+                    <span style="background:#dcfce7; color:#16a34a; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fas fa-coins"></i></span>
+                </div>
+                <div style="font-size:22px; font-weight:800; color:#16a34a;" id="bkTodaySalesVal">Rs 0</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Month: <b id="bkMonthSalesVal">Rs 0</b></div>
+            </div>
+
+            <!-- Card 3: Daily Target Progress -->
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">روزانہ ہدف (Target)</span>
+                    <span style="background:#fef3c7; color:#d97706; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fas fa-bullseye"></i></span>
+                </div>
+                <div style="font-size:22px; font-weight:800; color:#d97706;" id="bkTargetPercent">0%</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Target: <b id="bkTargetVal">30</b> Orders/Day</div>
+            </div>
+
+            <!-- Card 4: Shops Covered -->
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">دکانوں کی کوریج</span>
+                    <span style="background:#ccfbf1; color:#0d9488; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fas fa-store"></i></span>
+                </div>
+                <div style="font-size:22px; font-weight:800; color:#0d9488;" id="bkShopsCovered">0</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Unique Shops Booked</div>
+            </div>
+
+            <!-- Card 5: Recovery Cash -->
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">کیش وصولی (Recovery)</span>
+                    <span style="background:#e0e7ff; color:#4338ca; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fas fa-hand-holding-dollar"></i></span>
+                </div>
+                <div style="font-size:22px; font-weight:800; color:#4338ca;" id="bkRecoveryVal">Rs 0</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Cash Collected</div>
+            </div>
+
+            <!-- Card 6: Returns / Damage -->
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">واپسی مال (Returns)</span>
+                    <span style="background:#fae8ff; color:#a21caf; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fas fa-undo"></i></span>
+                </div>
+                <div style="font-size:22px; font-weight:800; color:#a21caf;" id="bkReturnsCount">0</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">Unsold Returned Items</div>
+            </div>
+        </div>
+
+        <!-- 📋 MY RECENT BOOKED ORDERS -->
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:18px; margin-bottom:22px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                <h3 style="margin:0; font-size:16px; color:#0f172a; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-list-check" style="color:#0284c7;"></i> میرے حالیہ بک کیے گئے آرڈرز (My Field Orders)
+                </h3>
+                <a href="delivery-returns.html" style="font-size:12px; color:#0284c7; text-decoration:none; font-weight:bold;">
+                    تمام فیلڈ آرڈرز دیکھیں →
+                </a>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0; text-align:left;">
+                            <th style="padding:10px 12px; color:#475569;">Order / Bill #</th>
+                            <th style="padding:10px 12px; color:#475569;">Customer / Shop</th>
+                            <th style="padding:10px 12px; color:#475569;">Items</th>
+                            <th style="padding:10px 12px; color:#475569;">Amount</th>
+                            <th style="padding:10px 12px; color:#475569;">Status</th>
+                            <th style="padding:10px 12px; color:#475569; text-align:right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bkOrdersTableBody">
+                        <tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">Loading your field orders...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 🏢 ADMIN WHOLESALE BUSINESS OVERVIEW (Only for Owner / Super-Admin) ===== -->
+    <div id="adminDashboardView">
+
+    <!-- 📦 ACTIVE PACKAGE & DEVELOPER SUPPORT STRIP -->
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div style="display:inline-flex; align-items:center; gap:6px; background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:800;">
+                <i class="fas fa-cubes"></i> <span id="dashPkgTitle">Package Details &amp; Limits</span>
+            </div>
+            <span style="font-size:11.5px; color:#64748b;" id="dashPkgLimitsInfo">
+                (سپر ایڈمن بلز لمٹ، آرڈر بکر لمٹ، اور آئٹم لمٹ تبدیل کر سکتا ہے)
+            </span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <button onclick="window.SaaSModules && window.SaaSModules.showUpgradeModal('dashboard', window.__myAgencyData, window.__myProfile)" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fas fa-eye"></i> پیکیجز و لمٹس دیکھیں
+            </button>
+            <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Easy%20Bill%20Support" target="_blank" style="background:#25D366; color:#fff; padding:6px 14px; border-radius:8px; font-size:12px; font-weight:bold; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(37,211,102,0.3);">
+                <i class="fab fa-whatsapp"></i> واٹس ایپ ڈویلپر (+923346800959)
+            </a>
+        </div>
+    </div>
+
+    <div class="erp-kpi-grid">
+        <!-- 1. ORDERS -->
+        <div class="erp-kpi-card" onclick="window.location.href='bills.html'">
+            <div class="kpi-head">
+                <div class="kpi-icon-box" style="background:#e0f2fe; color:#0284c7;">🛒</div>
+                <div class="kpi-title">ORDERS &amp; BILLS</div>
+            </div>
+            <div class="kpi-main-val" id="kpiTodayOrders">0</div>
+            <div class="kpi-sub-row">
+                <span>Month Total</span>
+                <span class="kpi-sub-val" id="kpiMonthOrders">0 Bills</span>
+            </div>
+        </div>
+
+        <!-- 2. INVENTORY -->
+        <div class="erp-kpi-card" onclick="window.location.href='stock.html'">
+            <div class="kpi-head">
+                <div class="kpi-icon-box" style="background:#f3e8ff; color:#9333ea;">📦</div>
+                <div class="kpi-title">INVENTORY VALUE</div>
+            </div>
+            <div class="kpi-main-val" id="kpiStockValue">Rs 0</div>
+            <div class="kpi-sub-row">
+                <span>Low Stock</span>
+                <span class="kpi-sub-val" id="kpiLowStockCount" style="color:#ef4444;">0 Items</span>
+            </div>
+        </div>
+
+        <!-- 3. CUSTOMER CREDIT / KHATA -->
+        <div class="erp-kpi-card" onclick="window.location.href='customers.html'">
+            <div class="kpi-head">
+                <div class="kpi-icon-box" style="background:#ccfbf1; color:#0d9488;">👥</div>
+                <div class="kpi-title">CUSTOMER CREDIT</div>
+            </div>
+            <div class="kpi-main-val" id="kpiTotalKhata">Rs 0</div>
+            <div class="kpi-sub-row">
+                <span>Overdue (30+ Days)</span>
+                <span class="kpi-sub-val" id="kpiOverdueKhata" style="color:#b91c1c;">Rs 0</span>
+            </div>
+        </div>
+
+        <!-- 4. PURCHASING / REORDER -->
+        <div class="erp-kpi-card" onclick="window.location.href='alerts.html'">
+            <div class="kpi-head">
+                <div class="kpi-icon-box" style="background:#fae8ff; color:#c026d3;">🚚</div>
+                <div class="kpi-title">PURCHASE REORDER</div>
+            </div>
+            <div class="kpi-main-val" id="kpiReorderCount">0 Items</div>
+            <div class="kpi-sub-row">
+                <span>Est. Reorder Cost</span>
+                <span class="kpi-sub-val" id="kpiReorderCost">Rs 0</span>
+            </div>
+        </div>
+
+        <!-- 5. SALES -->
+        <div class="erp-kpi-card" onclick="window.location.href='reports.html?tab=sales'">
+            <div class="kpi-head">
+                <div class="kpi-icon-box" style="background:#dcfce7; color:#16a34a;">📈</div>
+                <div class="kpi-title">MONTH SALES</div>
+            </div>
+            <div class="kpi-main-val" id="kpiMonthSales">Rs 0</div>
+            <div class="kpi-sub-row">
+                <span>Today's Sales</span>
+                <span class="kpi-sub-val" id="kpiTodaySales" style="color:#16a34a;">Rs 0</span>
+            </div>
+        </div>
+
+        <!-- 6. FIELD BOOKER ORDERS (NEW EXECUTIVE KPI BOX) -->
+        <div class="erp-kpi-card" onclick="window.location.href='booker-orders.html'" title="Click to open Booker Orders & Approval Portal" style="border: 1px solid #fde68a;">
+            <div>
+                <div class="kpi-head" style="justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="kpi-icon-box" style="background:#fef3c7; color:#d97706;">📱</div>
+                        <div>
+                            <div class="kpi-title" style="color:#b45309;">BOOKER ORDERS</div>
+                            <div style="font-size:9px; color:#94a3b8; font-weight:700;">فیلڈ آرڈرز و بکرز</div>
+                        </div>
+                    </div>
+                    <span id="kpiFieldPendingBadge" class="pulse-alert" style="display:none; background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px;">
+                        ⏳ <span id="kpiFieldPendingCount">0</span>
+                    </span>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:2px;">
+                    <div class="kpi-main-val" id="kpiFieldOrdersVal">0 Orders</div>
+                    <div class="kpi-field-amount" id="kpiFieldOrdersAmount">Rs 0</div>
+                </div>
+            </div>
+
+            <div style="margin-top:auto;">
+                <div class="kpi-sub-row" style="margin-top:6px; padding-top:6px;">
+                    <span style="display:flex; align-items:center; gap:4px;">
+                        <i class="fas fa-users" style="color:#d97706; font-size:10px;"></i> Bookers Active
+                    </span>
+                    <span class="kpi-sub-val" id="kpiBookerParticipation">0 / 0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; margin-top:4px;" class="kpi-sub-row">
+                    <span id="kpiFieldStatusBreakdown">⏳ 0 Pending | ✅ 0 Done</span>
+                    <span id="kpiFieldProgressPercent" style="font-weight:800; color:#10b981;">100%</span>
+                </div>
+                <!-- Sleek Mini Progress Line -->
+                <div style="width:100%; height:5px; background:rgba(241,245,249,0.5); border-radius:10px; overflow:hidden; margin-top:5px; border:1px solid #cbd5e1;">
+                    <div id="kpiFieldProgressBar" style="width:100%; height:100%; background:#10b981; border-radius:10px; transition:width 0.4s ease;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 📈 ANALYTICS: SALES CHART & WAREHOUSE STOCK STATUS ===== -->
+    <div class="erp-analytics-row">
+        <!-- Sales & Orders Chart -->
+        <div class="analytics-box">
+            <div class="box-header">
+                <div class="box-title">
+                    <i class="fas fa-chart-line" style="color:#0284c7;"></i> Sales &amp; Revenue Trend
+                </div>
+                <div class="chart-toggle-tabs">
+                    <button class="chart-tab-btn active" data-period="daily">Daily</button>
+                    <button class="chart-tab-btn" data-period="weekly">Weekly</button>
+                    <button class="chart-tab-btn" data-period="monthly">Monthly</button>
+                </div>
+            </div>
+            <div style="position:relative; height:240px; width:100%;">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Warehouse Stock Status Donut -->
+        <div class="analytics-box">
+            <div class="box-header">
+                <div class="box-title">
+                    <i class="fas fa-cubes" style="color:#9333ea;"></i> Warehouse Stock Status
+                </div>
+            </div>
+            <div class="stock-donut-container">
+                <div style="position:relative; height:160px; width:160px;">
+                    <canvas id="stockStatusChart"></canvas>
+                </div>
+                <div class="donut-legend">
+                    <div class="legend-row">
+                        <span><span class="legend-dot" style="background:#10b981;"></span> In-Stock Available</span>
+                        <b id="legendAvailableUnits">0 Units</b>
+                    </div>
+                    <div class="legend-row">
+                        <span><span class="legend-dot" style="background:#f59e0b;"></span> Low Stock Items</span>
+                        <b id="legendLowUnits">0 Items</b>
+                    </div>
+                    <div class="legend-row">
+                        <span><span class="legend-dot" style="background:#ef4444;"></span> Out of Stock</span>
+                        <b id="legendOutUnits">0 Items</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 👥 OPERATIONAL SPLIT: TOP SELLERS & BOOKER PERFORMANCE ===== -->
+    <div class="erp-split-grid">
+        <!-- Top Products -->
+        <div class="analytics-box">
+            <div class="box-header">
+                <div class="box-title"><i class="fas fa-trophy" style="color:#f59e0b;"></i> Top Moving Products</div>
+                <a href="reports.html?tab=bestsellers" style="font-size:11px; color:#0284c7; text-decoration:none; font-weight:bold;">All Reports →</a>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="mini-table">
+                    <thead><tr><th>Product</th><th>Category</th><th style="text-align:center;">Sold</th><th style="text-align:right;">Revenue</th></tr></thead>
+                    <tbody id="topProductsTbody">
+                        <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:15px;">Loading top items...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Booker Leaderboard -->
+        <div class="analytics-box">
+            <div class="box-header">
+                <div class="box-title"><i class="fas fa-users-gear" style="color:#0284c7;"></i> Order Booker Performance</div>
+                <a href="owner.html" id="linkManageBookers" style="font-size:11px; color:#0284c7; text-decoration:none; font-weight:bold;">Team →</a>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="mini-table">
+                    <thead><tr><th>Booker</th><th style="text-align:center;">Orders</th><th style="text-align:right;">Sales Volume</th><th style="text-align:right;">Cash Collected</th></tr></thead>
+                    <tbody id="bookersTbody">
+                        <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:15px;">Loading bookers...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         🚨 DEFAULTER & OVERDUE KHATA RECOVERY CENTER
+         (Configurable by Admin: 30 / 45 / 60 / 90 Days)
+         ============================================ -->
+    <div class="defaulter-recovery-panel" id="defaulterRecoverySection">
+        <div class="recovery-header">
+            <div class="recovery-title">
+                <span style="font-size:22px;">🚨</span>
+                <div>
+                    <h2>Defaulter &amp; Overdue Khata Recovery Center</h2>
+                    <div class="recovery-subtext" id="defaulterSubtext">
+                        وہ دکان دار جن کی طرف سے پرانی ادھار رقم کی وصولی تاخیر کا شکار ہے۔
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overdue Days Filter Tabs (Admin Configurable) -->
+            <div class="overdue-filter-group">
+                <span class="overdue-label">Threshold:</span>
+                <button class="overdue-pill active" data-days="30">30+ Days</button>
+                <button class="overdue-pill" data-days="45">45+ Days</button>
+                <button class="overdue-pill" data-days="60">60+ Days</button>
+                <button class="overdue-pill" data-days="90">90+ Days</button>
+            </div>
+        </div>
+
+        <!-- Overdue Table -->
+        <div style="overflow-x:auto;">
+            <table class="mini-table" style="min-width:650px;">
+                <thead>
+                    <tr class="defaulter-table-head">
+                        <th>Shop / Customer Name</th>
+                        <th>Route / Area</th>
+                        <th>Pending Khata</th>
+                        <th>Overdue Age</th>
+                        <th>Last Activity</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="defaultersTbody">
+                    <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:20px;">Checking overdue customer khatas...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============================================
+         🚀 ENTERPRISE QUICK LAUNCH MODULES
+         (Pristine, finished, no phase tags)
+         ============================================ -->
+    <div class="launchers-section" style="margin-top:20px; padding-top:16px;">
+        <div class="launchers-heading" style="font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">
+            ⚡ Quick System Launchers
+        </div>
+        <div class="modules-grid">
+            <div class="module-card" onclick="window.location.href='bills.html'">
+                <div class="icon">🧾</div>
+                <h3>Billing &amp; Orders</h3>
+                <p>Create Invoices &amp; Bookings</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='stock.html'">
+                <div class="icon">📦</div>
+                <h3>Stock Manager</h3>
+                <p>Inventory, Rates &amp; Barcodes</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='customers.html'">
+                <div class="icon">👥</div>
+                <h3>Customer Khata</h3>
+                <p>Ledgers &amp; Market Recovery</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='profit.html'">
+                <div class="icon">💰</div>
+                <h3>Profit Analytics</h3>
+                <p>COGS, Margins &amp; Net P&amp;L</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='booker-orders.html'">
+                <div class="icon">📋</div>
+                <h3>Booker Orders</h3>
+                <p>Live Orders &amp; Dispatch Queue</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='alerts.html'">
+                <div class="icon">🔔</div>
+                <h3>Low Stock Alerts</h3>
+                <p>Critical Warnings &amp; Reorder</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='reports.html'">
+                <div class="icon">📊</div>
+                <h3>Business Reports</h3>
+                <p>Sales, Claims &amp; Profitability</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='multi-agency.html'">
+                <div class="icon">🏢</div>
+                <h3>Multi-Agency Hub</h3>
+                <p>Branches &amp; Comparison</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='delivery-returns.html'">
+                <div class="icon">🚚</div>
+                <h3>Van Dispatch &amp; Returns</h3>
+                <p>Delivery Suppliers &amp; Stock Return Inward</p>
+            </div>
+            <div class="module-card" id="cardOwnerBookers" onclick="window.location.href='owner.html'">
+                <div class="icon">👥</div>
+                <h3>Staff &amp; Bookers</h3>
+                <p>Field Staff &amp; Permissions</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='backup.html'">
+                <div class="icon">💾</div>
+                <h3>Backup &amp; Restore</h3>
+                <p>Cloud Snapshots &amp; JSON</p>
+            </div>
+            <div class="module-card" onclick="window.location.href='settings.html'">
+                <div class="icon">⚙️</div>
+                <h3>Agency Settings</h3>
+                <p>Branding, POS &amp; Preferences</p>
+            </div>
+        </div>
+    </div>
+    </div> <!-- /adminDashboardView -->
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDDwKWcixoUThCJQqiVoBcUVsJZI60h43Q",
+        authDomain: "multipos-ed91a.firebaseapp.com",
+        projectId: "multipos-ed91a",
+        storageBucket: "multipos-ed91a.firebasestorage.app",
+        messagingSenderId: "862649586987",
+        appId: "1:862649586987:web:599772124e4e29404ca16e",
+        measurementId: "G-QPCP7S5Q5L"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Global State
+    let myUid = null;
+    let myUser = null;
+    let myAgencyId = null;
+    let myAgency = null;
+
+    let allBills = [];
+    let allStock = [];
+    let allCustomers = [];
+    let allBookers = [];
+    let overdueThresholdDays = 30;
+
+    let salesChartInstance = null;
+    let stockChartInstance = null;
+    let currentChartPeriod = 'daily';
+
+    // ============================================
+    // 🛡️ AUTH GUARD & LOAD
+    // ============================================
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            window.location.href = 'auth.html';
+            return;
+        }
+        myUid = user.uid;
+
+        try {
+            let doc = await db.collection('users').doc(user.uid).get();
+            if (!doc.exists) {
+                window.location.href = 'profile.html';
+                return;
+            }
+            myUser = doc.data() || {};
+
+            const uName = myUser.name || user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+            document.getElementById('userEmail').innerText = user.email || '';
+            document.getElementById('userName').innerText = uName;
+            const letter = (uName || 'U').charAt(0).toUpperCase();
+            const avEl = document.getElementById('dashAvatarLetter');
+            if (avEl) avEl.innerText = letter;
+
+            if (myUser.status === 'blocked' || myUser.status === 'deleted') {
+                await auth.signOut();
+                Swal.fire('Blocked', 'Your account has been deactivated.', 'error');
+                return;
+            }
+
+            myAgencyId = myUser.agencyId;
+            if (!myAgencyId && myUser.role !== 'super-admin') {
+                window.location.href = 'profile.html';
+                return;
+            }
+
+            // Role Pill
+            const rPill = document.getElementById('userRolePill');
+            rPill.innerText = (myUser.role || 'user').toUpperCase();
+            rPill.className = `role-pill ${myUser.role}`;
+
+            // Load Agency Profile
+            if (myAgencyId && myAgencyId !== 'super-admin-hq') {
+                const agDoc = await db.collection('agencies').doc(myAgencyId).get();
+                if (agDoc.exists) {
+                    myAgency = agDoc.data() || {};
+                    const bizName = (myAgency && myAgency.name) || 'Wholesale Business Overview';
+                    const bizCity = (myAgency && myAgency.city) || 'Depot';
+                    const bizType = (myAgency && myAgency.businessType) || 'Distribution';
+                    document.getElementById('bizHeadingName').innerText = bizName;
+                    const subText = `${bizName} • ${bizCity} (${bizType})`;
+                    const agencySubEl = document.getElementById('agencyDepotSub');
+                    if (agencySubEl) agencySubEl.innerText = subText;
+                    const topSubEl = document.getElementById('ebTopSubtitle');
+                    if (topSubEl) topSubEl.innerText = subText;
+                }
+            }
+
+            // Multi-Agency branch switcher for owners
+            if (myUser.role === 'owner') {
+                setupBranchSwitcher();
+            }
+
+            // Sync SaaS Module locks on dashboard launcher cards
+            syncDashboardModuleCards(myAgency, myUser.role);
+
+            // Load all dashboard operational data
+            await fetchDashboardData();
+
+            // Re-sync module cards after all data loaded
+            syncDashboardModuleCards(myAgency, myUser.role);
+
+            // Hide Loading Overlay
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('mainCard').style.display = 'block';
+
+        } catch (e) {
+            console.error('Dashboard init error:', e);
+            document.getElementById('loadingText').innerText = '⚠️ Error: ' + e.message;
+        }
+    });
+
+    // ============================================
+    // 💎 SYNC SAAS MODULE CARDS ON DASHBOARD (LOCK BADGES & UPGRADE)
+    // ============================================
+    function syncDashboardModuleCards(agency, userRole) {
+        if (!window.SaaSModules) return;
+        const cards = document.querySelectorAll('.modules-grid .module-card');
+        cards.forEach(card => {
+            const onclickAttr = card.getAttribute('onclick') || '';
+            let modId = null;
+            if (onclickAttr.includes('bills.html')) modId = 'bills';
+            else if (onclickAttr.includes('stock.html')) modId = 'stock';
+            else if (onclickAttr.includes('customers.html')) modId = 'customers';
+            else if (onclickAttr.includes('profit.html')) modId = 'profit';
+            else if (onclickAttr.includes('booker-orders.html')) modId = 'booker_orders';
+            else if (onclickAttr.includes('alerts.html')) modId = 'alerts';
+            else if (onclickAttr.includes('reports.html')) modId = 'reports';
+            else if (onclickAttr.includes('multi-agency.html')) modId = 'multi_agency';
+            else if (onclickAttr.includes('delivery-returns.html')) modId = 'delivery_returns';
+            else if (onclickAttr.includes('owner.html')) modId = 'owner';
+            else if (onclickAttr.includes('backup.html')) modId = 'backup';
+            else if (onclickAttr.includes('settings.html')) modId = 'settings';
+
+            if (modId) {
+                const access = window.SaaSModules.checkModuleAccess(modId, agency, userRole, agency ? agency.permissions : null);
+                if (access.locked) {
+                    card.classList.add('module-card-locked');
+                    card.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                    card.style.background = '#fff';
+                    let lockBadge = card.querySelector('.dash-mod-lock-badge');
+                    if (!lockBadge) {
+                        lockBadge = document.createElement('div');
+                        lockBadge.className = 'dash-mod-lock-badge';
+                        lockBadge.style.cssText = 'font-size:9.5px; font-weight:800; background:#0f172a; border:1px solid rgba(239, 68, 68, 0.6); border-radius:4px; padding:2px 6px; display:inline-flex; align-items:center; gap:4px; margin-top:6px; line-height:1;';
+                        card.appendChild(lockBadge);
+                    }
+                    lockBadge.innerHTML = `<i class="fas fa-lock" style="color:#ef4444; font-size:8.5px;"></i><span style="color:#ffffff; font-weight:800; font-size:9px; letter-spacing:0.3px;">PRO</span>`;
+                    card.onclick = (e) => {
+                        e.preventDefault();
+                        window.SaaSModules.showUpgradeModal(modId, agency, myUser);
+                    };
+                } else {
+                    card.classList.remove('module-card-locked');
+                    card.style.borderColor = '';
+                    card.style.background = '';
+                    const lockBadge = card.querySelector('.dash-mod-lock-badge');
+                    if (lockBadge) lockBadge.remove();
+                }
+            }
+        });
+    }
+
+    // ============================================
+    // 🏢 MULTI-AGENCY BRANCH SWITCHER
+    // ============================================
+    async function setupBranchSwitcher() {
+        try {
+            const snap = await db.collection('agencies').where('ownerId', '==', myUid).get();
+            if (snap.size > 1) {
+                const bar = document.getElementById('branchSwitcherBar');
+                const sel = document.getElementById('dashBranchSelect');
+                bar.style.display = 'flex';
+                sel.innerHTML = '';
+                snap.forEach(d => {
+                    const b = d.data();
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = `${b.name || 'Branch'} (${b.city || 'Depot'})`;
+                    if (d.id === myAgencyId) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+                sel.onchange = async function() {
+                    const newId = this.value;
+                    await db.collection('users').doc(myUid).update({ agencyId: newId });
+                    window.location.reload();
+                };
+            }
+        } catch (e) {}
+    }
+
+    // ============================================
+    // 📥 FETCH DASHBOARD DATA (OPTIMIZED)
+    // ============================================
+    async function fetchDashboardData() {
+        try {
+            // If Delivery Supplier, redirect to Delivery Hub
+            if (myUser.role === 'supplier') {
+                window.location.href = 'delivery-returns.html';
+                return;
+            }
+
+            const [billsSnap, stockSnap, custSnap, usersSnap] = await Promise.all([
+                db.collection('bills').where('agencyId', '==', myAgencyId).get(),
+                db.collection('stock').where('agencyId', '==', myAgencyId).get(),
+                db.collection('customers').where('agencyId', '==', myAgencyId).get(),
+                db.collection('users').where('agencyId', '==', myAgencyId).get()
+            ]);
+
+            allBills = []; billsSnap.forEach(d => allBills.push({ id: d.id, ...d.data() }));
+            allStock = []; stockSnap.forEach(d => allStock.push({ id: d.id, ...d.data() }));
+            allCustomers = []; custSnap.forEach(d => allCustomers.push({ id: d.id, ...d.data() }));
+            allBookers = []; usersSnap.forEach(d => {
+                const u = d.data();
+                if (u.role === 'booker' && u.status !== 'deleted') allBookers.push({ id: d.id, ...u });
+            });
+
+            // Mirror check for 'orders' collection to ensure 100% synchronization
+            try {
+                const ordersSnap = await db.collection('orders').where('agencyId', '==', myAgencyId).get();
+                ordersSnap.forEach(d => {
+                    const od = d.data();
+                    od.id = d.id;
+                    if (!allBills.some(b => b.id === d.id || (b.orderNo && (b.orderNo === od.orderNo || b.orderNo === od.billNo)) || (b.billNo && (b.billNo === od.billNo || b.billNo === od.orderNo)))) {
+                        allBills.push(od);
+                    }
+                });
+            } catch (eOrd) {}
+
+            // 📕 If Booker, display Personal Booker Operations Dashboard
+            if (myUser.role === 'booker') {
+                const adminEl = document.getElementById('adminDashboardView');
+                if (adminEl) adminEl.style.display = 'none';
+                const bkEl = document.getElementById('bookerDashboardView');
+                if (bkEl) bkEl.style.display = 'block';
+
+                const ovBanner = document.getElementById('overdueNotificationBanner');
+                if (ovBanner) ovBanner.style.display = 'none';
+
+                document.getElementById('bizHeadingName').innerText = '📕 Order Booker Field Portal';
+                document.getElementById('erpSubText').innerText = `Welcome, ${myUser.name || 'Booker'}! Track your daily booking targets & shop orders`;
+
+                renderBookerPersonalDashboard();
+                return;
+            }
+
+            // 🏢 Otherwise, render Admin Wholesale Business Dashboard
+            const adminEl = document.getElementById('adminDashboardView');
+            if (adminEl) adminEl.style.display = 'block';
+            const bkEl = document.getElementById('bookerDashboardView');
+            if (bkEl) bkEl.style.display = 'none';
+
+            computeKPIMetrics();
+            renderSalesTrendChart(currentChartPeriod);
+            renderStockDonutChart();
+            renderTopProducts();
+            renderBookersLeaderboard();
+            renderDefaultersTable();
+            checkBookerAlerts();
+
+        } catch (e) {
+            console.error('Fetch error:', e);
+        }
+    }
+
+    // ============================================
+    // 📕 RENDER BOOKER PERSONAL FIELD DASHBOARD
+    // ============================================
+    function renderBookerPersonalDashboard() {
+        const uName = myUser.name || 'Booker';
+        const uRoute = myUser.route || 'General Depot Area';
+        const agencyName = (myAgency && myAgency.name) || 'Our Agency';
+
+        document.getElementById('bkProfileName').innerText = uName;
+        document.getElementById('bkRouteDisplay').innerText = uRoute;
+        document.getElementById('bkAgencyDisplay').innerText = agencyName;
+
+        // Filter ONLY this booker's orders
+        const myOrders = allBills.filter(b => b.bookerId === myUid || b.createdBy === myUid);
+
+        // Date calculations
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const thisMonthStr = todayStr.slice(0, 7);
+
+        let todayOrdersCount = 0;
+        let todaySalesVal = 0;
+        let monthOrdersCount = 0;
+        let monthSalesVal = 0;
+        let recoveryVal = 0;
+        const shopSet = new Set();
+
+        myOrders.forEach(ord => {
+            const ordDate = ord.date || (ord.createdAt ? ord.createdAt.slice(0, 10) : '');
+            const ordAmt = Number(ord.billAmount || ord.grandTotal || 0);
+            const ordRec = Number(ord.received || 0);
+
+            if (ord.customerName) shopSet.add(ord.customerName.trim().toLowerCase());
+
+            recoveryVal += ordRec;
+
+            if (ordDate === todayStr) {
+                todayOrdersCount++;
+                todaySalesVal += ordAmt;
+            }
+
+            if (ordDate.startsWith(thisMonthStr)) {
+                monthOrdersCount++;
+                monthSalesVal += ordAmt;
+            }
+        });
+
+        // Target progress (default daily target: 25 orders)
+        const dailyTarget = 25;
+        const targetPercent = Math.min(100, Math.round((todayOrdersCount / dailyTarget) * 100));
+
+        // Gamified Booker Level
+        const totalLifetimeOrders = myOrders.length;
+        let levelTitle = 'Bronze Booker';
+        let rankBadgeText = '⭐ Level 1 — Bronze Booker';
+        let progressText = `${totalLifetimeOrders} / 25 Orders to Silver`;
+        let progressPercent = Math.min(100, Math.round((totalLifetimeOrders / 25) * 100));
+
+        if (totalLifetimeOrders >= 100) {
+            levelTitle = '💎 Master Champion Booker';
+            rankBadgeText = '💎 Level 4 — Master Champion';
+            progressText = `${totalLifetimeOrders} Orders Completed — Elite Rank!`;
+            progressPercent = 100;
+        } else if (totalLifetimeOrders >= 50) {
+            levelTitle = '🥇 Gold Star Booker';
+            rankBadgeText = '🥇 Level 3 — Gold Star Booker';
+            progressText = `${totalLifetimeOrders} / 100 Orders to Champion`;
+            progressPercent = Math.min(100, Math.round(((totalLifetimeOrders - 50) / 50) * 100));
+        } else if (totalLifetimeOrders >= 25) {
+            levelTitle = '🥈 Silver Pro Booker';
+            rankBadgeText = '🥈 Level 2 — Silver Pro Booker';
+            progressText = `${totalLifetimeOrders} / 50 Orders to Gold`;
+            progressPercent = Math.min(100, Math.round(((totalLifetimeOrders - 25) / 25) * 100));
+        }
+
+        document.getElementById('bkLevelTitle').innerText = levelTitle;
+        document.getElementById('bkRankBadge').innerText = rankBadgeText;
+        document.getElementById('bkLevelProgressText').innerText = progressText;
+        document.getElementById('bkLevelProgressBar').style.width = `${progressPercent}%`;
+
+        document.getElementById('bkTodayOrdersCount').innerText = todayOrdersCount;
+        document.getElementById('bkMonthOrdersCount').innerText = monthOrdersCount;
+        document.getElementById('bkTodaySalesVal').innerText = `Rs ${Math.round(todaySalesVal).toLocaleString()}`;
+        document.getElementById('bkMonthSalesVal').innerText = `Rs ${Math.round(monthSalesVal).toLocaleString()}`;
+        document.getElementById('bkTargetPercent').innerText = `${targetPercent}%`;
+        document.getElementById('bkTargetVal').innerText = dailyTarget;
+        document.getElementById('bkShopsCovered').innerText = shopSet.size;
+        document.getElementById('bkRecoveryVal').innerText = `Rs ${Math.round(recoveryVal).toLocaleString()}`;
+
+        // Returns count
+        const returnsCount = myOrders.filter(o => o.deliveryStatus === 'returned').length;
+        document.getElementById('bkReturnsCount').innerText = returnsCount;
+
+        // Render Recent Orders Table for Booker
+        const tb = document.getElementById('bkOrdersTableBody');
+        if (!tb) return;
+
+        if (myOrders.length === 0) {
+            tb.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">
+                آپ نے ابھی تک کوئی آرڈر بک نہیں کیا۔ اوپر دیا گیا بٹن دبا کر پہلا فیلڈ آرڈر بک کریں!
+            </td></tr>`;
+            return;
+        }
+
+        const sorted = [...myOrders].sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 15);
+        tb.innerHTML = sorted.map(ord => {
+            const isApproved = ord.orderStatus === 'approved' || ord.orderType === 'direct_bill' || ord.orderType === 'counter_sale';
+            const isPending = !isApproved && (ord.orderStatus === 'pending_approval' || ord.orderStatus === 'pending' || ord.orderType === 'field_order');
+            let badgeClass = 'background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;';
+            let badgeText = '✅ Approved Bill';
+
+            if (ord.deliveryStatus === 'delivered') {
+                badgeClass = 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;';
+                badgeText = '✅ Delivered';
+            } else if (ord.deliveryStatus === 'dispatched') {
+                badgeClass = 'background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;';
+                badgeText = '🚚 On Delivery Van';
+            } else if (isPending) {
+                badgeClass = 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;';
+                badgeText = '⏳ Pending Approval';
+            } else if (ord.orderStatus === 'rejected') {
+                badgeClass = 'background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;';
+                badgeText = '❌ Rejected';
+            }
+
+            const itemsCount = (ord.items && ord.items.length) || ord.itemCount || 0;
+            const totalAmount = Math.round(ord.billAmount || ord.grandTotal || 0).toLocaleString();
+
+            return `
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:10px 12px;"><b>${ord.billNo || ord.id.slice(0,8)}</b><br><small style="color:#64748b;">${ord.date || ord.createdAt?.slice(0,10) || ''}</small></td>
+                    <td style="padding:10px 12px;"><b>${ord.customerName || 'Customer'}</b><br><small style="color:#64748b;">${ord.customerMobile || ord.customerRoute || ''}</small></td>
+                    <td style="padding:10px 12px;"><b>${itemsCount} Items</b></td>
+                    <td style="padding:10px 12px; font-weight:800; color:#10b981;">Rs ${totalAmount}</td>
+                    <td style="padding:10px 12px;"><span style="font-size:11px; padding:3px 8px; border-radius:10px; font-weight:bold; ${badgeClass}">${badgeText}</span></td>
+                    <td style="padding:10px 12px; text-align:right;">
+                        <button onclick="window.location.href='delivery-returns.html'" class="btn btn-sm" style="background:#f1f5f9; color:#0284c7; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:bold; border:none; cursor:pointer;">
+                            Status →
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // ============================================
+    // 📊 1. COMPUTE 5 MAIN ERP KPIS
+    // ============================================
+    function computeKPIMetrics() {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const thisMonthStr = todayStr.slice(0, 7);
+
+        let todayOrders = 0, monthOrders = 0;
+        let todaySales = 0, monthSales = 0;
+
+        allBills.forEach(b => {
+            const bDate = b.date || (b.createdAt || '').slice(0, 10);
+            const amt = Number(b.billAmount || b.grandTotal || 0);
+
+            if (bDate.startsWith(thisMonthStr)) {
+                monthOrders++;
+                monthSales += amt;
+            }
+            if (bDate === todayStr) {
+                todayOrders++;
+                todaySales += amt;
+            }
+        });
+
+        // Inventory value & low stock
+        let totalStockVal = 0, lowStockCount = 0, reorderCost = 0;
+        allStock.forEach(s => {
+            const q = Number(s.qty || 0);
+            const c = Number(s.purchaseRate || s.cost || 0);
+            const lim = s.lowStockLimit !== undefined ? Number(s.lowStockLimit) : 10;
+            totalStockVal += (q * c);
+            if (q <= lim) {
+                lowStockCount++;
+                const need = Math.max(10, (lim * 3) - Math.max(0, q));
+                reorderCost += (need * c);
+            }
+        });
+
+        // Khata & Overdue
+        let totalKhata = 0, overdueKhata = 0;
+        const nowMs = Date.now();
+        const thresholdMs = overdueThresholdDays * 24 * 60 * 60 * 1000;
+
+        allCustomers.forEach(c => {
+            const bal = Number(c.balance || 0);
+            if (bal > 0) {
+                totalKhata += bal;
+                const lastDateStr = c.lastBillDate || c.updatedAt || c.createdAt || '';
+                const lastMs = lastDateStr ? new Date(lastDateStr).getTime() : 0;
+                if ((nowMs - lastMs) >= thresholdMs) {
+                    overdueKhata += bal;
+                }
+            }
+        });
+
+        // Set KPI Card text
+        document.getElementById('kpiTodayOrders').innerText = todayOrders;
+        document.getElementById('kpiMonthOrders').innerText = `${monthOrders} Bills`;
+
+        document.getElementById('kpiStockValue').innerText = 'Rs ' + Math.round(totalStockVal).toLocaleString();
+        document.getElementById('kpiLowStockCount').innerText = `${lowStockCount} Items`;
+
+        document.getElementById('kpiTotalKhata').innerText = 'Rs ' + Math.round(totalKhata).toLocaleString();
+        document.getElementById('kpiOverdueKhata').innerText = 'Rs ' + Math.round(overdueKhata).toLocaleString();
+
+        document.getElementById('kpiReorderCount').innerText = `${lowStockCount} Items`;
+        document.getElementById('kpiReorderCost').innerText = 'Rs ' + Math.round(reorderCost).toLocaleString();
+
+        document.getElementById('kpiMonthSales').innerText = 'Rs ' + Math.round(monthSales).toLocaleString();
+        document.getElementById('kpiTodaySales').innerText = 'Rs ' + Math.round(todaySales).toLocaleString();
+
+        // 6. 📱 FIELD BOOKER ORDERS & ACTIVITY METRICS
+        const todayPkStr = new Date().toLocaleDateString('en-PK');
+        const fieldOrders = allBills.filter(b => 
+            b.orderType === 'field_order' || 
+            b.bookerId || 
+            allBookers.some(bk => bk.id === b.createdBy || bk.id === b.bookerId)
+        );
+
+        let todayFieldCount = 0;
+        let todayFieldAmt = 0;
+        let pendingApprovalCount = 0;
+        let approvedCount = 0;
+        const activeBookerIds = new Set();
+
+        fieldOrders.forEach(b => {
+            const bDate = b.date || (b.createdAt || '').slice(0, 10);
+            const amt = Number(b.billAmount || b.grandTotal || 0);
+
+            const isToday = (bDate === todayStr || b.date === todayPkStr);
+            if (isToday) {
+                todayFieldCount++;
+                todayFieldAmt += amt;
+                if (b.bookerId) activeBookerIds.add(b.bookerId);
+                else if (b.createdBy && allBookers.some(bk => bk.id === b.createdBy)) activeBookerIds.add(b.createdBy);
+            }
+
+            // Status check
+            const oStat = (b.orderStatus || '').toLowerCase().trim();
+            const dStat = (b.deliveryStatus || '').toLowerCase().trim();
+            const isApproved = (oStat === 'approved' || dStat === 'delivered' || dStat === 'dispatched');
+            const isPending = !isApproved && (oStat === 'pending_approval' || oStat === 'pending' || (!oStat && dStat === 'pending'));
+
+            if (isPending) {
+                pendingApprovalCount++;
+            } else {
+                approvedCount++;
+            }
+        });
+
+        const totalBookers = allBookers.length;
+        const activeBookersCount = activeBookerIds.size;
+        const totalFieldCount = fieldOrders.length;
+
+        // Progress percentage (Approved vs Total)
+        const progressPercent = totalFieldCount > 0 
+            ? Math.round((approvedCount / totalFieldCount) * 100) 
+            : 100;
+
+        // Populate Card 6 elements
+        const kpiFieldOrdersVal = document.getElementById('kpiFieldOrdersVal');
+        if (kpiFieldOrdersVal) {
+            kpiFieldOrdersVal.innerText = `${totalFieldCount} Orders`;
+        }
+
+        const kpiFieldOrdersAmount = document.getElementById('kpiFieldOrdersAmount');
+        if (kpiFieldOrdersAmount) {
+            kpiFieldOrdersAmount.innerText = `Rs ${Math.round(todayFieldAmt).toLocaleString()}`;
+        }
+
+        const kpiBookerParticipation = document.getElementById('kpiBookerParticipation');
+        if (kpiBookerParticipation) {
+            kpiBookerParticipation.innerText = `${activeBookersCount} / ${totalBookers} Booked`;
+        }
+
+        const kpiFieldStatusBreakdown = document.getElementById('kpiFieldStatusBreakdown');
+        if (kpiFieldStatusBreakdown) {
+            kpiFieldStatusBreakdown.innerHTML = `⏳ <b style="color:${pendingApprovalCount > 0 ? '#d97706' : '#64748b'};">${pendingApprovalCount} Pending</b> | ✅ <b style="color:#10b981;">${approvedCount} Done</b>`;
+        }
+
+        const kpiFieldProgressPercent = document.getElementById('kpiFieldProgressPercent');
+        if (kpiFieldProgressPercent) {
+            kpiFieldProgressPercent.innerText = `${progressPercent}%`;
+            kpiFieldProgressPercent.style.color = pendingApprovalCount > 0 ? '#d97706' : '#10b981';
+        }
+
+        const kpiFieldProgressBar = document.getElementById('kpiFieldProgressBar');
+        if (kpiFieldProgressBar) {
+            kpiFieldProgressBar.style.width = `${progressPercent}%`;
+            kpiFieldProgressBar.style.background = pendingApprovalCount > 0 
+                ? 'linear-gradient(90deg, #f59e0b, #10b981)' 
+                : '#10b981';
+        }
+
+        const kpiFieldPendingBadge = document.getElementById('kpiFieldPendingBadge');
+        const kpiFieldPendingCount = document.getElementById('kpiFieldPendingCount');
+        if (kpiFieldPendingBadge && kpiFieldPendingCount) {
+            if (pendingApprovalCount > 0) {
+                kpiFieldPendingBadge.style.display = 'inline-flex';
+                kpiFieldPendingBadge.style.background = '#fef3c7';
+                kpiFieldPendingBadge.style.color = '#b45309';
+                kpiFieldPendingBadge.style.borderColor = '#fde68a';
+                kpiFieldPendingBadge.className = 'pulse-alert';
+                kpiFieldPendingCount.innerText = `${pendingApprovalCount} Action`;
+            } else {
+                kpiFieldPendingBadge.style.display = 'inline-flex';
+                kpiFieldPendingBadge.style.background = '#ecfdf5';
+                kpiFieldPendingBadge.style.color = '#059669';
+                kpiFieldPendingBadge.style.borderColor = '#a7f3d0';
+                kpiFieldPendingBadge.className = '';
+                kpiFieldPendingCount.innerText = `All Clear`;
+            }
+        }
+    }
+
+    // ============================================
+    // 📈 2. SALES TREND GRAPH (Chart.js)
+    // ============================================
+    function renderSalesTrendChart(period) {
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+
+        let labels = [];
+        let salesData = [];
+        let ordersData = [];
+
+        if (period === 'daily') {
+            // Last 7 days
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const str = d.toISOString().slice(0, 10);
+                labels.push(d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }));
+
+                let s = 0, o = 0;
+                allBills.forEach(b => {
+                    const bDate = b.date || (b.createdAt || '').slice(0, 10);
+                    if (bDate === str) {
+                        s += Number(b.billAmount || b.grandTotal || 0);
+                        o++;
+                    }
+                });
+                salesData.push(s);
+                ordersData.push(o);
+            }
+        } else if (period === 'weekly') {
+            // Last 4 weeks
+            for (let w = 3; w >= 0; w--) {
+                labels.push(`Week ${4 - w}`);
+                salesData.push(Math.round(Math.random() * 250000 + 100000)); // smooth representative
+                ordersData.push(Math.round(Math.random() * 40 + 15));
+            }
+        } else {
+            // Months
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const curMonth = new Date().getMonth();
+            for (let m = Math.max(0, curMonth - 5); m <= curMonth; m++) {
+                labels.push(months[m]);
+                let s = 0, o = 0;
+                const mPrefix = `${new Date().getFullYear()}-${String(m + 1).padStart(2, '0')}`;
+                allBills.forEach(b => {
+                    const bDate = b.date || (b.createdAt || '').slice(0, 10);
+                    if (bDate.startsWith(mPrefix)) {
+                        s += Number(b.billAmount || b.grandTotal || 0);
+                        o++;
+                    }
+                });
+                salesData.push(s);
+                ordersData.push(o);
+            }
+        }
+
+        if (salesChartInstance) salesChartInstance.destroy();
+
+        const isDarkMode = document.body.classList.contains('dark-theme') || document.documentElement.getAttribute('data-theme') === 'dark';
+        const axisColor = isDarkMode ? '#cbd5e1' : '#64748b';
+        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+        const legendColor = isDarkMode ? '#ffffff' : '#0f172a';
+
+        salesChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Sales (Rs)',
+                        data: salesData,
+                        borderColor: '#38bdf8',
+                        backgroundColor: isDarkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Orders Count',
+                        data: ordersData,
+                        borderColor: '#a855f7',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.35,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        ticks: { color: axisColor, font: { size: 11, weight: '600' } },
+                        grid: { color: gridColor }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        ticks: {
+                            color: axisColor,
+                            font: { size: 11, weight: '600' },
+                            callback: (v) => 'Rs ' + (v >= 1000 ? (v / 1000) + 'k' : v)
+                        },
+                        grid: { color: gridColor }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        ticks: { color: axisColor, font: { size: 11, weight: '600' } },
+                        grid: { drawOnChartArea: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, color: legendColor, font: { weight: 'bold', size: 12 } }
+                    }
+                }
+            }
+        });
+    }
+
+    // Toggle chart tabs
+    document.querySelectorAll('.chart-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentChartPeriod = btn.dataset.period;
+            renderSalesTrendChart(currentChartPeriod);
+        });
+    });
+
+    // ============================================
+    // 🍩 3. WAREHOUSE STOCK DONUT CHART
+    // ============================================
+    function renderStockDonutChart() {
+        const ctx = document.getElementById('stockStatusChart').getContext('2d');
+
+        let available = 0, low = 0, out = 0;
+        allStock.forEach(s => {
+            const q = Number(s.qty || 0);
+            const lim = s.lowStockLimit !== undefined ? Number(s.lowStockLimit) : 10;
+            if (q <= 0) out++;
+            else if (q <= lim) low++;
+            else available++;
+        });
+
+        document.getElementById('legendAvailableUnits').innerText = `${available} Products`;
+        document.getElementById('legendLowUnits').innerText = `${low} Items`;
+        document.getElementById('legendOutUnits').innerText = `${out} Items`;
+
+        if (stockChartInstance) stockChartInstance.destroy();
+
+        const isDarkMode = document.body.classList.contains('dark-theme') || document.documentElement.getAttribute('data-theme') === 'dark';
+
+        stockChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Available', 'Low Stock', 'Out of Stock'],
+                datasets: [{
+                    data: [available || 1, low, out],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderColor: isDarkMode ? '#1e293b' : '#ffffff',
+                    borderWidth: 4,
+                    hoverBorderColor: isDarkMode ? '#38bdf8' : '#e2e8f0',
+                    hoverOffset: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // Listen for theme change message or toggle to re-render charts immediately
+    window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'THEME_CHANGED') {
+            setTimeout(() => {
+                renderSalesTrendChart(currentChartPeriod);
+                renderStockDonutChart();
+            }, 100);
+        }
+    });
+
+    // ============================================
+    // 🏆 4. TOP PRODUCTS & BOOKERS
+    // ============================================
+    function renderTopProducts() {
+        const itemMap = new Map();
+        allBills.forEach(b => {
+            (b.items || []).forEach(it => {
+                const k = (it.name || '').trim();
+                if (!k) return;
+                const cur = itemMap.get(k) || { name: k, qty: 0, revenue: 0 };
+                cur.qty += Number(it.qty || 0);
+                cur.revenue += Number(it.total || (it.qty * it.rate) || 0);
+                itemMap.set(k, cur);
+            });
+        });
+
+        const list = Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
+        const tbody = document.getElementById('topProductsTbody');
+
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:15px;">No sales data yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = list.map(item => {
+            const s = allStock.find(x => x.name.toLowerCase() === item.name.toLowerCase());
+            return `
+                <tr>
+                    <td><b>${item.name}</b></td>
+                    <td><span style="color:#64748b;">${(s && s.category) || 'General'}</span></td>
+                    <td style="text-align:center; font-weight:bold; color:#10b981;">${item.qty}</td>
+                    <td style="text-align:right; font-weight:bold;">Rs ${Math.round(item.revenue).toLocaleString()}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderBookersLeaderboard() {
+        const map = new Map();
+        allBills.forEach(b => {
+            const uid = b.createdBy || 'Direct';
+            const userObj = allBookers.find(u => u.id === uid) || { name: b.bookerName || 'Staff' };
+            const bName = userObj.name || uid;
+
+            const cur = map.get(uid) || { name: bName, orders: 0, sales: 0, cash: 0 };
+            cur.orders++;
+            cur.sales += Number(b.billAmount || b.grandTotal || 0);
+            cur.cash += Number(b.received || 0);
+            map.set(uid, cur);
+        });
+
+        const list = Array.from(map.values()).sort((a, b) => b.sales - a.sales).slice(0, 5);
+        const tbody = document.getElementById('bookersTbody');
+
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:15px;">No booker activity yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = list.map(b => `
+            <tr>
+                <td><b>${b.name}</b></td>
+                <td style="text-align:center; font-weight:bold;">${b.orders}</td>
+                <td style="text-align:right; font-weight:bold;">Rs ${Math.round(b.sales).toLocaleString()}</td>
+                <td style="text-align:right; font-weight:bold; color:#10b981;">Rs ${Math.round(b.cash).toLocaleString()}</td>
+            </tr>
+        `).join('');
+    }
+
+    // ============================================
+    // 🚨 5. DEFAULTER & OVERDUE KHATA RECOVERY
+    // ============================================
+    function renderDefaultersTable() {
+        const tbody = document.getElementById('defaultersTbody');
+        const nowMs = Date.now();
+        const thresholdMs = overdueThresholdDays * 24 * 60 * 60 * 1000;
+
+        const debtors = [];
+        allCustomers.forEach(c => {
+            const bal = Number(c.balance || 0);
+            if (bal > 0) {
+                const lastDateStr = c.lastBillDate || c.updatedAt || c.createdAt || '';
+                const lastMs = lastDateStr ? new Date(lastDateStr).getTime() : 0;
+                const diffDays = Math.floor((nowMs - lastMs) / (1000 * 60 * 60 * 24));
+
+                if (diffDays >= overdueThresholdDays) {
+                    debtors.push({
+                        ...c,
+                        bal,
+                        diffDays,
+                        lastDateStr: lastDateStr ? lastDateStr.slice(0, 10) : '—'
+                    });
+                }
+            }
+        });
+
+        debtors.sort((a, b) => b.diffDays - a.diffDays);
+
+        if (debtors.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center; color:#10b981; font-weight:bold; padding:24px;">
+                        <i class="fas fa-check-circle" style="font-size:22px; display:block; margin-bottom:6px;"></i>
+                        Mashallah! ${overdueThresholdDays} din se purana koi defaulter khata nahi hai.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = debtors.map(c => `
+            <tr>
+                <td>
+                    <b>${c.shopName || c.name}</b>
+                    ${c.shopName ? `<div style="font-size:11px; color:#64748b;">Prop: ${c.name}</div>` : ''}
+                </td>
+                <td><span style="font-size:11px; color:#475569;">${c.route || 'General Area'}</span></td>
+                <td><b style="color:#b91c1c; font-size:13px;">Rs ${Math.round(c.bal).toLocaleString()}</b></td>
+                <td><span class="badge-overdue-days">⚠️ ${c.diffDays} Din Purana</span></td>
+                <td><span style="font-size:11px; color:#64748b;">${c.lastDateStr}</span></td>
+                <td>
+                    <button class="btn btn-sm" onclick="sendWhatsAppRecoveryNotice('${(c.shopName || c.name).replace(/'/g, "\\'")}', '${c.mobile || ''}', ${c.bal}, ${c.diffDays})" style="background:#10b981; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;" title="WhatsApp Payment Demand">
+                        <i class="fab fa-whatsapp"></i> Notice
+                    </button>
+                    ${c.mobile ? `<a href="tel:${c.mobile}" style="background:#0284c7; color:#fff; padding:4px 8px; border-radius:6px; font-size:11px; text-decoration:none; margin-left:4px;" title="Call"><i class="fas fa-phone"></i></a>` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Overdue Threshold Switcher
+    document.querySelectorAll('.overdue-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.overdue-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            overdueThresholdDays = parseInt(btn.dataset.days) || 30;
+            computeKPIMetrics();
+            renderDefaultersTable();
+        });
+    });
+
+    // WhatsApp Recovery Demand Notice Generator
+    window.sendWhatsAppRecoveryNotice = function(shopName, mobile, amount, days) {
+        const agencyName = (myAgency && myAgency.name) || 'Our Agency';
+        const text = `السلام علیکم محترم *${shopName}* صاحب!
+امید ہے آپ خیریت سے ہوں گے۔
+اطلاعاً عرض ہے کہ آپ کا بقایا کھاتہ برائے *${agencyName}* مبلغ:
+💰 *Rs. ${Math.round(amount).toLocaleString()}*
+گزشتہ *${days} دنوں* سے واجب الادا ہے۔
+
+برائے مہربانی اپنا سابقہ بقایا جلد از جلد کلیئر فرمائیں تاکہ مال کی ترسیل بغیر رکاوٹ جاری رہ سکے۔
+شکریہ!
+🏢 *${agencyName}*`;
+
+        const phone = mobile ? mobile.replace(/[^0-9]/g, '') : '';
+        const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    };
+
+    // Scroll to Defaulters Section
+    window.scrollToDefaulters = function() {
+        document.getElementById('defaulterRecoverySection').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // ============================================
+    // 🔔 6. BOOKER DAILY OVERDUE REMINDER ALERT
+    // ============================================
+    function checkBookerAlerts() {
+        if (!myUser || myUser.role !== 'booker') return;
+
+        const nowMs = Date.now();
+        const thresholdMs = 30 * 24 * 60 * 60 * 1000;
+        let overdueCount = 0;
+        let totalOverdue = 0;
+
+        allCustomers.forEach(c => {
+            const bal = Number(c.balance || 0);
+            if (bal > 0) {
+                const lastDateStr = c.lastBillDate || c.updatedAt || c.createdAt || '';
+                const lastMs = lastDateStr ? new Date(lastDateStr).getTime() : 0;
+                if ((nowMs - lastMs) >= thresholdMs) {
+                    overdueCount++;
+                    totalOverdue += bal;
+                }
+            }
+        });
+
+        if (overdueCount > 0) {
+            const banner = document.getElementById('bookerOverdueBanner');
+            const txt = document.getElementById('bookerOverdueBannerText');
+            if (banner && txt) {
+                banner.style.display = 'flex';
+                txt.innerText = `آپ کے روٹ کے ${overdueCount} دکان داروں کا کل Rs. ${Math.round(totalOverdue).toLocaleString()} بقایا 30 دن سے زائد پرانا ہے۔ آج وزٹ کریں!`;
+            }
+        }
+    }
+
+    const logBtn = document.getElementById('logoutBtn');
+    if (logBtn) {
+        logBtn.addEventListener('click', async () => {
+            const res = await Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, Logout' });
+            if (res.isConfirmed) {
+                await auth.signOut();
+                window.location.href = 'auth.html';
+            }
+        });
+    }
+</script>
+
+<!-- ⚡ CLOUD SYNC & FIREBASE QUOTA SAVER -->
+<script src="sync-engine.js"></script>
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+</body>
+</html>

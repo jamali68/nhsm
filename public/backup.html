@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Backup & Restore (Phase 9)</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 💎 SaaS Modules Registry & Paywall Guard -->
+    <script src="saas-modules.js"></script>
+
+    <style>
+        .swal2-container { z-index: 999999 !important; }
+
+        .backup-hero {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 16px;
+            padding: 24px;
+            color: #fff;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .backup-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+        .status-safe { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #059669; }
+        .status-warn { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #d97706; }
+
+        .backup-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .action-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+
+        .action-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .action-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #fff;
+        }
+
+        .stats-pill-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 12px 0 16px 0;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 10px;
+        }
+        .stat-pill-item {
+            font-size: 12px;
+            color: #475569;
+        }
+        .stat-pill-val {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 24px 16px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8fafc;
+            transition: all 0.2s;
+            margin-bottom: 14px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .csv-exports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .btn-csv-export {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-csv-export:hover {
+            border-color: #10b981;
+            color: #10b981;
+            background: #f0fdf4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 🛡️ HERO STATUS BANNER ===== -->
+    <div class="backup-hero">
+        <div>
+            <div style="font-size:20px; font-weight:800; margin-bottom:4px;">
+                ☁️ Agency Data Protection &amp; Instant Recovery
+            </div>
+            <div style="font-size:13px; opacity:0.85; max-width:600px;">
+                اپنے تمام بزنس ڈیٹا (اسٹاک، کسٹمرز، بلز اور کھاتوں) کا مکمل بیک اپ اپنے کمپیوٹر یا موبائل میں محفوظ رکھیں تاکہ کسی بھی وقت ایک سیکنڈ میں ڈیٹا بحال کیا جا سکے۔
+            </div>
+        </div>
+        <div>
+            <span class="backup-status-badge status-safe" id="backupStatusBadge">
+                <i class="fas fa-shield-halved"></i> Checking Backup...
+            </span>
+        </div>
+    </div>
+
+    <!-- ===== 📦 MAIN ACTIONS: BACKUP & RESTORE ===== -->
+    <div class="backup-actions-grid">
+        
+        <!-- 📥 FULL CLOUD BACKUP CARD -->
+        <div class="action-card" style="border-top: 4px solid #10b981;">
+            <div>
+                <div class="action-card-header">
+                    <div class="action-card-icon" style="background:#10b981;">
+                        <i class="fas fa-cloud-arrow-down"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:16px; font-weight:800; color:var(--primary);">Download Complete Backup</div>
+                        <div style="font-size:12px; color:#64748b;">Full agency snapshot (.JSON)</div>
+                    </div>
+                </div>
+                <p style="font-size:13px; color:#475569; line-height:1.4;">
+                    اس میں آپ کا تمام ڈیٹا اکٹھا شامل ہوگا: اسٹاک، سپلائر ریٹس، دکان داروں کے کھاتے، انوائسز اور فنانشل ہسٹری۔
+                </p>
+
+                <div class="stats-pill-grid">
+                    <div class="stat-pill-item">
+                        <div>📦 Stock Items</div>
+                        <div class="stat-pill-val" id="cntStock">—</div>
+                    </div>
+                    <div class="stat-pill-item">
+                        <div>👥 Customers</div>
+                        <div class="stat-pill-val" id="cntCustomers">—</div>
+                    </div>
+                    <div class="stat-pill-item">
+                        <div>🧾 Total Bills</div>
+                        <div class="stat-pill-val" id="cntBills">—</div>
+                    </div>
+                    <div class="stat-pill-item">
+                        <div>🔄 Stock Logs</div>
+                        <div class="stat-pill-val" id="cntMovements">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="btnDownloadBackup" style="background:#10b981; width:100%; padding:12px;">
+                <i class="fas fa-download"></i> DOWNLOAD FULL BACKUP (.JSON)
+            </button>
+        </div>
+
+        <!-- 📤 RESTORE FROM BACKUP CARD -->
+        <div class="action-card" style="border-top: 4px solid #3b82f6;">
+            <div>
+                <div class="action-card-header">
+                    <div class="action-card-icon" style="background:#3b82f6;">
+                        <i class="fas fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:16px; font-weight:800; color:var(--primary);">Restore From Backup File</div>
+                        <div style="font-size:12px; color:#64748b;">Upload previously saved .JSON</div>
+                    </div>
+                </div>
+                <p style="font-size:13px; color:#475569; line-height:1.4;">
+                    کمپیوٹر خراب ہونے، موبائل تبدیل کرنے یا غلطی سے ڈیٹا اڑ جانے کی صورت میں پرانی بیک اپ فائل اپلوڈ کر کے بحال کریں۔
+                </p>
+
+                <input type="file" id="restoreFileInput" accept=".json" style="display:none;">
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('restoreFileInput').click();">
+                    <i class="fas fa-file-arrow-up" style="font-size:28px; color:#3b82f6; margin-bottom:8px; display:block;"></i>
+                    <div style="font-weight:700; font-size:13px; color:#1e293b;">Click or Drag &amp; Drop Backup File here</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Only valid EasyBill .JSON files accepted</div>
+                </div>
+            </div>
+
+            <div style="font-size:11px; color:#94a3b8; text-align:center;">
+                🔒 Safe Restore: Previews contents before writing to Firebase.
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 📑 INDIVIDUAL EXCEL / CSV EXPORTS ===== -->
+    <div class="panel-card" style="border-top-color:#f59e0b;">
+        <div class="card-header">
+            <h2><i class="fas fa-file-excel" style="color:#10b981;"></i> Individual Excel / CSV Data Exports</h2>
+            <small class="header-note">اگر آپ صرف مخصوص ڈیٹا کو ایکسل شیٹ میں اوپن کرنا چاہیں</small>
+        </div>
+
+        <div class="csv-exports-grid">
+            <button class="btn-csv-export" id="btnExportStockCSV">
+                <span><i class="fas fa-boxes-stacked" style="color:#0284c7; margin-right:8px;"></i> Stock Items List</span>
+                <i class="fas fa-download"></i>
+            </button>
+            <button class="btn-csv-export" id="btnExportCustCSV">
+                <span><i class="fas fa-users" style="color:#8b5cf6; margin-right:8px;"></i> Customers &amp; Khata</span>
+                <i class="fas fa-download"></i>
+            </button>
+            <button class="btn-csv-export" id="btnExportBillsCSV">
+                <span><i class="fas fa-file-invoice-dollar" style="color:#10b981; margin-right:8px;"></i> Sales Bills Register</span>
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- 💾 BACKUP CONTROLLER -->
+<script src="backup.js"></script>
+</body>
+</html>

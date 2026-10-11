@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Multi-Agency Owner Hub (Phase 5)</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 💎 SaaS Modules Registry & Paywall Guard -->
+    <script src="saas-modules.js"></script>
+
+    <style>
+        .swal2-container { z-index: 999999 !important; }
+        
+        /* Multi-Agency Stats Grid */
+        .exec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .exec-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .exec-card:hover {
+            transform: translateY(-2px);
+        }
+        .exec-icon {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 19px;
+            color: #fff;
+        }
+        .exec-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .exec-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* Branch Cards */
+        .branch-card {
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 14px;
+            transition: all 0.2s;
+        }
+        .branch-card.active-branch {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .branch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .branch-name {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .branch-badge {
+            font-size: 11px;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-weight: 800;
+        }
+        .badge-active { background: #dcfce7; color: #15803d; }
+        .badge-inactive { background: #f1f5f9; color: #64748b; }
+
+        .branch-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+            background: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 14px;
+        }
+        .b-stat-item {
+            text-align: center;
+        }
+        .b-stat-num {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .b-stat-lbl {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .branch-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Comparison Table */
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .comp-table th, .comp-table td {
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .comp-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+        }
+
+        /* Quota Bar */
+        .quota-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .quota-fill {
+            background: #10b981;
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        @media print {
+            .panel-topbar, .top-actions, .branch-actions, #registerBranchBtn, .btn-print-comp {
+                display: none !important;
+            }
+            body { background: #fff; padding: 0; }
+            .panel-card { box-shadow: none; border: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 👑 OWNER PACKAGE & BRANCH CAPACITY BAR ===== -->
+    <div class="panel-card" style="border-top-color:#3b82f6; padding:18px 22px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div style="font-size:12px; color:#64748b; font-weight:bold; text-transform:uppercase;">Package Tier</div>
+                <div style="font-size:18px; font-weight:800; color:var(--primary); margin-top:2px;" id="pkgNameDisplay">
+                    💎 Multi-Agency Enterprise (Up to 5 Branches)
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:12px; color:#64748b; font-weight:bold;">BRANCH ALLOCATION</div>
+                <div style="font-size:16px; font-weight:800; color:#10b981;" id="branchCountRatio">
+                    0 / 5 Branches Used
+                </div>
+            </div>
+        </div>
+        <div class="quota-bar" style="margin-top:10px;">
+            <div class="quota-fill" id="branchQuotaFill" style="width: 20%;"></div>
+        </div>
+    </div>
+
+    <!-- ===== 📊 CONSOLIDATED EXECUTIVE METRICS (Across All Branches) ===== -->
+    <div class="panel-card" style="border-top-color:#10b981;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-chart-pie"></i> Consolidated Multi-Branch Performance</h2>
+                <small class="header-note">تمام برانچز کا مجموعی اور یکجا تجارتی جائزہ</small>
+            </div>
+            <button class="btn btn-sm" id="refreshConsolidatedBtn" style="background:#0284c7; color:#fff;">
+                <i class="fas fa-sync-alt"></i> Refresh All Data
+            </button>
+        </div>
+
+        <div class="exec-grid" id="execMetricsGrid">
+            <div class="exec-card">
+                <div class="exec-icon" style="background:#3b82f6;">🏢</div>
+                <div class="exec-value" id="totBranchesVal">0</div>
+                <div class="exec-label">Connected Branches</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-icon" style="background:#10b981;">💰</div>
+                <div class="exec-value" id="totSalesVal">Rs 0</div>
+                <div class="exec-label">Month Sales (All Branches)</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-icon" style="background:#8b5cf6;">📈</div>
+                <div class="exec-value" id="totProfitVal">Rs 0</div>
+                <div class="exec-label">Est. Gross Margin</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-icon" style="background:#f59e0b;">👥</div>
+                <div class="exec-value" id="totBookersVal">0</div>
+                <div class="exec-label">Total Order Bookers</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-icon" style="background:#ef4444;">📉</div>
+                <div class="exec-value" id="totReceivablesVal">Rs 0</div>
+                <div class="exec-label">Total Khata Receivables</div>
+            </div>
+            <div class="exec-card">
+                <div class="exec-icon" style="background:#06b6d4;">📦</div>
+                <div class="exec-value" id="totInventoryVal">Rs 0</div>
+                <div class="exec-label">Total Inventory Worth</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 🏢 MY AGENCIES / BRANCHES LIST ===== -->
+    <div class="panel-card" style="border-top-color:#f59e0b;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-building"></i> My Agency Branches</h2>
+                <small class="header-note">ہر برانچ کو منتخب کر کے اس کی سیلز، بلنگ اور اسٹاک سنبھالیں</small>
+            </div>
+            <button class="btn" id="registerBranchBtn" style="background:#10b981; color:#fff;">
+                <i class="fas fa-plus-circle"></i> + Add / Connect New Branch
+            </button>
+        </div>
+
+        <div id="branchesList">
+            <div class="loading-inline">Loading your agency branches...</div>
+        </div>
+    </div>
+
+    <!-- ===== 📈 COMPARATIVE BRANCH MATRIX (Side-by-Side) ===== -->
+    <div class="panel-card" style="border-top-color:#8b5cf6;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-scale-balanced"></i> Branch Performance Comparison Matrix</h2>
+                <small class="header-note">برانچ بمقابلہ برانچ موازنہ برائے اونر</small>
+            </div>
+            <button class="btn btn-sm btn-print-comp" id="printMatrixBtn" style="background:#475569; color:#fff;">
+                <i class="fas fa-print"></i> Print Comparison
+            </button>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table class="comp-table" id="branchMatrixTable">
+                <thead>
+                    <tr>
+                        <th>Branch Name</th>
+                        <th>City / Area</th>
+                        <th>Today Sales</th>
+                        <th>Month Sales</th>
+                        <th>Bookers</th>
+                        <th>Khata Balance</th>
+                        <th>Inventory Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="matrixTbody">
+                    <tr><td colspan="8" style="text-align:center; color:#94a3b8;">Loading matrix comparison...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- 🏢 MULTI-AGENCY CONTROLLER -->
+<script src="multi-agency.js"></script>
+</body>
+</html>

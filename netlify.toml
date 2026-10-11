@@ -1,0 +1,32 @@
+# ⚡ Netlify Deployment Configuration for Easy Bill Generator & POS System
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# 🛡️ Layer 6: Route API calls to Serverless Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Instant Edge redirect directly to login portal
+[[redirects]]
+  from = "/"
+  to = "/auth.html"
+  status = 301
+  force = true
+
+# Support any requests targeted at /public/* smoothly
+[[redirects]]
+  from = "/public/*"
+  to = "/:splat"
+  status = 301
+
+# Production Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

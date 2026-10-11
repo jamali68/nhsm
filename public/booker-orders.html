@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ur" dir="ltr">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Booker Orders & Admin Approval Hub — Easy Bill ERP</title>
+
+    <!-- FontAwesome & SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- HTML2CANVAS (For JPG / Image receipts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Base Panels & Delivery CSS -->
+    <link rel="stylesheet" href="panels.css">
+    <link rel="stylesheet" href="delivery-returns.css">
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <style>
+        .swal2-container { z-index: 9999999 !important; }
+        
+        /* Specific Styles for Booker Orders Portal */
+        .booker-ribbon {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .booker-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--border-color, #e2e8f0);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .booker-card:hover {
+            border-color: #0284c7;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(2,132,199,0.1);
+        }
+        .booker-card.active {
+            border: 2px solid #0284c7;
+            background: #f0f9ff;
+        }
+        .dark-theme .booker-card {
+            background: #1e293b;
+            border-color: #334155;
+        }
+        .dark-theme .booker-card.active {
+            background: #0c4a6e;
+            border-color: #38bdf8;
+        }
+
+        .pulse-amber {
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(217, 119, 6, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+        }
+
+        .filter-date-btn {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .filter-date-btn.active {
+            background: #0284c7;
+            color: #fff;
+            border-color: #0284c7;
+        }
+        .dark-theme .filter-date-btn {
+            background: #334155;
+            color: #cbd5e1;
+            border-color: #475569;
+        }
+        .dark-theme .filter-date-btn.active {
+            background: #0284c7;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="vyapar-container" style="margin-top: 8px;">
+
+    <!-- ===== 🚀 BOOKER QUICK ACTIONS BAR ===== -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; background:#fff; padding:10px 14px; border-radius:12px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:16px;">📋</span>
+            <span style="font-size:13px; font-weight:800; color:#0f172a;" id="agencyNameHeader">Booker Orders &amp; Dispatch Hub</span>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <a href="bills.html" class="btn" style="background:#0284c7; color:#fff; text-decoration:none; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-plus-circle"></i> <span>Book Order (کیٹلاگ)</span>
+            </a>
+            <button type="button" class="btn" id="btnOpenPrintHub" style="background:#059669; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <i class="fas fa-print"></i> <span>Print Hub (پرنٹ سینٹر)</span>
+            </button>
+            <button type="button" class="btn" id="btnOpenAdvanceSettings" style="background:#475569; color:#fff; border:none; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <i class="fas fa-sliders-h"></i> <span>Advance Settings</span>
+            </button>
+            <a href="delivery-returns.html" class="btn" style="background:#8b5cf6; color:#fff; text-decoration:none; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-truck-loading"></i> <span>Van Dispatch &amp; Returns</span>
+            </a>
+            <a href="dashboard.html" class="btn" style="background:#64748b; color:#fff; text-decoration:none; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-home"></i> <span>Dashboard</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- ===== ⚡ 2-SHIFT CLOUD SYNC & OFFLINE QUEUE BANNER ===== -->
+    <div id="bookerShiftSyncBanner" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color:#fff; padding:10px 16px; border-radius:12px; box-shadow:0 2px 8px rgba(15,23,42,0.25); border:1px solid #334155;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">🇵🇰</span>
+            <div>
+                <div style="font-size:12px; font-weight:800; color:#38bdf8;" id="bookerShiftName">
+                    Shift 1: Morning (12:00 AM - 12:00 PM PKT)
+                </div>
+                <div style="font-size:11px; color:#cbd5e1;">
+                    Shift Status: <span id="bookerShiftStatusText" style="color:#34d399; font-weight:bold;">⚡ 1 Refresh Available</span>
+                    &nbsp;|&nbsp;
+                    <span id="bookerNetStatus" style="font-weight:600; color:#94a3b8;">Network: Online</span>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn btn-sm" id="btnBookerQuickSync" style="background:#0284c7; color:#fff; font-weight:700; border:none; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fas fa-rotate"></i> <span>Refresh Catalog</span>
+            </button>
+            <button type="button" class="btn btn-sm" id="btnBookerUploadOrders" style="background:#10b981; color:#fff; font-weight:700; border:none; padding:6px 14px; border-radius:8px; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fas fa-cloud-arrow-up"></i> <span>Upload Orders (<span id="bookerPendingCount">0</span>)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 📊 EXECUTIVE KPI DASHBOARD ===== -->
+    <div class="kpi-ribbon" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <!-- 1. Total Field Orders -->
+        <div class="kpi-box">
+            <div class="kpi-icon" style="background:#e0f2fe; color:#0284c7;">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title">Total Field Orders</div>
+                <div class="kpi-val" id="kpiTotalOrders">0</div>
+                <div class="kpi-sub" id="kpiTotalUnitsSub">0 Total Units</div>
+            </div>
+        </div>
+
+        <!-- 2. Today's Field Orders (New User Specification) -->
+        <div class="kpi-box" style="border: 2px solid #38bdf8; background:#f0f9ff;">
+            <div class="kpi-icon" style="background:#bae6fd; color:#0369a1;">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title" style="color:#0369a1; font-weight:800;">Today's Orders (آج)</div>
+                <div class="kpi-val" id="kpiTodayOrders" style="color:#0284c7;">0</div>
+                <div class="kpi-sub" id="kpiTodayValueSub" style="color:#0369a1; font-weight:bold;">Rs 0 Today</div>
+            </div>
+        </div>
+
+        <!-- 3. Pending Approval (Highlighted Pulse) -->
+        <div class="kpi-box pulse-amber" style="border: 2px solid #f59e0b; background:#fffbeb; cursor:pointer;" onclick="filterByPendingApproval()" title="Click to view only Pending Orders">
+            <div class="kpi-icon" style="background:#fef3c7; color:#d97706;">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title" style="color:#b45309; font-weight:800;">Pending Approval</div>
+                <div class="kpi-val" id="kpiPendingApproval" style="color:#b45309;">0</div>
+                <div class="kpi-sub" id="kpiPendingValueSub" style="color:#92400e; font-weight:700;">Needs Admin Action</div>
+            </div>
+        </div>
+
+        <!-- 4. Approved Orders -->
+        <div class="kpi-box" style="cursor:pointer;" onclick="filterByApproved()" title="Click to view Approved Orders">
+            <div class="kpi-icon" style="background:#dcfce7; color:#15803d;">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title">Approved Orders</div>
+                <div class="kpi-val" id="kpiApproved">0</div>
+                <div class="kpi-sub" id="kpiApprovedValueSub">Ready for Loading</div>
+            </div>
+        </div>
+
+        <!-- 5. Pending Print (User Specification) -->
+        <div class="kpi-box" style="cursor:pointer;" onclick="filterByPendingPrint()" title="Click to view Orders Pending Print">
+            <div class="kpi-icon" style="background:#fef9c3; color:#ca8a04;">
+                <i class="fas fa-print"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title">Pending Print (پرنٹ درکار)</div>
+                <div class="kpi-val" id="kpiPendingPrint">0</div>
+                <div class="kpi-sub" id="kpiPendingPrintSub">Bills to Print</div>
+            </div>
+        </div>
+
+        <!-- 6. On Delivery Van -->
+        <div class="kpi-box">
+            <div class="kpi-icon" style="background:#f3e8ff; color:#9333ea;">
+                <i class="fas fa-truck-moving"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title">Out for Delivery</div>
+                <div class="kpi-val" id="kpiDispatched">0</div>
+                <div class="kpi-sub">On Supplier Vans</div>
+            </div>
+        </div>
+
+        <!-- 7. Delivered -->
+        <div class="kpi-box">
+            <div class="kpi-icon" style="background:#d1fae5; color:#059669;">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title">Delivered Today</div>
+                <div class="kpi-val" id="kpiDelivered">0</div>
+                <div class="kpi-sub">Completed Orders</div>
+            </div>
+        </div>
+
+        <!-- 8. Total Order Value (Rs) -->
+        <div class="kpi-box">
+            <div class="kpi-icon" style="background:#ecfdf5; color:#059669;">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-title">Total Orders Value</div>
+                <div class="kpi-val" style="color:#059669; font-size:18px;" id="kpiTotalValue">Rs 0</div>
+                <div class="kpi-sub">Gross field booking</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 👥 ORDER BOOKERS OVERVIEW & PERFORMANCE RIBBON ===== -->
+    <div style="background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:14px 16px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+            <div style="font-size:14px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-users-cog" style="color:#0284c7; font-size:16px;"></i>
+                <span>Order Bookers Performance &amp; Activity Hub (تمام آرڈر بکرز کی کارکردگی و رپورٹس)</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="font-size:12px; color:#64748b; font-weight:700;" id="bookerActiveCountText">
+                    Loading bookers...
+                </span>
+                <button type="button" class="btn btn-sm" onclick="printAllBookersPerformanceSheet()" style="background:#0284c7; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                    <i class="fas fa-print"></i> روزانہ بکرز سمری پرنٹ کریں
+                </button>
+            </div>
+        </div>
+        <div class="booker-ribbon" id="bookersListRibbon">
+            <!-- Dynamic Booker summary cards rendered here -->
+        </div>
+    </div>
+
+    <!-- ===== 🔍 ADVANCE FILTER & DATE BAR ===== -->
+    <div class="vyapar-card" style="margin-bottom:16px; padding:14px 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+            <!-- Search Input -->
+            <div class="search-box" style="flex:1; min-width:240px;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="orderSearchInput" placeholder="Search by Order #, Customer, Shop name, Route, or Booker...">
+            </div>
+
+            <!-- Booker Dropdown Filter -->
+            <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:12px; font-weight:700; color:#475569; white-space:nowrap;">Booker:</label>
+                <select id="filterBookerSelect" style="padding:7px 10px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:700; background:#fff; outline:none;">
+                    <option value="all">👥 All Order Bookers</option>
+                </select>
+            </div>
+
+            <!-- Date Presets -->
+            <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="filter-date-btn active" data-date="all">All Dates</button>
+                <button type="button" class="filter-date-btn" data-date="today">Today</button>
+                <button type="button" class="filter-date-btn" data-date="yesterday">Yesterday</button>
+                <button type="button" class="filter-date-btn" data-date="week">This Week</button>
+                <button type="button" class="filter-date-btn" data-date="month">This Month</button>
+            </div>
+
+            <!-- Custom Date Range -->
+            <div style="display:flex; align-items:center; gap:5px; background:#f8fafc; padding:4px 8px; border-radius:8px; border:1px solid #cbd5e1;">
+                <span style="font-size:11px; font-weight:700; color:#64748b;">Custom:</span>
+                <input type="date" id="filterFromDate" style="border:1px solid #cbd5e1; border-radius:6px; padding:3px 6px; font-size:11px; outline:none; background:#fff;">
+                <span style="font-size:11px; color:#94a3b8;">to</span>
+                <input type="date" id="filterToDate" style="border:1px solid #cbd5e1; border-radius:6px; padding:3px 6px; font-size:11px; outline:none; background:#fff;">
+                <button type="button" class="btn btn-sm" id="btnApplyCustomDate" style="background:#0284c7; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">Filter</button>
+            </div>
+        </div>
+
+        <!-- Status Filter Chips -->
+        <div class="filter-chips">
+            <button class="filter-chip active" data-status="all">
+                All Orders (<span id="chipAllCount">0</span>)
+            </button>
+            <button class="filter-chip" data-status="pending_approval" style="color:#d97706; font-weight:800; border-color:#fde68a;">
+                ⏳ Pending Approval (<span id="chipPendingCount">0</span>)
+            </button>
+            <button class="filter-chip" data-status="approved" style="color:#15803d; font-weight:700;">
+                ✅ Approved (<span id="chipApprovedCount">0</span>)
+            </button>
+            <button class="filter-chip" data-status="dispatched" style="color:#9333ea;">
+                🚚 On Delivery Van (<span id="chipDispatchedCount">0</span>)
+            </button>
+            <button class="filter-chip" data-status="delivered" style="color:#059669;">
+                ✅ Delivered (<span id="chipDeliveredCount">0</span>)
+            </button>
+            <button class="filter-chip" data-status="rejected" style="color:#dc2626;">
+                ❌ Rejected (<span id="chipRejectedCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== ⚡ BULK ACTIONS TOOLBAR ===== -->
+    <div id="bulkOrdersBar" style="display:none; background:#eff6ff; border:1.5px solid #93c5fd; border-radius:12px; padding:12px 16px; margin-bottom:16px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div style="font-size:14px; font-weight:800; color:#1e40af; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-check-circle" style="color:#3b82f6; font-size:18px;"></i>
+            <span id="selectedOrdersCount">0</span> آرڈرز منتخب ہیں
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select id="bulkSupplierSelect" style="padding:8px 12px; border-radius:8px; border:1px solid #93c5fd; font-size:13px; font-weight:700; background:#fff; outline:none;">
+                <option value="">— Select Delivery Supplier —</option>
+            </select>
+            <button type="button" class="btn" id="btnBulkApprove" style="background:#10b981; color:#fff; font-weight:800; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-check-double"></i> Accept &amp; Assign to Supplier
+            </button>
+            <button type="button" class="btn" id="btnBulkPrint" style="background:#0284c7; color:#fff; font-weight:800; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-print"></i> Print Batch Bills
+            </button>
+            <button type="button" class="btn" id="btnBulkChallan" style="background:#7c3aed; color:#fff; font-weight:800; padding:8px 14px; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-truck-loading"></i> Loading Gate Pass
+            </button>
+            <button type="button" class="btn" id="btnBulkRouteSheet" style="background:#0891b2; color:#fff; font-weight:800; padding:8px 14px; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-route"></i> Delivery Route Sheet
+            </button>
+            <button type="button" class="btn" id="btnExportCSV" style="background:#475569; color:#fff; font-weight:700; padding:8px 14px; border-radius:8px; border:none; cursor:pointer;">
+                <i class="fas fa-file-csv"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 📋 ORDERS TABLE ===== -->
+    <div class="vyapar-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid #e2e8f0; background:#f8fafc; flex-wrap:wrap; gap:8px;">
+            <div style="font-size:14px; font-weight:800; color:#0f172a;" id="tableSummaryLabel">
+                📦 Showing All Field Orders
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button type="button" class="btn btn-sm" onclick="printPendingOrdersList()" style="background:#fef3c7; border:1px solid #fde68a; color:#b45309; font-weight:800; padding:5px 12px; border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                    <i class="fas fa-print"></i> Print Pending Orders (<span id="btnPendingPrintCount">0</span>)
+                </button>
+                <button type="button" class="btn btn-sm" id="btnRefreshOrders" style="background:#fff; border:1px solid #cbd5e1; color:#475569; font-weight:700; padding:5px 10px; border-radius:6px; cursor:pointer;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table class="vyapar-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px;"><input type="checkbox" id="selectAllOrders"></th>
+                        <th>Order / Bill #</th>
+                        <th>Date &amp; Time</th>
+                        <th>Customer / Shop</th>
+                        <th>Order Booker</th>
+                        <th>Items &amp; Total</th>
+                        <th>Status</th>
+                        <th>Delivery Supplier</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <tr><td colspan="9" style="text-align:center; padding:35px; color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> فیلڈ آرڈرز لوڈ ہو رہے ہیں...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================
+     MODAL: 🖨️ PRINT HUB & REPORTS CENTER
+     ============================================ -->
+<div class="modal-overlay" id="modalPrintHub" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:999999; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:16px; width:100%; max-width:640px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:flex; flex-direction:column;">
+        <div style="padding:14px 18px; background:#0f172a; color:#fff; display:flex; justify-content:space-between; align-items:center; border-top-left-radius:16px; border-top-right-radius:16px;">
+            <div style="font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-print" style="color:#0284c7;"></i>
+                <span>Print Hub &amp; Operations Center (پرنٹ سینٹر)</span>
+            </div>
+            <button type="button" onclick="closePrintHubModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
+        </div>
+
+        <div style="padding:18px; display:flex; flex-direction:column; gap:12px;">
+            <!-- Option 1: Pending Orders List -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#fffbeb; border:1.5px solid #fde68a; border-radius:12px; padding:12px 16px;">
+                <div>
+                    <div style="font-weight:800; color:#b45309; font-size:14px;"><i class="fas fa-hourglass-half"></i> Print Pending Orders List (منظوری کے منتظر آرڈرز)</div>
+                    <div style="font-size:12px; color:#92400e;">تمام ایسے آرڈرز کی لسٹ جو ابھی ایڈمن کی منظوری کے منتظر ہیں تاکہ فیلڈ یا فون پر تصدیق کی جا سکے۔</div>
+                </div>
+                <button type="button" onclick="closePrintHubModal(); printPendingOrdersList()" class="btn" style="background:#d97706; color:#fff; font-weight:800; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; flex-shrink:0;">
+                    <i class="fas fa-print"></i> پرنٹ کریں
+                </button>
+            </div>
+
+            <!-- Option 2: Van Loading Challan (Gate Pass) -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f5f3ff; border:1.5px solid #ddd6fe; border-radius:12px; padding:12px 16px;">
+                <div>
+                    <div style="font-weight:800; color:#6d28d9; font-size:14px;"><i class="fas fa-truck-loading"></i> Print Van Loading Gate Pass (گاڑی کا لوڈنگ گیٹ پاس)</div>
+                    <div style="font-size:12px; color:#5b21b6;">آرڈرز کے تمام پروڈکٹس کی مجموعی تعداد (Total Quantities per Product) تاکہ گودام والا گاڑی پر مال لوڈ کر سکے۔</div>
+                </div>
+                <button type="button" onclick="closePrintHubModal(); printVanLoadingChallan()" class="btn" style="background:#7c3aed; color:#fff; font-weight:800; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; flex-shrink:0;">
+                    <i class="fas fa-file-invoice"></i> لوڈنگ شیٹ
+                </button>
+            </div>
+
+            <!-- Option 3: Route Delivery Sheet -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#ecfeff; border:1.5px solid #a5f3fc; border-radius:12px; padding:12px 16px;">
+                <div>
+                    <div style="font-weight:800; color:#0e7490; font-size:14px;"><i class="fas fa-route"></i> Print Route Delivery Manifest (روٹ ڈلیوری و وصولی شیٹ)</div>
+                    <div style="font-size:12px; color:#155e75;">ڈرائیور/سپلائر کے لیے دکان وار بل، فون نمبر، کل رقم، کیش وصولی کالم اور دستخطی شیٹ۔</div>
+                </div>
+                <button type="button" onclick="closePrintHubModal(); printDeliveryRouteSheet()" class="btn" style="background:#0891b2; color:#fff; font-weight:800; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; flex-shrink:0;">
+                    <i class="fas fa-list-alt"></i> ڈلیوری شیٹ
+                </button>
+            </div>
+
+            <!-- Option 4: Bookers Daily Performance Sheet -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f0f9ff; border:1.5px solid #bae6fd; border-radius:12px; padding:12px 16px;">
+                <div>
+                    <div style="font-weight:800; color:#0369a1; font-size:14px;"><i class="fas fa-users"></i> Print Bookers Daily Performance (آرڈر بکرز روزانہ سمری)</div>
+                    <div style="font-size:12px; color:#0c4a6e;">ہر بکر کی آج کی بکنگ، کل دکانیں، بک شدہ مالیت اور کارکردگی کی باضابطہ شیٹ۔</div>
+                </div>
+                <button type="button" onclick="closePrintHubModal(); printAllBookersPerformanceSheet()" class="btn" style="background:#0284c7; color:#fff; font-weight:800; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; flex-shrink:0;">
+                    <i class="fas fa-chart-bar"></i> سمری رپورٹ
+                </button>
+            </div>
+
+            <!-- Option 5: Batch Print Invoices -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 16px;">
+                <div>
+                    <div style="font-weight:800; color:#334155; font-size:14px;"><i class="fas fa-receipt"></i> Batch Print Customer Invoices (گاہکوں کے بل پرنٹ کریں)</div>
+                    <div style="font-size:12px; color:#64748b;">منتخب یا منظور شدہ آرڈرز کے تھرمل 80mm یا A4 بل ایک ساتھ پرنٹ کریں۔</div>
+                </div>
+                <button type="button" onclick="closePrintHubModal(); handleBulkPrint()" class="btn" style="background:#10b981; color:#fff; font-weight:800; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; flex-shrink:0;">
+                    <i class="fas fa-print"></i> بیچ پرنٹ
+                </button>
+            </div>
+        </div>
+
+        <div style="padding:12px 18px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end;">
+            <button type="button" onclick="closePrintHubModal()" class="btn" style="background:#94a3b8; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================
+     MODAL: ⚙️ ADVANCE SETTINGS
+     ============================================ -->
+<div class="modal-overlay" id="modalAdvanceSettings" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:999999; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:16px; width:100%; max-width:580px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:flex; flex-direction:column;">
+        <div style="padding:14px 18px; background:#0f172a; color:#fff; display:flex; justify-content:space-between; align-items:center; border-top-left-radius:16px; border-top-right-radius:16px;">
+            <div style="font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-sliders-h" style="color:#0284c7;"></i>
+                <span>Booker Orders &amp; Dispatch Advance Settings</span>
+            </div>
+            <button type="button" onclick="closeAdvanceSettingsModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
+        </div>
+
+        <div style="padding:18px; display:flex; flex-direction:column; gap:16px;">
+            <!-- Setting 1: Order Auto Approval -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px 14px; border-radius:10px; border:1px solid #e2e8f0;">
+                <div>
+                    <div style="font-weight:800; font-size:13.5px; color:#0f172a;">⚡ Auto-Approval of Field Orders</div>
+                    <div style="font-size:11.5px; color:#64748b;">آرڈر بک ہوتے ہی خودکار Approve ہو جائے یا ایڈمن کی تصدیق کے بعد؟</div>
+                </div>
+                <select id="settingAutoApprove" style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; font-weight:bold;">
+                    <option value="manual">Manual Admin Approval (تجویز کردہ)</option>
+                    <option value="auto">Instant Auto-Approve (خودکار منظوری)</option>
+                </select>
+            </div>
+
+            <!-- Setting 2: New Order Audio Sound Chime -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px 14px; border-radius:10px; border:1px solid #e2e8f0;">
+                <div>
+                    <div style="font-weight:800; font-size:13.5px; color:#0f172a;">🔔 Audio Notification on New Order</div>
+                    <div style="font-size:11.5px; color:#64748b;">جب بکر نیا آرڈر بک کرے تو کمپیوٹر پر گھنٹی بجے؟</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <select id="settingOrderSound" style="padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; font-weight:bold;">
+                        <option value="on">🔊 Sound ON</option>
+                        <option value="off">🔇 Sound OFF</option>
+                    </select>
+                    <button type="button" onclick="playTestChime()" class="btn btn-sm" style="background:#e0f2fe; color:#0284c7; border:none; padding:5px 9px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer;" title="Test Chime">
+                        ▶ Test
+                    </button>
+                </div>
+            </div>
+
+            <!-- Setting 3: Default Print Format -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px 14px; border-radius:10px; border:1px solid #e2e8f0;">
+                <div>
+                    <div style="font-weight:800; font-size:13.5px; color:#0f172a;">🖨️ Default Printing Paper Size</div>
+                    <div style="font-size:11.5px; color:#64748b;">گاہک کے بل کا سائز تھرمل رول (80mm) ہو یا فل A4 پیپر؟</div>
+                </div>
+                <select id="settingPrintPaper" style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; font-weight:bold;">
+                    <option value="thermal80">Thermal POS Roll (80mm)</option>
+                    <option value="a4">Standard A4 Full Sheet</option>
+                    <option value="a5">A5 Half Sheet</option>
+                </select>
+            </div>
+
+            <!-- Setting 4: Bill Prefix -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px 14px; border-radius:10px; border:1px solid #e2e8f0;">
+                <div>
+                    <div style="font-weight:800; font-size:13.5px; color:#0f172a;">🏷️ Invoice / Bill Prefix</div>
+                    <div style="font-size:11.5px; color:#64748b;">بل نمبر کے شروع میں کوڈ (مثلاً INV-, ORD-)</div>
+                </div>
+                <input type="text" id="settingBillPrefix" placeholder="مثلاً: ORD-" style="padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; font-weight:bold; width:100px; text-align:center;">
+            </div>
+
+            <!-- Setting 5: Stock Deduction Rule Notice -->
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:10px 14px; font-size:12px; color:#1e40af;">
+                <i class="fas fa-shield-alt"></i> <b>اسٹاک کا اصول:</b> گودام کا اسٹاک آرڈر بک ہونے پر نہیں کٹتا بلکہ <b>ایڈمن کی منظوری (Approval)</b> پر کٹتا ہے تاکہ اگر کوئی آرڈر منسوخ یا ریجیکٹ ہو تو گودام کا حساب کبھی غلط نہ ہو۔
+            </div>
+        </div>
+
+        <div style="padding:12px 18px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <button type="button" onclick="closeAdvanceSettingsModal()" class="btn" style="background:#94a3b8; color:#fff; border:none; padding:7px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">Close</button>
+            <button type="button" onclick="saveAdvanceSettings()" class="btn" style="background:#10b981; color:#fff; border:none; padding:8px 20px; border-radius:8px; font-weight:bold; cursor:pointer;">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================
+     MODAL: 👁️ ORDER DETAILS & ITEMS PREVIEW
+     ============================================ -->
+<div class="modal-overlay" id="modalOrderDetails" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:999999; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:16px; width:100%; max-width:680px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:flex; flex-direction:column;">
+        <div style="padding:14px 18px; background:#0f172a; color:#fff; display:flex; justify-content:space-between; align-items:center; border-top-left-radius:16px; border-top-right-radius:16px;">
+            <div style="font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-file-invoice" style="color:#0284c7;"></i>
+                <span id="modalOrderTitle">Order Details</span>
+            </div>
+            <button type="button" onclick="closeOrderDetailsModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">✕</button>
+        </div>
+
+        <div style="padding:18px; flex:1;" id="orderDetailsBody">
+            <!-- Dynamic Content -->
+        </div>
+
+        <div style="padding:12px 18px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom-left-radius:16px; border-bottom-right-radius:16px;">
+            <button type="button" onclick="closeOrderDetailsModal()" class="btn" style="background:#94a3b8; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">Close</button>
+            <div id="modalOrderActions" style="display:flex; gap:8px;">
+                <!-- Accept, Print, Reject buttons injected dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- Sidebar, Print Engine & Templates -->
+<script src="sidebar.js"></script>
+<!-- ⚡ CLOUD SYNC & FIREBASE QUOTA SAVER -->
+<script src="sync-engine.js"></script>
+<script src="print-settings.js"></script>
+<script src="bill-templates.js"></script>
+
+<!-- Booker Orders Hub Engine -->
+<script src="booker-orders.js"></script>
+</body>
+</html>

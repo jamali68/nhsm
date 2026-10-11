@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Advanced Profit & Loss Analytics</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels & Global CSS -->
+    <link rel="stylesheet" href="panels.css">
+    <!-- Reports CSS -->
+    <link rel="stylesheet" href="reports.css">
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 💎 SaaS Modules Registry & Paywall Guard -->
+    <script src="saas-modules.js"></script>
+
+    <style>
+        .profit-badge-high {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .profit-badge-med {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .profit-badge-loss {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .profit-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profit-modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+        }
+        .profit-modal-box {
+            position: relative;
+            background: #fff;
+            width: 92%;
+            max-width: 780px;
+            max-height: 88vh;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            z-index: 10;
+            padding: 22px;
+        }
+        .margin-bar-container {
+            width: 70px;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .margin-bar-fill {
+            height: 100%;
+            background: #10b981;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 🔝 EXECUTIVE HEADER ===== -->
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+        <div>
+            <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; display: flex; align-items: center; gap: 10px; margin: 0;">
+                <i class="fas fa-sack-dollar" style="color: #10b981; font-size: 24px;"></i> 
+                Advanced Profit &amp; Loss Analytics (منافع کی تفصیلی رپورٹ)
+            </h1>
+            <p style="font-size: 12px; color: #64748b; margin: 3px 0 0 0;">
+                ریئل ٹائم آئٹم وار، بل وار، روزانہ، ہفتہ وار، ماہانہ اور گاہک وار خالص منافع و مارجن رپورٹ
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <a href="expenses.html" class="btn btn-sm" style="background:#ef4444; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:bold;" title="Manage Business Expenses">
+                <i class="fas fa-wallet"></i> Expenses (اخراجات)
+            </a>
+            <button class="btn btn-sm" id="btnRefreshProfit" style="background:#0284c7; color:#fff;" title="Reload Data">
+                <i class="fas fa-rotate"></i> Refresh
+            </button>
+            <button class="btn btn-sm" id="btnExportProfitCSV" style="background:#10b981; color:#fff;" title="Download Excel CSV">
+                <i class="fas fa-file-excel"></i> Export CSV
+            </button>
+            <button class="btn btn-sm" id="btnPrintProfit" style="background:#475569; color:#fff;" title="Print Report">
+                <i class="fas fa-print"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 💰 SUMMARY KPI METRICS GRID ===== -->
+    <div class="kpi-grid" id="profitKpiGrid">
+        <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
+            <div class="kpi-icon" style="color:#3b82f6;"><i class="fas fa-cash-register"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title">Total Sales (کل فروخت)</span>
+                <span class="kpi-val" id="kpiRevenue">Rs 0</span>
+                <small class="kpi-sub" id="kpiBillCount">0 Bills Issued</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+            <div class="kpi-icon" style="color:#f59e0b;"><i class="fas fa-boxes-packing"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title">Cost of Goods (خرید لاگت)</span>
+                <span class="kpi-val" id="kpiCost">Rs 0</span>
+                <small class="kpi-sub" id="kpiCostRatio">0% of Sales</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #10b981; background: #f0fdf4;">
+            <div class="kpi-icon" style="color:#10b981;"><i class="fas fa-hand-holding-dollar"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title" style="color:#15803d; font-weight:bold;">Net Gross Profit (خالص منافع)</span>
+                <span class="kpi-val" id="kpiNetProfit" style="color:#15803d;">Rs 0</span>
+                <small class="kpi-sub" id="kpiMarginStatus" style="color:#166534; font-weight:bold;">0% Gross Margin</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+            <div class="kpi-icon" style="color:#8b5cf6;"><i class="fas fa-percent"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title">Overall Margin % (منافع کا تناسب)</span>
+                <span class="kpi-val" id="kpiMarginPct">0.0%</span>
+                <small class="kpi-sub">On Net Sales Volume</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #ef4444; background:#fff5f5;">
+            <div class="kpi-icon" style="color:#ef4444;"><i class="fas fa-wallet"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title" style="color:#b91c1c;">Operating Expenses (اخراجات)</span>
+                <span class="kpi-val" id="kpiOperatingExpenses" style="color:#b91c1c;">Rs 0</span>
+                <small class="kpi-sub" id="kpiExpenseSub">0 Expense Vouchers</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #059669; background:#ecfdf5;">
+            <div class="kpi-icon" style="color:#059669;"><i class="fas fa-sack-dollar"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title" style="color:#047857; font-weight:bold;">Final Net Profit (حتمی منافع)</span>
+                <span class="kpi-val" id="kpiFinalNetProfit" style="color:#047857;">Rs 0</span>
+                <small class="kpi-sub" id="kpiFinalNetSub">Gross Profit - Expenses</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 📅 DATE FILTER & PRESETS BAR ===== -->
+    <div class="date-filter-bar">
+        <div class="date-presets" id="profitDatePresets">
+            <button class="date-preset-btn" data-preset="today">Today (آج)</button>
+            <button class="date-preset-btn" data-preset="yesterday">Yesterday (گزشتہ کل)</button>
+            <button class="date-preset-btn" data-preset="thisweek">This Week (اس ہفتے)</button>
+            <button class="date-preset-btn" data-preset="last7">Last 7 Days (7 دن)</button>
+            <button class="date-preset-btn active" data-preset="thismonth">This Month (موجودہ مہینہ)</button>
+            <button class="date-preset-btn" data-preset="lastmonth">Last Month (پچھلا مہینہ)</button>
+            <button class="date-preset-btn" data-preset="alltime">All Time (تمام)</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div class="custom-date-inputs">
+                <input type="date" id="profitDateStart" title="Start Date">
+                <span style="font-size:12px; color:#64748b; font-weight:bold;">to</span>
+                <input type="date" id="profitDateEnd" title="End Date">
+                <button class="btn btn-sm" id="btnApplyProfitDate" style="background:#0284c7; color:#fff;">
+                    Apply
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 📑 6 PROFIT VIEW TABS ===== -->
+    <div class="report-tabs-nav" id="profitViewTabs">
+        <button class="report-tab-btn active" data-view="items">
+            <i class="fas fa-box-open"></i> 1. Items-wise Profit (آئٹم وار منافع)
+        </button>
+        <button class="report-tab-btn" data-view="bills">
+            <i class="fas fa-file-invoice"></i> 2. Bill-wise Profit (بل وار منافع)
+        </button>
+        <button class="report-tab-btn" data-view="day">
+            <i class="fas fa-calendar-day"></i> 3. Day-wise Profit (روزانہ منافع)
+        </button>
+        <button class="report-tab-btn" data-view="weekly">
+            <i class="fas fa-calendar-week"></i> 4. Weekly-wise Profit (ہفتہ وار منافع)
+        </button>
+        <button class="report-tab-btn" data-view="monthly">
+            <i class="fas fa-calendar-alt"></i> 5. Monthly-wise Profit (ماہانہ منافع)
+        </button>
+        <button class="report-tab-btn" data-view="customer">
+            <i class="fas fa-users"></i> 6. Customer-wise Profit (گاہک وار منافع)
+        </button>
+    </div>
+
+    <!-- ===== 📊 DYNAMIC REPORT TABLE CONTAINER ===== -->
+    <div class="panel-card" id="profitContentCard">
+        <!-- Table Controls: Search & Sort Bar -->
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2 id="profitViewTitle" style="font-size:16px; font-weight:bold; color:#0f172a; margin:0;">
+                    <i class="fas fa-box-open" style="color:#10b981;"></i> Items-wise Profit Breakdown
+                </h2>
+                <small class="header-note" id="profitViewSubTitle">ہر پراڈکٹ کی فروخت، خریداری لاگت، خالص منافع اور منافع کا تناسب</small>
+            </div>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select id="profitSortSelect" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px; font-weight:600; outline:none; background:#fff;">
+                    <option value="profit_desc">Sort: Highest Profit First (زیادہ منافع)</option>
+                    <option value="profit_asc">Sort: Lowest Profit First (کم منافع)</option>
+                    <option value="sales_desc">Sort: Highest Sales (زیادہ فروخت)</option>
+                    <option value="margin_desc">Sort: Highest Margin % (بہترین مارجن)</option>
+                </select>
+
+                <div style="position:relative; width:100%; max-width:240px;">
+                    <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:12px;"></i>
+                    <input type="text" id="profitSearchInput" placeholder="Search in results..." style="width:100%; padding:6px 10px 6px 30px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px; outline:none;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table Container -->
+        <div class="table-responsive" id="profitTableContainer">
+            <div class="loading-inline">Loading profit calculations...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== 🧾 BILL DETAILS BREAKDOWN MODAL ===== -->
+<div id="billProfitModal" class="profit-modal" style="display:none;">
+    <div class="profit-modal-overlay" onclick="closeBillProfitModal()"></div>
+    <div class="profit-modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:14px;">
+            <h3 style="margin:0; font-size:17px; font-weight:bold; color:#0f172a; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-receipt" style="color:#0284c7;"></i> Bill Profit Breakdown: <span id="modalBillNo">INV-000</span>
+            </h3>
+            <button onclick="closeBillProfitModal()" style="background:none; border:none; font-size:22px; cursor:pointer; color:#64748b;">&times;</button>
+        </div>
+
+        <div id="modalBillMeta" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:14px; font-size:12.5px; display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px;">
+            <!-- Meta injected via JS -->
+        </div>
+
+        <div class="table-responsive">
+            <table class="report-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Item Name</th>
+                        <th style="text-align:center;">Qty</th>
+                        <th style="text-align:right;">Cost Price</th>
+                        <th style="text-align:right;">Sell Price</th>
+                        <th style="text-align:right;">Total Cost</th>
+                        <th style="text-align:right;">Total Sale</th>
+                        <th style="text-align:right;">Item Profit</th>
+                        <th style="text-align:center;">Margin %</th>
+                    </tr>
+                </thead>
+                <tbody id="modalBillItemsTbody">
+                </tbody>
+            </table>
+        </div>
+
+        <div style="text-align:right; margin-top:16px;">
+            <button class="btn btn-sm" onclick="closeBillProfitModal()" style="background:#64748b; color:#fff;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- 💰 PROFIT ENGINE SCRIPT -->
+<script src="profit.js"></script>
+</body>
+</html>

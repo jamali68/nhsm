@@ -1,0 +1,492 @@
+/* ==========================================================================
+   🌙 EASY BILL GENERATOR — GLOBAL THEME & NIGHT MODE ENGINE
+   ✅ Dark / Night Mode: Deep Gray (#0f172a / #111827 / #1e293b) + Pure White (#ffffff) text
+   ✅ Future Theme Architecture: Ready for Green, Red, Blue, Purple, Yellow, Orange
+   ✅ Universal Dual-Language (English / English+Urdu) Compatibility
+   ========================================================================== */
+
+/* 🎨 THEME CSS VARIABLES ARCHITECTURE (Ready for Light, Dark, and Future Themes) */
+:root {
+    --theme-primary: #10b981;
+    --theme-primary-hover: #059669;
+    --theme-accent: #38bdf8;
+    --theme-bg: #f8fafc;
+    --theme-surface: #ffffff;
+    --theme-surface-card: #ffffff;
+    --theme-border: #e2e8f0;
+    --theme-text: #0f172a;
+    --theme-text-secondary: #64748b;
+    --theme-text-muted: #94a3b8;
+}
+
+/* 🌙 NIGHT / DARK MODE TOKENS (Deep Gray & Pure White Text) */
+:root[data-theme="dark"],
+:root[data-theme="night"],
+body.dark-theme,
+html.dark-theme {
+    --theme-primary: #38bdf8;
+    --theme-primary-hover: #0284c7;
+    --theme-accent: #10b981;
+    --theme-bg: #0b1120;
+    --theme-surface: #1e293b;
+    --theme-surface-card: #1e293b;
+    --theme-border: #334155;
+    --theme-text: #ffffff;
+    --theme-text-secondary: #cbd5e1;
+    --theme-text-muted: #94a3b8;
+}
+
+/* 🟢 FUTURE THEME: GREEN (Emerald / Forest) */
+:root[data-theme="theme-green"],
+body.theme-green {
+    --theme-primary: #10b981;
+    --theme-primary-hover: #059669;
+    --theme-accent: #34d399;
+    --theme-border: #065f46;
+}
+
+/* 🔴 FUTURE THEME: RED (Crimson / Ruby) */
+:root[data-theme="theme-red"],
+body.theme-red {
+    --theme-primary: #ef4444;
+    --theme-primary-hover: #dc2626;
+    --theme-accent: #f87171;
+    --theme-border: #991b1b;
+}
+
+/* 🔵 FUTURE THEME: BLUE (Royal / Ocean) */
+:root[data-theme="theme-blue"],
+body.theme-blue {
+    --theme-primary: #3b82f6;
+    --theme-primary-hover: #2563eb;
+    --theme-accent: #60a5fa;
+    --theme-border: #1e40af;
+}
+
+/* 🟣 FUTURE THEME: PURPLE (Amethyst / Violet) */
+:root[data-theme="theme-purple"],
+body.theme-purple {
+    --theme-primary: #8b5cf6;
+    --theme-primary-hover: #7c3aed;
+    --theme-accent: #a78bfa;
+    --theme-border: #5b21b6;
+}
+
+/* 🟡 FUTURE THEME: YELLOW (Amber / Gold) */
+:root[data-theme="theme-yellow"],
+body.theme-yellow {
+    --theme-primary: #f59e0b;
+    --theme-primary-hover: #d97706;
+    --theme-accent: #fbbf24;
+    --theme-border: #92400e;
+}
+
+/* 🟠 FUTURE THEME: ORANGE (Sunset / Tangerine) */
+:root[data-theme="theme-orange"],
+body.theme-orange {
+    --theme-primary: #f97316;
+    --theme-primary-hover: #ea580c;
+    --theme-accent: #fb923c;
+    --theme-border: #9a3412;
+}
+
+/* ==========================================================================
+   🌙 COMPREHENSIVE DARK / NIGHT MODE OVERRIDES
+   Ensures ALL pages background is deep gray and ALL text is crystal clear pure white
+   ========================================================================== */
+
+/* 1. Global Page Background & Root Typography */
+html.dark-theme,
+html.dark-theme body,
+body.dark-theme,
+[data-theme="dark"] body,
+[data-theme="night"] body {
+    background-color: #0b1120 !important;
+    color: #ffffff !important;
+}
+
+/* 2. Top bars & Legacy elements cleanup */
+body.dark-theme .panel-topbar,
+body.dark-theme .top-bar {
+    display: none !important;
+}
+
+/* 3. Universal Main Containers across all ERP Pages */
+body.dark-theme .dashboard-container,
+body.dark-theme .container,
+body.dark-theme .main-container,
+body.dark-theme .content-wrapper,
+body.dark-theme .panel-container,
+body.dark-theme .bill-container,
+body.dark-theme .pos-container,
+body.dark-theme .auth-container,
+body.dark-theme .settings-container,
+body.dark-theme .catalog-container {
+    background: #111827 !important;
+    border-color: #334155 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 4. Universal Cards, KPI Boxes & Surfaces */
+body.dark-theme .card,
+body.dark-theme .panel-card,
+body.dark-theme .erp-kpi-card,
+body.dark-theme .kpi-card,
+body.dark-theme .stat-card,
+body.dark-theme .analytics-box,
+body.dark-theme .module-card,
+body.dark-theme .stock-card,
+body.dark-theme .customer-card,
+body.dark-theme .expense-card,
+body.dark-theme .trip-card,
+body.dark-theme .order-card,
+body.dark-theme .report-card,
+body.dark-theme .setting-card,
+body.dark-theme .admin-card,
+body.dark-theme .agency-card,
+body.dark-theme .saas-metric-card,
+body.dark-theme .profile-card,
+body.dark-theme .bill-preview-box,
+body.dark-theme .pos-sidebar,
+body.dark-theme .cat-card,
+body.dark-theme .modal-content,
+body.dark-theme .modal-card,
+body.dark-theme .auth-card,
+body.dark-theme .swal2-popup,
+body.dark-theme .summary-stat-box,
+body.dark-theme .item-row,
+body.dark-theme .stock-item,
+body.dark-theme .customer-item {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 5. Typography: Headings, Labels, Values & Paragraphs */
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme h5,
+body.dark-theme h6,
+body.dark-theme .erp-title-group h1,
+body.dark-theme .box-title,
+body.dark-theme .kpi-main-val,
+body.dark-theme .stat-value,
+body.dark-theme .user-name,
+body.dark-theme #userName,
+body.dark-theme .app-title,
+body.dark-theme .module-card h3,
+body.dark-theme .item-title,
+body.dark-theme .stock-name,
+body.dark-theme .customer-name,
+body.dark-theme .saas-metric-val,
+body.dark-theme strong,
+body.dark-theme b,
+body.dark-theme .legend-row b {
+    color: #ffffff !important;
+}
+
+body.dark-theme p,
+body.dark-theme .sub-text,
+body.dark-theme .erp-title-group .sub-text,
+body.dark-theme .module-card p,
+body.dark-theme .kpi-title,
+body.dark-theme .kpi-sub-row,
+body.dark-theme .text-muted,
+body.dark-theme .user-email,
+body.dark-theme #userEmail,
+body.dark-theme .biz-item .label,
+body.dark-theme .billno-box .label,
+body.dark-theme .stat-label,
+body.dark-theme .app-subtitle,
+body.dark-theme label,
+body.dark-theme .form-group label,
+body.dark-theme .overdue-label,
+body.dark-theme .legend-row span {
+    color: #cbd5e1 !important;
+}
+
+/* 6. Form Controls: Inputs, Selects, Search Boxes & Textareas */
+body.dark-theme input[type="text"],
+body.dark-theme input[type="number"],
+body.dark-theme input[type="tel"],
+body.dark-theme input[type="email"],
+body.dark-theme input[type="password"],
+body.dark-theme input[type="date"],
+body.dark-theme input[type="search"],
+body.dark-theme select,
+body.dark-theme textarea,
+body.dark-theme .search-box input,
+body.dark-theme .form-control,
+body.dark-theme .swal2-input,
+body.dark-theme .swal2-select,
+body.dark-theme .swal2-textarea {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid #334155 !important;
+}
+
+body.dark-theme input::placeholder,
+body.dark-theme textarea::placeholder {
+    color: #64748b !important;
+}
+
+body.dark-theme input:focus,
+body.dark-theme select:focus,
+body.dark-theme textarea:focus,
+body.dark-theme .search-box input:focus {
+    border-color: #38bdf8 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* 7. Tables & Data Grids */
+body.dark-theme table,
+body.dark-theme .mini-table,
+body.dark-theme .recent-bills-table,
+body.dark-theme .ledger-table,
+body.dark-theme .table-responsive {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    border-color: #334155 !important;
+}
+
+body.dark-theme table th,
+body.dark-theme .mini-table th,
+body.dark-theme .defaulter-table-head th {
+    background: #0f172a !important;
+    color: #cbd5e1 !important;
+    border-bottom: 1px solid #334155 !important;
+    border-color: #334155 !important;
+}
+
+body.dark-theme table td,
+body.dark-theme .mini-table td,
+body.dark-theme #defaultersTbody td {
+    color: #ffffff !important;
+    border-bottom: 1px solid #334155 !important;
+    border-color: #334155 !important;
+}
+
+body.dark-theme table tr:hover,
+body.dark-theme .mini-table tr:hover {
+    background: rgba(51, 65, 85, 0.5) !important;
+}
+
+/* 8. Defaulter Recovery & Alert Panels */
+body.dark-theme .defaulter-recovery-panel {
+    background: #1e293b !important;
+    border: 2px solid #7f1d1d !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.15) !important;
+}
+body.dark-theme .recovery-header {
+    border-bottom-color: #374151 !important;
+}
+body.dark-theme .recovery-title h2 {
+    color: #f87171 !important;
+}
+body.dark-theme .recovery-subtext,
+body.dark-theme #defaulterSubtext {
+    color: #fca5a5 !important;
+    opacity: 0.95;
+}
+body.dark-theme .overdue-pill {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #fca5a5 !important;
+    border-color: #ef4444 !important;
+}
+body.dark-theme .overdue-pill.active {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
+}
+body.dark-theme .badge-overdue-days {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* 9. Quick Launchers Section */
+body.dark-theme .launchers-section {
+    border-top: 1px solid #334155 !important;
+}
+body.dark-theme .launchers-heading {
+    color: #f8fafc !important;
+}
+body.dark-theme .module-card:hover {
+    background: #334155 !important;
+    border-color: #38bdf8 !important;
+}
+
+/* 10. Booker Alert Banners & Phase Notes */
+body.dark-theme .booker-overdue-alert-banner,
+body.dark-theme .phase-note {
+    background: #1e293b !important;
+    border-color: #475569 !important;
+    color: #fde68a !important;
+}
+
+/* 11. Filter Tabs, Chips & Mode Switchers */
+body.dark-theme .chart-toggle-tabs,
+body.dark-theme .mode-tabs,
+body.dark-theme .auth-tabs,
+body.dark-theme #bookingModeToggleBar,
+body.dark-theme .search-bar,
+body.dark-theme .search-filter-bar {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+body.dark-theme .chart-tab-btn,
+body.dark-theme .mode-tab,
+body.dark-theme .auth-tab,
+body.dark-theme .filter-chip {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    border-color: #334155 !important;
+}
+
+body.dark-theme .chart-tab-btn.active,
+body.dark-theme .mode-tab.active,
+body.dark-theme .auth-tab.active,
+body.dark-theme .filter-chip.active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #38bdf8 !important;
+}
+
+/* 12. KPI Icons & Special Values */
+body.dark-theme .biz-item .value,
+body.dark-theme .billno-box .value,
+body.dark-theme .kpi-sub-val,
+body.dark-theme .stock-price {
+    color: #34d399 !important;
+}
+body.dark-theme #kpiBookerParticipation,
+body.dark-theme #kpiFieldOrdersAmount,
+body.dark-theme .kpi-field-amount {
+    color: #38bdf8 !important;
+}
+
+/* 13. High-Contrast Overrides for any inline styles */
+body.dark-theme [style*="color:#0f172a"],
+body.dark-theme [style*="color: #0f172a"],
+body.dark-theme [style*="color:#1e293b"],
+body.dark-theme [style*="color: #1e293b"],
+body.dark-theme [style*="color:#334155"],
+body.dark-theme [style*="color: #334155"] {
+    color: #ffffff !important;
+}
+
+body.dark-theme [style*="color:#64748b"],
+body.dark-theme [style*="color: #64748b"],
+body.dark-theme [style*="color:#475569"],
+body.dark-theme [style*="color: #475569"] {
+    color: #cbd5e1 !important;
+}
+
+body.dark-theme [style*="color:#7f1d1d"],
+body.dark-theme [style*="color: #7f1d1d"] {
+    color: #fca5a5 !important;
+}
+
+body.dark-theme [style*="color:#b91c1c"],
+body.dark-theme [style*="color: #b91c1c"] {
+    color: #f87171 !important;
+}
+
+body.dark-theme [style*="color:#166534"],
+body.dark-theme [style*="color: #166534"],
+body.dark-theme [style*="color:#15803d"],
+body.dark-theme [style*="color: #15803d"] {
+    color: #4ade80 !important;
+}
+
+body.dark-theme [style*="color:#78350f"],
+body.dark-theme [style*="color: #78350f"],
+body.dark-theme [style*="color:#b45309"],
+body.dark-theme [style*="color: #b45309"] {
+    color: #fde68a !important;
+}
+
+body.dark-theme [style*="color:#4338ca"],
+body.dark-theme [style*="color: #4338ca"] {
+    color: #a5b4fc !important;
+}
+
+body.dark-theme [style*="color:#a21caf"],
+body.dark-theme [style*="color: #a21caf"] {
+    color: #f0abfc !important;
+}
+
+body.dark-theme [style*="color:#0d9488"],
+body.dark-theme [style*="color: #0d9488"] {
+    color: #5eead4 !important;
+}
+
+body.dark-theme [style*="color:#0284c7"],
+body.dark-theme [style*="color: #0284c7"] {
+    color: #38bdf8 !important;
+}
+
+/* 14. ERP Header Row Divider */
+body.dark-theme .erp-header-row {
+    border-bottom-color: #334155 !important;
+}
+
+/* 15. Buttons in Dark Mode */
+body.dark-theme .btn-secondary,
+body.dark-theme .btn-light {
+    background: #334155 !important;
+    color: #ffffff !important;
+    border-color: #475569 !important;
+}
+body.dark-theme .btn-secondary:hover,
+body.dark-theme .btn-light:hover {
+    background: #475569 !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   🌐 UNIVERSAL LANGUAGE SWITCHER RULES (ENGLISH DEFAULT / ENGLISH + URDU)
+   ========================================================================== */
+html[data-lang="en"] .ur-sub,
+html:not([data-lang="en-ur"]) .ur-sub,
+html[data-lang="en"] .ur-block,
+html:not([data-lang="en-ur"]) .ur-block,
+html[data-lang="en"] .ur-only,
+html:not([data-lang="en-ur"]) .ur-only {
+    display: none !important;
+}
+
+html[data-lang="en-ur"] .ur-sub {
+    display: inline !important;
+    font-size: 0.9em;
+    opacity: 0.88;
+    margin-left: 4px;
+}
+
+/* Sidebar item Urdu subline: Always clean separate line underneath English */
+html[data-lang="en-ur"] .eb-item-ur.ur-sub,
+html[data-lang="en-ur"] .eb-sidebar .eb-item-ur {
+    display: block !important;
+    margin-left: 0 !important;
+    font-size: 11px !important;
+    color: #94a3b8 !important;
+}
+
+html[data-lang="en-ur"] .ur-block {
+    display: block !important;
+    font-size: 0.9em;
+    opacity: 0.88;
+    margin-top: 3px;
+}
+
+html[data-lang="en-ur"] .ur-only {
+    display: inline-block !important;
+}

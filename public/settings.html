@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Business & POS Settings (Phase 10)</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <style>
+        .swal2-container { z-index: 999999 !important; }
+
+        .settings-nav {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 4px;
+        }
+        .settings-tab-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .settings-tab-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .settings-tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .settings-section {
+            display: none;
+        }
+        .settings-section.active {
+            display: block;
+        }
+
+        .form-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .form-toggle-row:last-child { border-bottom: none; }
+
+        .switch-toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .switch-toggle input { opacity: 0; width: 0; height: 0; }
+        .switch-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .switch-slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .switch-slider { background-color: #10b981; }
+        input:checked + .switch-slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 📑 SETTINGS TABS ===== -->
+    <div class="settings-nav">
+        <button class="settings-tab-btn active" data-target="secProfile">
+            <i class="fas fa-building"></i> Agency Profile &amp; Branding
+        </button>
+        <button class="settings-tab-btn" data-target="secInvoice">
+            <i class="fas fa-receipt"></i> Invoice &amp; POS Setup
+        </button>
+        <button class="settings-tab-btn" data-target="secInventory">
+            <i class="fas fa-boxes-stacked"></i> Stock &amp; Alerts Rules
+        </button>
+        <button class="settings-tab-btn" data-target="secSyncSchedule">
+            <i class="fas fa-cloud-arrow-down"></i> Cloud Sync &amp; Shift Schedule
+        </button>
+        <button class="settings-tab-btn" data-target="secSecurity">
+            <i class="fas fa-shield-halved"></i> Security &amp; Cache
+        </button>
+    </div>
+
+    <!-- ===== 🏢 SECTION 1: AGENCY IDENTITY & PROFILE ===== -->
+    <div class="settings-section active" id="secProfile">
+        <div class="panel-card" style="border-top-color:#3b82f6;">
+            <div class="card-header">
+                <h2><i class="fas fa-building"></i> Agency Identity &amp; Contact Details</h2>
+                <small class="header-note">یہ معلومات تمام بلز، انوائسز اور واٹس ایپ پیغامات کے ہیڈر میں پرنٹ ہوں گی</small>
+            </div>
+
+            <form id="profileForm" class="panel-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🏢 Business / Agency Name *</label>
+                        <input type="text" id="setAgencyName" required placeholder="e.g. GS Bag House">
+                    </div>
+                    <div class="form-group">
+                        <label>🏷️ Slogan / Subtitle</label>
+                        <input type="text" id="setAgencyTagline" placeholder="e.g. Authorized Whole &amp; Retail Distributor">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🏪 Business Category</label>
+                        <select id="setBizType">
+                            <option value="general">🏪 General Distribution</option>
+                            <option value="wholesaler">📦 Wholesale Trader</option>
+                            <option value="fmcg">🥤 FMCG &amp; Food Agency</option>
+                            <option value="medical">💊 Medical &amp; Pharma Store</option>
+                            <option value="cosmetics">💄 Cosmetics &amp; Beauty</option>
+                            <option value="garments">👔 Garments &amp; Fabrics</option>
+                            <option value="mobile">📱 Mobile &amp; Accessories</option>
+                            <option value="hardware">🔧 Hardware &amp; Electrical</option>
+                            <option value="other">💼 Other Business</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🏙️ City / Depot</label>
+                        <input type="text" id="setCity" placeholder="e.g. Lahore / Sadiqabad">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📱 Primary Mobile (WhatsApp for Bills)</label>
+                        <input type="tel" id="setMobile" placeholder="03001234567">
+                    </div>
+                    <div class="form-group">
+                        <label>📞 Secondary Phone / Landline</label>
+                        <input type="tel" id="setPhone" placeholder="042-3123456">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>📍 Complete Market / Shop Address</label>
+                    <textarea id="setAddress" rows="2" placeholder="e.g. Shop # 14, Main Market, Hall Road, Lahore" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;"></textarea>
+                </div>
+
+                <div class="form-row" style="margin-top:10px;">
+                    <div class="form-group">
+                        <label>🔢 Tax / NTN / STRN Number</label>
+                        <input type="text" id="setNTN" placeholder="e.g. 1234567-8">
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:flex-end;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:13px; margin-bottom:10px;">
+                            <input type="checkbox" id="setShowNTN" style="width:18px; height:18px; accent-color:#10b981;">
+                            <span>Show NTN on Printed Invoices</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 🌐 SOFTWARE LANGUAGE MODE (RADIO BUTTONS) -->
+                <div class="form-group" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; margin: 14px 0;">
+                    <label style="font-size:13px; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <i class="fas fa-language" style="color:#0284c7; font-size:16px;"></i> Software Language Mode (زبان کا انتخاب)
+                    </label>
+                    <p style="font-size:11.5px; color:#64748b; margin-bottom:10px;">
+                        Choose your preferred interface language: Clean English (Default) or English + Urdu Mixed.
+                    </p>
+                    <div style="display:flex; gap:22px; flex-wrap:wrap;">
+                        <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:13px; color:#0f172a; margin:0; user-select:none;">
+                            <input type="radio" name="appLanguageMode" id="langEnglish" value="en" checked style="accent-color:#0284c7; width:16px; height:16px;">
+                            <span>English Only (Default)</span>
+                        </label>
+                        <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:13px; color:#0f172a; margin:0; user-select:none;">
+                            <input type="radio" name="appLanguageMode" id="langUrduMix" value="en-ur" style="accent-color:#0284c7; width:16px; height:16px;">
+                            <span>English + Urdu Mix (اردو اور انگلش مکس)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="background:#3b82f6; margin-top:10px;">
+                    <i class="fas fa-save"></i> SAVE AGENCY PROFILE
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== 🧾 SECTION 2: INVOICE & POS PREFERENCES ===== -->
+    <div class="settings-section" id="secInvoice">
+        <div class="panel-card" style="border-top-color:#10b981;">
+            <div class="card-header">
+                <h2><i class="fas fa-receipt"></i> Invoice &amp; Thermal POS Printing Setup</h2>
+                <small class="header-note">ڈفالٹ بل ٹیمپلیٹ، تھرمل پرنٹر سائز اور بلنگ نمبر پریفکس منتخب کریں</small>
+            </div>
+
+            <form id="invoiceForm" class="panel-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🎨 Default Bill Print Template</label>
+                        <select id="setDefaultTemplate">
+                            <option value="template4">⚡ Modern Minimal (Default)</option>
+                            <option value="template1">🇵🇰 Urdu Classic (Nastaliq)</option>
+                            <option value="template2">📋 Traders English (Big Header)</option>
+                            <option value="template6">🧾 Thermal Slip (58mm / 80mm POS)</option>
+                            <option value="template7">📦 FMCG Distribution Invoice</option>
+                            <option value="template8">🇵🇰 Classic Wholesale Urdu Grid</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🖨️ Thermal POS Paper Width</label>
+                        <select id="setThermalWidth">
+                            <option value="58">58mm (Small Portable / Bluetooth POS)</option>
+                            <option value="80">80mm (Standard Desktop Thermal POS)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🏷️ Default Price Mode</label>
+                        <select id="setDefaultPriceMode">
+                            <option value="wholesale">📦 Wholesale Rate (ہول سیل ریٹ)</option>
+                            <option value="retail">🏪 Retail Rate (پرچون ریٹ)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🔢 Stock Invoice Prefix</label>
+                        <input type="text" id="setBillPrefix" placeholder="STK-" style="text-transform:uppercase;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>📝 Terms &amp; Conditions Footer Note (Printed on Bills)</label>
+                    <textarea id="setInvoiceFooter" rows="2" placeholder="e.g. مال واپس یا تبدیل 3 دن میں ہو سکتا ہے۔ کیش واپس نہیں ہوگا۔" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;"></textarea>
+                </div>
+
+                <!-- 💬 SELECT CUSTOMER TYPE POP-UP (HIDE / SHOW) -->
+                <div class="form-group" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; margin: 14px 0;">
+                    <label style="font-size:13px; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                        <i class="fas fa-comment-dots" style="color:#0284c7; font-size:16px;"></i> Select Customer Type Pop-up
+                    </label>
+                    <p style="font-size:11.5px; color:#64748b; margin-bottom:10px;">
+                        When selecting a Retail or Wholesale customer in billing, choose whether to show or hide the auto-applied rate notification pop-up.
+                    </p>
+                    <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                        <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:13px; color:#0f172a; margin:0; user-select:none;">
+                            <input type="radio" name="custTypePopupMode" id="custTypePopupHide" value="hide" checked style="accent-color:#0284c7; width:16px; height:16px;">
+                            <span>🙈 Hide Pop-up (Default)</span>
+                        </label>
+                        <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:13px; color:#0f172a; margin:0; user-select:none;">
+                            <input type="radio" name="custTypePopupMode" id="custTypePopupShow" value="show" style="accent-color:#0284c7; width:16px; height:16px;">
+                            <span>👁️ Show Pop-up</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 🇵🇰 FBR ADVANCE TAX (FILER vs NON-FILER) WITH ON/OFF SWITCH -->
+                <div id="fbrTaxSettingsBox" class="form-group" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:12px; padding:16px; margin: 16px 0; transition: all 0.3s ease;">
+                    <!-- Top Bar with Title & On/Off Switch -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:8px; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:12px;">
+                        <div>
+                            <label id="fbrTaxBoxTitle" style="font-size:14px; font-weight:800; color:#475569; display:flex; align-items:center; gap:8px; margin:0;">
+                                <i class="fas fa-file-invoice-dollar" style="color:#64748b; font-size:17px;"></i> 🇵🇰 FBR Advance Tax (236G / 236H) System
+                            </label>
+                            <div id="fbrTaxBoxSub" style="font-size:11.5px; color:#64748b; margin-top:2px;">
+                                رجسٹرڈ فائلر اور نان فائلر کسٹمرز کے لیے خودکار ایڈوانس سیلز ٹیکس شیڈول
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span id="fbrTaxStatusBadge" style="font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">
+                                🔴 OFF (غیر فعال — سادہ بلنگ بغیر ٹیکس)
+                            </span>
+                            <label class="switch-toggle" style="margin:0;" title="Toggle FBR Advance Tax System">
+                                <input type="checkbox" id="setEnableFbrTax">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <p id="fbrTaxDesc" style="font-size:11.5px; color:#64748b; margin-bottom:12px; line-height:1.6;">
+                        💡 اگر آپ <b>ڈیجی کھاتہ</b> یا عام دکاندار کی طرح بغیر ٹیکس کے صرف سادہ انوینٹری مینجمنٹ اور بلنگ چلانا چاہتے ہیں تو اس سوئچ کو <b>OFF</b> رکھیں (کوئی ٹیکس لاگو نہیں ہوگا)۔ اگر آپ پاکستانی ایف بی آر کے تحت ٹیکس کاٹتے ہیں تو اسے <b>ON</b> کریں، سسٹم فائلر اور نان فائلر کے فیصد کے مطابق ہر بل پر خودکار ٹیکس کیلکولیٹ کرے گا۔
+                    </p>
+
+                    <!-- Rate Input Boxes -->
+                    <div id="fbrTaxInputsContainer" class="form-row" style="margin-bottom:6px; opacity:0.6; pointer-events:none; transition: all 0.3s ease;">
+                        <div class="form-group">
+                            <label id="lblFilerRate" style="font-size:12px; font-weight:700; color:#64748b;">🟢 Filer Tax Rate (%)</label>
+                            <div style="position:relative; display:flex; align-items:center;">
+                                <input type="number" id="setFilerTaxRate" min="0" max="100" step="0.05" value="1.5" placeholder="1.5" disabled style="width:100%; padding:8px 32px 8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-weight:800; color:#64748b; background:#f1f5f9; font-size:14px;">
+                                <span style="position:absolute; right:12px; font-weight:900; color:#64748b; font-size:14px;">%</span>
+                            </div>
+                            <small id="subFilerRate" style="color:#64748b; font-size:11px;">Default: 1.5% for registered tax filers</small>
+                        </div>
+                        <div class="form-group">
+                            <label id="lblNonFilerRate" style="font-size:12px; font-weight:700; color:#64748b;">🔴 Non-Filer Tax Rate (%)</label>
+                            <div style="position:relative; display:flex; align-items:center;">
+                                <input type="number" id="setNonFilerTaxRate" min="0" max="100" step="0.05" value="3.0" placeholder="3.0" disabled style="width:100%; padding:8px 32px 8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-weight:800; color:#64748b; background:#f1f5f9; font-size:14px;">
+                                <span style="position:absolute; right:12px; font-weight:900; color:#64748b; font-size:14px;">%</span>
+                            </div>
+                            <small id="subNonFilerRate" style="color:#64748b; font-size:11px;">Default: 3.0% for non-registered customers</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🖨️ BILL PRINT FIELDS CUSTOMIZATION (CHECKBOXES) -->
+                <div class="form-group" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:12px; padding:16px; margin: 16px 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+                        <label style="font-size:14px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px; margin:0;">
+                            <i class="fas fa-print" style="color:#2563eb; font-size:16px;"></i> 🖨️ Bill Print Customization (معلومات چیک باکسز)
+                        </label>
+                        <span style="font-size:11px; font-weight:bold; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:6px;">
+                            Bulk Printing Fields Control
+                        </span>
+                    </div>
+                    <p style="font-size:11.5px; color:#64748b; margin-bottom:14px;">
+                        جو معلومات آپ بل پر پرنٹ کرنا چاہتے ہیں ان پر چیک لگائیں۔ اگر معلومات کسٹمر یا ایجنسی اکاؤنٹ میں موجود ہو گی تو پرنٹ پر آئے گی، ورنہ وہ جگہ خالی رہے گی۔
+                    </p>
+
+                    <!-- Group 1: Agency & Header Info -->
+                    <div style="margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+                        <div style="font-size:12px; font-weight:800; color:#1e293b; margin-bottom:8px;">
+                            🏢 Header &amp; Agency Details (ایجنسی ہیڈر)
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowLogo" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Agency Logo (لوگو)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowAgencyName" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Agency Name (نام)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowOwnerName" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Owner Name (پروپرائٹر)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowMobiles" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Phone / Mobiles (رابطہ)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowAddress" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Agency Address (پتہ)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowNTN" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Agency NTN (ٹیکس نمبر)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowLicence" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Licence No (لائسنس نمبر)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowPayType" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Show Cash/Credit Type (کیش/ادھار)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Group 2: Customer Info -->
+                    <div style="margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+                        <div style="font-size:12px; font-weight:800; color:#1e293b; margin-bottom:8px;">
+                            👤 Customer Section (گاہک کی معلومات)
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowCustomerName" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Customer Name (بل بنام)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowCustomerPhone" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Customer Mobile (موبائل نمبر)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowCustomerAddress" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Customer Address / Area (پتہ/علاقہ)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowCustomerRoute" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Route Name (روٹ کا نام)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowCustomerNTN" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Customer NTN / Filer Status (ٹیکس شناختی کارڈ)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Group 3: Order Booker & Dispatch -->
+                    <div style="margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+                        <div style="font-size:12px; font-weight:800; color:#1e293b; margin-bottom:8px;">
+                            🚴 Booker, Salesman &amp; Bill Meta (آرڈر بکر و تاریخ)
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowBillNo" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Invoice / Bill No (بل نمبر)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowDate" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Invoice Date (تاریخ)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowTime" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Time Stamp (وقت)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowBookerName" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Order Booker / Salesman (آرڈر بکر)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowSupplierName" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Delivery Man / Supplier (سپلائر)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Group 4: Calculations & Totals -->
+                    <div style="margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+                        <div style="font-size:12px; font-weight:800; color:#1e293b; margin-bottom:8px;">
+                            📊 Totals &amp; Balances (حساب کتاب)
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowTax" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>FBR Advance Tax Line (ایڈوانس ٹیکس)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowPreviousBalance" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Previous Khata Balance (سابقہ بقایا)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowReceivedAmount" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Received Cash (وصول شدہ رقم)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowBalance" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Total Net Due / Balance (ٹوٹل بقایا)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Group 5: Terms & Signatures -->
+                    <div>
+                        <div style="font-size:12px; font-weight:800; color:#1e293b; margin-bottom:8px;">
+                            ✍️ Terms &amp; Signatures (شرائط و دستخط)
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowTermsAndConditions" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Terms &amp; Claims Notice (شرائط نوٹس)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowSignatureCustomer" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Customer Signature Box (دستخط گاہک)</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowSignatureBooker" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Booker / Delivery Signature Box</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chkShowSignatureAuthorized" checked style="width:16px; height:16px; accent-color:#2563eb;">
+                                <span>Authorized Stamp Box (مہر و دستخط)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="background:#10b981; margin-top:10px;">
+                    <i class="fas fa-save"></i> SAVE BILLING SETTINGS
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== 📦 SECTION 3: STOCK & ALERTS RULES ===== -->
+    <div class="settings-section" id="secInventory">
+        <div class="panel-card" style="border-top-color:#f59e0b;">
+            <div class="card-header">
+                <h2><i class="fas fa-boxes-stacked"></i> Inventory &amp; Reorder Rules</h2>
+                <small class="header-note">کم اسٹاک کی وارننگ اور خودکار کٹوتی کے اصول</small>
+            </div>
+
+            <form id="inventoryForm" class="panel-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🔔 Default Low Stock Alert Threshold</label>
+                        <input type="number" id="setDefaultLowStock" min="1" max="500" value="10" placeholder="e.g. 10">
+                        <small style="color:#64748b; font-size:11px;">جب کسی پروڈکٹ کی مقدار اس سے کم ہو جائے گی تو الرٹ بیل متحرک ہو جائے گی۔</small>
+                    </div>
+                    <div class="form-group">
+                        <label>⚡ Auto-Deduct Inventory on Bill Confirmation</label>
+                        <div class="form-toggle-row">
+                            <span style="font-size:13px; font-weight:700;">Deduct Stock in Real-Time</span>
+                            <label class="switch-toggle">
+                                <input type="checkbox" id="setAutoDeductStock" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="background:#f59e0b; margin-top:10px;">
+                    <i class="fas fa-save"></i> SAVE INVENTORY RULES
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== ⚡ SECTION: CLOUD SYNC & SHIFT SCHEDULE ===== -->
+    <div class="settings-section" id="secSyncSchedule">
+        <div class="panel-card" style="border-top-color:#0284c7;">
+            <div class="card-header">
+                <h2><i class="fas fa-cloud" style="color:#0284c7;"></i> Cloud Sync &amp; Shift Schedule</h2>
+                <small class="header-note">2-Shift Schedule (12:00 AM - 12:00 PM &amp; 12:00 PM - 12:00 AM PKT) — 1 Manual Refresh Allowed Per Shift</small>
+            </div>
+
+            <!-- 🇵🇰 Live PKT & Shift Status Dashboard -->
+            <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color:#fff; border-radius:12px; padding:18px; margin-bottom:20px; box-shadow:0 4px 15px rgba(15,23,42,0.25); border:1px solid #334155;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#94a3b8; font-weight:700;">
+                            🇵🇰 Pakistan Standard Time (PKT, UTC+5)
+                        </div>
+                        <div style="font-size:26px; font-weight:900; font-family:monospace; margin:4px 0; color:#38bdf8;" id="secSyncClockDisplay">
+                            --:--:-- PKT
+                        </div>
+                        <div style="font-size:13px; font-weight:700; color:#e2e8f0;" id="secSyncShiftNameDisplay">
+                            Shift 1: Morning (12:00 AM - 12:00 PM PKT)
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                        <span id="secSyncStatusBadge" style="background:#0284c7; color:#fff; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:800; border:1px solid rgba(255,255,255,0.2);">
+                            ⚡ 1 Refresh Available
+                        </span>
+                        <div style="font-size:11px; color:#94a3b8;">
+                            Next Shift Unlocks In: <b id="secSyncCountdown" style="color:#e2e8f0;">--</b>
+                        </div>
+                        <div style="font-size:11px;" id="secSyncNetStatusDisplay">
+                            <span style="color:#34d399; font-weight:800;">🟢 Online</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.15); margin:14px 0 12px;">
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div style="font-size:12px; color:#94a3b8;">
+                        <span>Last Synced: <b id="secSyncLastTimeDisplay" style="color:#fff;">Never</b></span>
+                        &nbsp;|&nbsp;
+                        <span>Saved Cloud Reads: <b id="secSyncReadsSavedDisplay" style="color:#34d399; font-weight:800;">0 reads</b></span>
+                    </div>
+
+                    <button type="button" class="btn btn-sm" id="btnSecSyncNow" style="background:#0284c7; color:#fff; font-weight:800; border:none; padding:8px 16px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.2); cursor:pointer;">
+                        <i class="fas fa-rotate"></i> Refresh Cloud Data Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Clear & Concise English Shift Guidelines Card -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+                <h4 style="margin:0 0 12px 0; color:#0f172a; font-size:14px; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-circle-info" style="color:#0284c7;"></i> Shift Timetable &amp; Usage Rules
+                </h4>
+
+                <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:#334155; line-height:1.5;">
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                        <span style="color:#0284c7; font-weight:bold;">1.</span>
+                        <div><b>Two Fixed Shifts Daily:</b> Shift 1 operates from 12:00 AM to 12:00 PM PKT. Shift 2 operates from 12:00 PM to 12:00 AM PKT.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                        <span style="color:#0284c7; font-weight:bold;">2.</span>
+                        <div><b>1 Manual Refresh Allowed Per Shift:</b> You can fetch updated stock and customer lists once per shift. If already refreshed, the system informs you that the shift limit is reached.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                        <span style="color:#0284c7; font-weight:bold;">3.</span>
+                        <div><b>Offline Safety Guard:</b> If the device is offline, the refresh button will ask you to connect to the internet first. Offline billing and stock lookups continue uninterrupted from local storage.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                        <span style="color:#0284c7; font-weight:bold;">4.</span>
+                        <div><b>Order Booker Synchronization:</b> Orders placed in the field are kept locally on the booker's device until connected online, ensuring safe transmission to the cloud.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 🔒 SECTION 5: SECURITY & SYSTEM CACHE ===== -->
+    <div class="settings-section" id="secSecurity">
+        <div class="panel-card" style="border-top-color:#ef4444;">
+            <div class="card-header">
+                <h2><i class="fas fa-shield-halved"></i> Security &amp; Local Storage Cache</h2>
+                <small class="header-note">پاس ورڈ تبدیل کریں اور ڈیوائس کیشے کو ریفریش کریں</small>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div style="background:#f8fafc; padding:16px; border-radius:10px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <div style="font-weight:700; font-size:14px; color:#1e293b;">🔑 Change Account Password</div>
+                        <div style="font-size:12px; color:#64748b;">اپنے لاگ ان کا پاس ورڈ تبدیل کریں</div>
+                    </div>
+                    <button class="btn btn-sm" id="btnChangePassword" style="background:#3b82f6; color:#fff;">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                </div>
+
+                <div style="background:#fef2f2; padding:16px; border-radius:10px; border:1px solid #fecaca; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <div style="font-weight:700; font-size:14px; color:#b91c1c;">🧹 Clear Offline Device Cache</div>
+                        <div style="font-size:12px; color:#991b1b;">اگر کوئی آئٹم یا کسٹمر سکرین پر فوری اپڈیٹ نہ ہو رہا ہو تو کیشے ری سیٹ کریں</div>
+                    </div>
+                    <button class="btn btn-sm" id="btnClearCache" style="background:#ef4444; color:#fff;">
+                        <i class="fas fa-rotate"></i> Reset Offline Cache
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- ⚡ CLOUD SYNC & FIREBASE QUOTA SAVER -->
+<script src="sync-engine.js"></script>
+<!-- ⚙️ SETTINGS CONTROLLER -->
+<script src="settings.js"></script>
+</body>
+</html>

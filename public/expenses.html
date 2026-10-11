@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Business Expenses Manager (اخراجات)</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels & Global CSS -->
+    <link rel="stylesheet" href="panels.css">
+    <!-- Reports CSS -->
+    <link rel="stylesheet" href="reports.css">
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <style>
+        .expense-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .expense-modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+        }
+        .expense-modal-box {
+            position: relative;
+            background: #fff;
+            width: 94%;
+            max-width: 650px;
+            max-height: 90vh;
+            border-radius: 16px;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            z-index: 10;
+            padding: 24px;
+        }
+        .expense-cat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+        .pay-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .cat-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .cat-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .cat-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableExpenseArea, #printableExpenseArea * {
+                visibility: visible;
+            }
+            #printableExpenseArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .eb-universal-topbar, .eb-sidebar, .date-filter-bar, .report-tabs-nav, .card-header, .expense-modal {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 🔝 EXECUTIVE HEADER ===== -->
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+        <div>
+            <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; display: flex; align-items: center; gap: 10px; margin: 0;">
+                <i class="fas fa-wallet" style="color: #ef4444; font-size: 24px;"></i> 
+                Business Expenses Manager (کاروباری اخراجات)
+            </h1>
+            <p style="font-size: 12px; color: #64748b; margin: 3px 0 0 0;">
+                روزانہ، ہفتہ وار، ماہانہ اور کیٹیگری وار اخراجات (Electricity, Water, Fuel, Guests, Rent) کا مکمل حساب کتاب
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-sm" id="btnOpenAddExpenseModal" style="background:#ef4444; color:#fff; font-weight:bold;" title="Record New Expense">
+                <i class="fas fa-plus-circle"></i> + Record Expense (نیا خرچ)
+            </button>
+            <button class="btn btn-sm" id="btnOpenCatModal" style="background:#6366f1; color:#fff;" title="Manage Categories">
+                <i class="fas fa-tags"></i> Categories (کیٹیگریز)
+            </button>
+            <button class="btn btn-sm" id="btnRefreshExpenses" style="background:#0284c7; color:#fff;" title="Reload Data">
+                <i class="fas fa-rotate"></i> Refresh
+            </button>
+            <button class="btn btn-sm" id="btnExportExpenseCSV" style="background:#10b981; color:#fff;" title="Download Excel CSV">
+                <i class="fas fa-file-excel"></i> Export CSV
+            </button>
+            <button class="btn btn-sm" id="btnPrintExpenses" style="background:#475569; color:#fff;" title="Print Report">
+                <i class="fas fa-print"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 💰 SUMMARY KPI METRICS GRID ===== -->
+    <div class="kpi-grid" id="expenseKpiGrid">
+        <div class="kpi-card" style="border-left: 4px solid #ef4444; background: #fff5f5;">
+            <div class="kpi-icon" style="color:#ef4444;"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title" style="color:#b91c1c; font-weight:bold;">Total Expenses (کل اخراجات)</span>
+                <span class="kpi-val" id="kpiTotalExpenses" style="color:#b91c1c;">Rs 0</span>
+                <small class="kpi-sub" id="kpiExpenseCount">0 Vouchers in Selected Period</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+            <div class="kpi-icon" style="color:#f59e0b;"><i class="fas fa-calendar-day"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title">Today's Expense (آج کے اخراجات)</span>
+                <span class="kpi-val" id="kpiTodayExpenses">Rs 0</span>
+                <small class="kpi-sub" id="kpiTodayCount">0 Transactions Today</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
+            <div class="kpi-icon" style="color:#3b82f6;"><i class="fas fa-calendar-alt"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title">This Month (موجودہ مہینہ)</span>
+                <span class="kpi-val" id="kpiMonthExpenses">Rs 0</span>
+                <small class="kpi-sub" id="kpiMonthSub">Active Month Total</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+            <div class="kpi-icon" style="color:#8b5cf6;"><i class="fas fa-trophy"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title">Top Expense Category (سب سے بڑا خرچ)</span>
+                <span class="kpi-val" id="kpiTopCategory" style="font-size:16px;">--</span>
+                <small class="kpi-sub" id="kpiTopCategoryAmount">Rs 0 (0% of Total)</small>
+            </div>
+        </div>
+
+        <div class="kpi-card" style="border-left: 4px solid #06b6d4;">
+            <div class="kpi-icon" style="color:#06b6d4;"><i class="fas fa-receipt"></i></div>
+            <div class="kpi-details">
+                <span class="kpi-title">Avg per Voucher (اوسط فی خرچ)</span>
+                <span class="kpi-val" id="kpiAvgExpense">Rs 0</span>
+                <small class="kpi-sub" id="kpiActiveCategories">0 Active Categories</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 📅 DATE FILTER & PRESETS BAR ===== -->
+    <div class="date-filter-bar">
+        <div class="date-presets" id="expenseDatePresets">
+            <button class="date-preset-btn" data-preset="today">Today (آج)</button>
+            <button class="date-preset-btn" data-preset="yesterday">Yesterday (گزشتہ کل)</button>
+            <button class="date-preset-btn" data-preset="thisweek">This Week (اس ہفتے)</button>
+            <button class="date-preset-btn" data-preset="last7">Last 7 Days (7 دن)</button>
+            <button class="date-preset-btn active" data-preset="thismonth">This Month (موجودہ مہینہ)</button>
+            <button class="date-preset-btn" data-preset="lastmonth">Last Month (پچھلا مہینہ)</button>
+            <button class="date-preset-btn" data-preset="alltime">All Time (تمام)</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div class="custom-date-inputs">
+                <input type="date" id="expenseDateStart" title="Start Date">
+                <span style="font-size:12px; color:#64748b; font-weight:bold;">to</span>
+                <input type="date" id="expenseDateEnd" title="End Date">
+                <button class="btn btn-sm" id="btnApplyExpenseDate" style="background:#0284c7; color:#fff;">
+                    Apply
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 📑 5 EXPENSE VIEW TABS ===== -->
+    <div class="report-tabs-nav" id="expenseViewTabs">
+        <button class="report-tab-btn active" data-view="all">
+            <i class="fas fa-list-check"></i> 1. All Expenses List (تمام اخراجات)
+        </button>
+        <button class="report-tab-btn" data-view="category">
+            <i class="fas fa-chart-pie"></i> 2. Category-wise Breakdown (کیٹیگری وار)
+        </button>
+        <button class="report-tab-btn" data-view="day">
+            <i class="fas fa-calendar-day"></i> 3. Day-wise Breakdown (روزانہ اخراجات)
+        </button>
+        <button class="report-tab-btn" data-view="weekly">
+            <i class="fas fa-calendar-week"></i> 4. Weekly-wise Breakdown (ہفتہ وار)
+        </button>
+        <button class="report-tab-btn" data-view="monthly">
+            <i class="fas fa-calendar-alt"></i> 5. Monthly-wise Breakdown (ماہانہ)
+        </button>
+    </div>
+
+    <!-- ===== 📊 DYNAMIC REPORT TABLE CONTAINER ===== -->
+    <div class="panel-card" id="expenseContentCard">
+        <!-- Table Controls: Search & Category Filter Bar -->
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2 id="expenseViewTitle" style="font-size:16px; font-weight:bold; color:#0f172a; margin:0;">
+                    <i class="fas fa-list-check" style="color:#ef4444;"></i> Detailed Expenses Vouchers
+                </h2>
+                <small class="header-note" id="expenseViewSubTitle">تاریخ وار تمام ادائیگیوں اور واؤچرز کی مکمل تفصیل</small>
+            </div>
+
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <!-- Category Filter -->
+                <select id="expenseFilterCategory" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px; font-weight:600; outline:none; background:#fff;">
+                    <option value="all">All Categories (تمام کیٹیگریز)</option>
+                </select>
+
+                <!-- Payment Method Filter -->
+                <select id="expenseFilterPayMode" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px; font-weight:600; outline:none; background:#fff;">
+                    <option value="all">All Payment Modes (ادائیگی موڈ)</option>
+                    <option value="cash">Cash (کیش)</option>
+                    <option value="bank">Bank Transfer (بینک)</option>
+                    <option value="wallet">JazzCash / EasyPaisa</option>
+                    <option value="cheque">Cheque (چیک)</option>
+                </select>
+
+                <!-- Sort Order -->
+                <select id="expenseSortSelect" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px; font-weight:600; outline:none; background:#fff;">
+                    <option value="date_desc">Date: Newest First (تازہ ترین)</option>
+                    <option value="date_asc">Date: Oldest First (پرانی تاریخ)</option>
+                    <option value="amount_desc">Amount: Highest First (زیادہ رقم)</option>
+                    <option value="amount_asc">Amount: Lowest First (کم رقم)</option>
+                    <option value="category_asc">Category: A to Z</option>
+                </select>
+
+                <!-- Search Input -->
+                <div style="position:relative; width:100%; max-width:200px;">
+                    <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:12px;"></i>
+                    <input type="text" id="expenseSearchInput" placeholder="Search title, vendor..." style="width:100%; padding:6px 10px 6px 30px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px; outline:none;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table Container -->
+        <div class="table-responsive" id="expenseTableContainer">
+            <div style="text-align:center; padding:40px; color:#94a3b8;">
+                <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+                <p style="margin-top:10px;">Loading expenses data...</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== ➕ MODAL: ADD / EDIT EXPENSE ===== -->
+<div class="expense-modal" id="modalAddExpense" style="display:none;">
+    <div class="expense-modal-overlay" id="overlayAddExpense"></div>
+    <div class="expense-modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
+            <h2 id="modalExpenseTitle" style="font-size:17px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-plus-circle" style="color:#ef4444;"></i> Record Expense (نیا خرچ درج کریں)
+            </h2>
+            <button type="button" id="btnCloseExpenseModal" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="formExpense" class="panel-form" style="display:flex; flex-direction:column; gap:14px;">
+            <input type="hidden" id="expDocId" value="">
+
+            <!-- Category & Add New Cat Button Row -->
+            <div>
+                <label style="display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:4px;">
+                    📂 Expense Category (خرچ کی مد / کیٹیگری) *
+                </label>
+                <div style="display:flex; gap:8px;">
+                    <select id="expCategorySelect" required style="flex:1; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:600; outline:none; background:#fff;">
+                        <!-- Options injected dynamically -->
+                    </select>
+                    <button type="button" id="btnQuickAddCat" class="btn btn-sm" style="background:#6366f1; color:#fff; white-space:nowrap; padding:0 12px;" title="Add Custom Category">
+                        <i class="fas fa-plus"></i> New Cat
+                    </button>
+                </div>
+            </div>
+
+            <!-- Amount & Date Row -->
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label style="font-size:12px; font-weight:700; color:#475569;">
+                        💵 Amount in PKR (رقم) *
+                    </label>
+                    <input type="number" id="expAmount" required min="1" step="any" placeholder="e.g. 3500" style="padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px; font-weight:800; color:#b91c1c;">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label style="font-size:12px; font-weight:700; color:#475569;">
+                        📅 Expense Date (تاریخ) *
+                    </label>
+                    <input type="date" id="expDate" required style="padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;">
+                </div>
+            </div>
+
+            <!-- Description / Item Name -->
+            <div class="form-group">
+                <label style="font-size:12px; font-weight:700; color:#475569;">
+                    📝 Title / Item Description (خرچ کی تفصیل) *
+                </label>
+                <input type="text" id="expTitle" required placeholder="e.g. LESCO Electricity Bill Depot, 10 Litre Petrol Van" style="padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;">
+            </div>
+
+            <!-- Paid To & Payment Method -->
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label style="font-size:12px; font-weight:700; color:#475569;">
+                        👤 Paid To / Vendor (کس کو رقم دی)
+                    </label>
+                    <input type="text" id="expPaidTo" placeholder="e.g. WAPDA, Shell Pump, Hotel" style="padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label style="font-size:12px; font-weight:700; color:#475569;">
+                        💳 Payment Method (ادائیگی کا طریقہ) *
+                    </label>
+                    <select id="expPayMethod" required style="padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:600; background:#fff;">
+                        <option value="cash">Cash (نقد کیش)</option>
+                        <option value="bank">Bank Transfer (بینک اکاؤنٹ)</option>
+                        <option value="wallet">JazzCash / EasyPaisa (موبائل والٹ)</option>
+                        <option value="cheque">Cheque (بینک چیک)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Receipt No & Remarks -->
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label style="font-size:12px; font-weight:700; color:#475569;">
+                        🔢 Bill / Receipt No (رسید نمبر - اختیاری)
+                    </label>
+                    <input type="text" id="expReceiptNo" placeholder="e.g. BILL-9821" style="padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label style="font-size:12px; font-weight:700; color:#475569;">
+                        💬 Remarks / Notes (نوٹس)
+                    </label>
+                    <input type="text" id="expNotes" placeholder="e.g. Meter Reading 4290" style="padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px;">
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:14px;">
+                <button type="button" class="btn btn-sm" id="btnCancelExpense" style="background:#64748b; color:#fff;">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-sm" id="btnSaveExpense" style="background:#ef4444; color:#fff; font-weight:bold; padding:8px 20px;">
+                    <i class="fas fa-save"></i> Save Expense (محفوظ کریں)
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== 🏷️ MODAL: MANAGE CATEGORIES ===== -->
+<div class="expense-modal" id="modalCategories" style="display:none;">
+    <div class="expense-modal-overlay" id="overlayCategories"></div>
+    <div class="expense-modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #f1f5f9; padding-bottom:12px;">
+            <h2 style="font-size:17px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-tags" style="color:#6366f1;"></i> Expense Categories Manager (کیٹیگریز)
+            </h2>
+            <button type="button" id="btnCloseCatModal" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Add Category Form -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; margin-bottom:16px;">
+            <h4 style="margin:0 0 10px 0; font-size:13px; font-weight:800; color:#1e293b;">
+                ➕ Create New Category (نئی کیٹیگری بنائیں)
+            </h4>
+            <form id="formNewCat" style="display:flex; flex-direction:column; gap:10px;">
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-size:11px; font-weight:700; color:#475569;">Name in English *</label>
+                        <input type="text" id="newCatName" required placeholder="e.g. Generator Fuel" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-size:11px; font-weight:700; color:#475569;">نام برائے اردو (اختیاری)</label>
+                        <input type="text" id="newCatUrdu" placeholder="e.g. جنریٹر کا ڈیزل" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-size:11px; font-weight:700; color:#475569;">Icon (آئیکن)</label>
+                        <select id="newCatIcon" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; background:#fff;">
+                            <option value="fa-bolt">⚡ Electricity / Power</option>
+                            <option value="fa-faucet-drip">💧 Water / Utilities</option>
+                            <option value="fa-gas-pump">⛽ Fuel / Petrol / Diesel</option>
+                            <option value="fa-mug-hot">☕ Guests / Tea / Food</option>
+                            <option value="fa-building">🏢 Rent / Property</option>
+                            <option value="fa-user-tie">💼 Salaries / Wages</option>
+                            <option value="fa-box-archive">📦 Packaging & Supplies</option>
+                            <option value="fa-screwdriver-wrench">🛠️ Maintenance & Repair</option>
+                            <option value="fa-truck">🚚 Transport & Carriage</option>
+                            <option value="fa-wifi">🌐 Internet & Phone</option>
+                            <option value="fa-scale-balanced">🧾 Tax & Legal</option>
+                            <option value="fa-receipt">🔄 Miscellaneous</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label style="font-size:11px; font-weight:700; color:#475569;">Color (رنگ)</label>
+                        <select id="newCatColor" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; background:#fff;">
+                            <option value="#ef4444">🔴 Red (#ef4444)</option>
+                            <option value="#f59e0b">🟡 Amber (#f59e0b)</option>
+                            <option value="#10b981">🟢 Green (#10b981)</option>
+                            <option value="#3b82f6">🔵 Blue (#3b82f6)</option>
+                            <option value="#8b5cf6">🟣 Purple (#8b5cf6)</option>
+                            <option value="#06b6d4">🩵 Cyan (#06b6d4)</option>
+                            <option value="#64748b">⚪ Slate (#64748b)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-sm" id="btnSaveCategory" style="background:#6366f1; color:#fff; font-weight:bold; align-self:flex-end;">
+                    <i class="fas fa-plus"></i> Add Category
+                </button>
+            </form>
+        </div>
+
+        <!-- Categories List -->
+        <h4 style="margin:0 0 10px 0; font-size:13px; font-weight:800; color:#1e293b;">
+            📋 Active Categories (دستیاب کیٹیگریز)
+        </h4>
+        <div id="catListContainer" style="max-height:260px; overflow-y:auto; padding-right:4px;">
+            <!-- Categories injected here -->
+        </div>
+    </div>
+</div>
+
+<!-- ===== 🖨️ PRINTABLE EXPENSE VOUCHER TEMPLATE ===== -->
+<div id="printableExpenseArea" style="display:none;"></div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- Universal Navigation Sidebar -->
+<script src="sidebar.js"></script>
+<!-- Business Expenses Engine -->
+<script src="expenses.js"></script>
+</body>
+</html>

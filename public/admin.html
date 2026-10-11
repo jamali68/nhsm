@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Super Admin & SaaS Monetization (Phase 6)</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 🏢 Business Categories Registry -->
+    <script src="business-categories.js"></script>
+
+    <!-- 💎 SaaS Modules Registry & Paywall Guard -->
+    <script src="saas-modules.js"></script>
+
+    <style>
+        .swal2-container { z-index: 999999 !important; }
+
+        /* SaaS Revenue Grid */
+        .saas-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .saas-metric-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .saas-metric-val {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 4px;
+        }
+        .saas-metric-lbl {
+            font-size: 11px;
+            font-weight: bold;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        /* Package Badges */
+        .badge-pkg-single { background: #e0f2fe; color: #0284c7; }
+        .badge-pkg-multi { background: #fdf2f8; color: #db2777; }
+        .badge-sub-active { background: #dcfce7; color: #15803d; }
+        .badge-sub-due { background: #fef3c7; color: #b45309; }
+        .badge-sub-expired { background: #fee2e2; color: #b91c1c; }
+
+        .agency-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+        .agency-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .agency-main {
+            flex: 1;
+            min-width: 280px;
+        }
+        .agency-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .agency-meta {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .agency-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+<span id="adminEmail" style="display:none;"></span>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 💰 SAAS REVENUE & MONETIZATION DASHBOARD ===== -->
+    <div class="panel-card" style="border-top-color:#10b981;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-coins"></i> SaaS Revenue & Subscriptions Overview</h2>
+                <small class="header-note">ماہانہ فیس کی وصولی، ایکٹو سبسکرپشنز اور کلائنٹس مانیٹرنگ</small>
+            </div>
+            <button class="btn btn-sm" id="refreshAdminBtn" style="background:#0284c7; color:#fff;">
+                <i class="fas fa-sync-alt"></i> Refresh Revenue
+            </button>
+        </div>
+
+        <div class="saas-metrics-grid">
+            <div class="saas-metric-card">
+                <div class="saas-metric-lbl">Monthly Recurring Revenue (MRR)</div>
+                <div class="saas-metric-val" id="metricMRR" style="color:#10b981;">Rs 0</div>
+            </div>
+            <div class="saas-metric-card">
+                <div class="saas-metric-lbl">Total Registered Agencies</div>
+                <div class="saas-metric-val" id="metricTotalAgencies">0</div>
+            </div>
+            <div class="saas-metric-card">
+                <div class="saas-metric-lbl">Active Paid Subscriptions</div>
+                <div class="saas-metric-val" id="metricActiveSubs" style="color:#0284c7;">0</div>
+            </div>
+            <div class="saas-metric-card">
+                <div class="saas-metric-lbl">Expiring Soon (7 Days)</div>
+                <div class="saas-metric-val" id="metricDueSubs" style="color:#f59e0b;">0</div>
+            </div>
+            <div class="saas-metric-card">
+                <div class="saas-metric-lbl">Expired / Overdue</div>
+                <div class="saas-metric-val" id="metricExpiredSubs" style="color:#ef4444;">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ➕ CREATE NEW AGENCY / CLIENT ===== -->
+    <div class="panel-card" style="border-top-color:#3b82f6;">
+        <div class="card-header">
+            <h2><i class="fas fa-plus-circle"></i> Create New Agency & Assign Package</h2>
+            <small class="header-note">نیا کلائنٹ رجسٹر کریں، پیکیج منتخب کریں اور فیس مقرر کریں</small>
+        </div>
+        <form id="createAgencyForm" class="panel-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🏢 Agency / Business Name *</label>
+                    <input type="text" id="agName" placeholder="e.g. GS Bag House" required maxlength="60">
+                </div>
+                <div class="form-group">
+                    <label>🏪 Business Type *</label>
+                    <select id="agType" required>
+                        <option value="books">📚 Book Depot &amp; Stationery (بک ڈپو و اسٹیشنری / بک پوائنٹ)</option>
+                        <option value="mobile">📱 Mobile Shop &amp; Accessories (موبائل اور ایسیسریز)</option>
+                        <option value="medical">💊 Medical Store &amp; Pharmacy (میڈیکل اسٹور و فارمیسی)</option>
+                        <option value="shoes">👟 Shoe Store &amp; Footwear (جوتے و فٹ ویئر)</option>
+                        <option value="garments">👕 Garments &amp; Clothing (گارمنٹس و ملبوسات)</option>
+                        <option value="general">🛒 General Store &amp; Kiryana (جنرل اسٹور و کریانہ)</option>
+                        <option value="wholesaler">📦 Wholesaler &amp; Bulk Distribution (تھوک ڈیلر)</option>
+                        <option value="confectionery">🍪 Confectionery &amp; Biscuits (کنفیکشنری و بسکٹ)</option>
+                        <option value="hardware">🔧 Hardware, Sanitary &amp; Paint (ہارڈویئر و سینیٹری)</option>
+                        <option value="electronics">💻 Electronics &amp; Home Appliances (الیکٹرانکس)</option>
+                        <option value="cosmetics">💄 Cosmetics &amp; Beauty (کاسمیٹکس)</option>
+                        <option value="auto_parts">🚗 Auto Parts &amp; Spare Parts (آٹو پارٹس)</option>
+                        <option value="bakery">🍞 Bakery, Sweets &amp; Cafe (بیکری و مٹھائی)</option>
+                        <option value="furniture">🪑 Furniture &amp; Decor (فرنیچر)</option>
+                        <option value="other">💼 Other Business (دیگر کاروبار)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📧 Owner Email (Login ID) *</label>
+                    <input type="email" id="agEmail" placeholder="client@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>🔑 Owner Password (min 6 chars) *</label>
+                    <input type="text" id="agPassword" placeholder="Default Password" required minlength="6">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>💳 SaaS Package Tier *</label>
+                    <select id="agPackage" required>
+                        <option value="free">🆓 Free Starter (1 Branch, 50 Items, 150 Bills, Rs. 0/mo)</option>
+                        <option value="starter_single" selected>🏪 Single Agency Pro (1 Branch, 500 Items, Unlimited Bills, Rs. 2,000/mo)</option>
+                        <option value="wholesale_dist">📦 Wholesale Distribution Pro (1 Branch, 1,500 Items, 6 Bookers, Rs. 3,500/mo)</option>
+                        <option value="multi_pro">🏢 Multi-Agency Pro (Up to 3 Branches, 3,000 Items, 12 Bookers, Rs. 5,000/mo)</option>
+                        <option value="enterprise_multi">👑 Enterprise Mega Multi (Up to 10 Branches, Unlimited, Rs. 10,000/mo)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>💵 Monthly Fee Charged (PKR) *</label>
+                    <input type="number" id="agMonthlyFee" placeholder="e.g. 2000" value="2000" min="0" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📱 Owner Mobile (For WhatsApp Bills)</label>
+                    <input type="tel" id="agMobile" placeholder="03001234567">
+                </div>
+                <div class="form-group">
+                    <label>📅 Subscription Duration *</label>
+                    <select id="agDuration">
+                        <option value="1">1 Month (30 Days)</option>
+                        <option value="3">3 Months (Quarterly)</option>
+                        <option value="6">6 Months (Bi-Annual)</option>
+                        <option value="12">1 Year (Annual)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="createAgencyBtn" style="background:#10b981;">
+                <i class="fas fa-check-circle"></i> CREATE AGENCY & ACTIVATE SUBSCRIPTION
+            </button>
+        </form>
+    </div>
+
+    <!-- ===== 📩 INCOMING PACKAGE UPGRADE & FEE PAYMENT REQUESTS ===== -->
+    <div class="panel-card" id="upgradeRequestsCard" style="border-top-color:#10b981;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-inbox"></i> Incoming Package Upgrade &amp; Fee Requests (<span id="upgradeReqCount">0</span>)</h2>
+                <small class="header-note">کلائنٹس کی طرف سے پیکیج اپ گریڈ اور فیس ادائیگی کی درخواستیں — 1 کلک میں ان لاک کریں</small>
+            </div>
+            <button class="btn btn-sm" style="background:#0284c7; color:#fff;" onclick="loadUpgradeRequests()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <div id="upgradeRequestsList">
+            <div class="loading-inline">Loading requests...</div>
+        </div>
+    </div>
+
+    <!-- ===== 💎 EDIT SAAS PACKAGES & LIMITS ===== -->
+    <div class="panel-card" style="border-top-color:#8b5cf6;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-cubes"></i> SaaS Package Tiers, Limits &amp; Pricing Controls</h2>
+                <small class="header-note">سپر ایڈمن کنٹرولز: ہر پیکیج کے بلز کی لمٹ، آرڈر بکر لمٹ، آئٹمز لمٹ اور قیمت (فیس) کم یا زیادہ کریں</small>
+            </div>
+            <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Super%20Admin%20Panel%20Support" target="_blank" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fab fa-whatsapp"></i> Developer WhatsApp: +923346800959
+            </a>
+        </div>
+
+        <!-- Developer Contact Banner -->
+        <div style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:#fff; border-radius:10px; padding:12px 16px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:38px; height:38px; border-radius:50%; background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <div>
+                    <div style="font-size:13px; font-weight:800; color:#f8fafc;">سافٹ ویئر ڈویلپر سپورٹ (Developer Official WhatsApp): <span style="color:#22c55e;">+923346800959</span></div>
+                    <div style="font-size:11px; color:#94a3b8;">کسی بھی پیکیج کی کسٹم کنفیگریشن، بلز و بکرز لمٹس کے لیے ڈویلپر سے براہ راست واٹس ایپ پر رابطہ کیا جا سکتا ہے۔</div>
+                </div>
+            </div>
+            <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Super%20Admin%20Support" target="_blank" style="background:#25D366; color:#fff; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                <i class="fab fa-whatsapp"></i> WhatsApp Chat
+            </a>
+        </div>
+
+        <div id="packagesEditor">
+            <div class="loading-inline">Loading packages...</div>
+        </div>
+    </div>
+
+    <!-- ===== 🏢 ALL REGISTERED AGENCIES ===== -->
+    <div class="panel-card" style="border-top-color:#f59e0b;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+                <h2><i class="fas fa-building"></i> Client Agencies & Subscription Management (<span id="agencyCount">0</span>)</h2>
+                <small class="header-note">کلائنٹس کنٹرول، ماڈیولز لاک/ان لاک، سسپنڈ اور فیس کی تجدید</small>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <input type="text" id="agencySearchInput" placeholder="🔍 Search name, email, phone..." style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; min-width:200px; background:#fff; outline:none; color:#1e293b;">
+                <select id="agencyCategoryFilter" style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
+                    <option value="all">📂 All Business Types</option>
+                </select>
+                <select id="agencyStatusFilter" style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
+                    <option value="all">⚡ All Statuses</option>
+                    <option value="active">🟢 Active</option>
+                    <option value="due">🟠 Expiring in 7 Days</option>
+                    <option value="expired">🔴 Expired</option>
+                    <option value="suspended">⛔ Suspended / Frozen</option>
+                </select>
+            </div>
+        </div>
+        <div id="agenciesList">
+            <div class="loading-inline">Loading client agencies...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDDwKWcixoUThCJQqiVoBcUVsJZI60h43Q",
+        authDomain: "multipos-ed91a.firebaseapp.com",
+        projectId: "multipos-ed91a",
+        storageBucket: "multipos-ed91a.firebasestorage.app",
+        messagingSenderId: "862649586987",
+        appId: "1:862649586987:web:599772124e4e29404ca16e",
+        measurementId: "G-QPCP7S5Q5L"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentAdminUid = null;
+    let allAgencies = [];
+
+    // Master Default Packages
+    const DEFAULT_SAAS_PACKAGES = {
+        free: {
+            name: '🆓 Free Starter',
+            type: 'single',
+            fee: 0,
+            limits: { maxBranches: 1, maxItems: 50, monthlyBills: 150, maxBookers: 1 },
+            allowedTemplates: ['template4', 'template1']
+        },
+        starter_single: {
+            name: '🏪 Single Agency Pro',
+            type: 'single',
+            fee: 2000,
+            limits: { maxBranches: 1, maxItems: 500, monthlyBills: 99999, maxBookers: 3 },
+            allowedTemplates: ['template4', 'template1', 'template6']
+        },
+        wholesale_dist: {
+            name: '📦 Wholesale Distribution Pro',
+            type: 'single',
+            fee: 3500,
+            limits: { maxBranches: 1, maxItems: 1500, monthlyBills: 99999, maxBookers: 6 },
+            allowedTemplates: ['template4', 'template1', 'template6', 'template2']
+        },
+        multi_pro: {
+            name: '🏢 Multi-Agency Pro',
+            type: 'multi',
+            fee: 5000,
+            limits: { maxBranches: 3, maxItems: 3000, monthlyBills: 99999, maxBookers: 12 },
+            allowedTemplates: ['template4', 'template1', 'template2', 'template6', 'template7']
+        },
+        enterprise_multi: {
+            name: '👑 Enterprise Mega Multi',
+            type: 'multi',
+            fee: 10000,
+            limits: { maxBranches: 10, maxItems: 99999, monthlyBills: 99999, maxBookers: 50 },
+            allowedTemplates: ['template4', 'template1', 'template2', 'template3', 'template5', 'template6', 'template7', 'template8']
+        }
+    };
+
+    // Auth Guard
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            window.location.href = 'auth.html';
+            return;
+        }
+        try {
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (!doc.exists || doc.data().role !== 'super-admin') {
+                Swal.fire('⛔ Access Denied', 'Sirf Super Admin yahan aa sakta hai!', 'error')
+                    .then(() => window.location.href = 'dashboard.html');
+                return;
+            }
+            currentAdminUid = user.uid;
+            document.getElementById('adminEmail').innerText = user.email;
+
+            await loadPackages();
+            await loadUpgradeRequests();
+            await loadAgencies();
+        } catch (e) {
+            console.error('Super Admin init error:', e);
+        }
+    });
+
+    // Auto-fill suggested fee on package change
+    document.getElementById('agPackage').addEventListener('change', function() {
+        const fees = { 'free': 0, 'starter_single': 2000, 'wholesale_dist': 3500, 'multi_pro': 5000, 'enterprise_multi': 10000 };
+        document.getElementById('agMonthlyFee').value = fees[this.value] !== undefined ? fees[this.value] : 2000;
+    });
+
+    // ============================================
+    // 📩 INCOMING PACKAGE UPGRADE & FEE PAYMENT REQUESTS
+    // ============================================
+    async function loadUpgradeRequests() {
+        const container = document.getElementById('upgradeRequestsList');
+        if (!container) return;
+        try {
+            const snap = await db.collection('upgradeRequests').orderBy('createdAt', 'desc').limit(25).get();
+            if (snap.empty) {
+                container.innerHTML = '<div class="empty-state" style="padding:15px; color:#64748b; font-size:12.5px;">کوئی زیر التواء درخواست نہیں ہے۔ سب کلائنٹس ایکٹو ہیں!</div>';
+                const countBadge = document.getElementById('upgradeReqCount');
+                if (countBadge) countBadge.innerText = '0';
+                return;
+            }
+
+            let pendingCount = 0;
+            let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">';
+            snap.forEach(doc => {
+                const req = doc.data();
+                const isPending = req.status === 'pending';
+                if (isPending) pendingCount++;
+
+                const dateStr = req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent';
+                const pkgName = req.requestedPackageId ? req.requestedPackageId.toUpperCase() : 'PRO';
+
+                html += `
+                <div style="border:1.5px solid ${isPending ? '#10b981' : '#e2e8f0'}; border-radius:10px; padding:12px; background:${isPending ? '#f0fdf4' : '#f8fafc'};">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <b style="font-size:13.5px; color:#0f172a;">🏢 ${req.agencyName || 'Agency'}</b>
+                        <span class="branch-badge" style="background:${isPending ? '#dcfce7' : '#f1f5f9'}; color:${isPending ? '#15803d' : '#64748b'}; font-weight:800; font-size:10px;">
+                            ${isPending ? '⏳ PENDING' : '✅ APPROVED'}
+                        </span>
+                    </div>
+                    <div style="font-size:11.5px; color:#475569; margin-bottom:4px;">
+                        <span>📧 ${req.userEmail || '—'}</span> &nbsp;|&nbsp; <span>📅 ${dateStr}</span>
+                    </div>
+                    <div style="font-size:12px; margin-bottom:6px;">
+                        Target: <b style="color:#0284c7;">${pkgName}</b>
+                        ${req.requestedModule ? ` &nbsp;|&nbsp; Module: <b style="color:#8b5cf6;">${req.requestedModule}</b>` : ''}
+                    </div>
+                    ${req.paymentNote ? `<div style="background:#fff; border:1px dashed #cbd5e1; border-radius:6px; padding:5px 8px; font-size:11.5px; color:#334155; margin-bottom:8px;">📝 Trx / Note: <b>${req.paymentNote}</b></div>` : ''}
+                    
+                    ${isPending ? `
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="btn btn-sm" style="flex:1; background:#10b981; color:#fff;" onclick="approveUpgradeRequest('${doc.id}', '${req.agencyId}', '${req.requestedPackageId || 'starter_single'}', '${(req.agencyName || '').replace(/'/g, "\\'")}')">
+                            <i class="fas fa-check"></i> Approve &amp; Unlock
+                        </button>
+                        <button class="btn btn-sm" style="background:#ef4444; color:#fff;" onclick="dismissUpgradeRequest('${doc.id}')" title="Dismiss">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    ` : `<div style="font-size:11px; color:#10b981; font-weight:bold; margin-top:4px;">✅ Unlocked &amp; Activated</div>`}
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            const countBadge = document.getElementById('upgradeReqCount');
+            if (countBadge) countBadge.innerText = pendingCount;
+        } catch (e) {
+            console.warn('Load requests error:', e);
+            container.innerHTML = '<div class="empty-state" style="padding:10px; font-size:12px;">Requests history loaded</div>';
+        }
+    }
+
+    async function approveUpgradeRequest(reqId, agencyId, targetPackageId, agencyName) {
+        const pkgFeeMap = { 'free': 0, 'starter_single': 2000, 'wholesale_dist': 3500, 'multi_pro': 5000, 'enterprise_multi': 10000 };
+        const fee = pkgFeeMap[targetPackageId] || 2000;
+
+        const res = await Swal.fire({
+            title: `Approve & Unlock Package?`,
+            html: `Agency: <b>${agencyName}</b><br>Target: <b>${targetPackageId.toUpperCase()}</b> (Rs ${fee.toLocaleString()}/mo)<br><br><small style="color:#10b981;">کلائنٹ کا پیکیج فوری ایکٹو ہو جائے گا اور لاک شدہ تمام ماڈیولز ان لاک ہو جائیں گے۔</small>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: '✅ Approve & Unlock Now'
+        });
+
+        if (res.isConfirmed) {
+            Swal.fire({ title: 'Unlocking Package...', didOpen: () => Swal.showLoading() });
+            try {
+                const baseDate = new Date();
+                baseDate.setMonth(baseDate.getMonth() + 1);
+                const newExpiryStr = baseDate.toISOString().slice(0, 10);
+
+                await db.collection('agencies').doc(agencyId).update({
+                    packageId: targetPackageId,
+                    monthlyFee: fee,
+                    subscriptionExpiry: newExpiryStr,
+                    subscriptionStatus: 'active',
+                    status: 'active',
+                    isSuspended: false,
+                    lastUnlockedAt: new Date().toISOString()
+                });
+
+                await db.collection('upgradeRequests').doc(reqId).update({
+                    status: 'approved',
+                    approvedAt: new Date().toISOString()
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '🎉 Package Unlocked!',
+                    html: `<b>${agencyName}</b> ko <b>${targetPackageId.toUpperCase()}</b> par unlock kar diya gaya hai!<br>Valid till: <b>${newExpiryStr}</b>`
+                });
+
+                await loadUpgradeRequests();
+                await loadAgencies();
+            } catch (e) {
+                console.error('Approve upgrade error:', e);
+                Swal.fire('Error', 'Approval failed: ' + e.message, 'error');
+            }
+        }
+    }
+
+    async function dismissUpgradeRequest(reqId) {
+        const res = await Swal.fire({
+            title: 'Dismiss Request?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, Dismiss'
+        });
+        if (res.isConfirmed) {
+            try {
+                await db.collection('upgradeRequests').doc(reqId).update({ status: 'dismissed' });
+                await loadUpgradeRequests();
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+    }
+
+    // ============================================
+    // 💳 LOAD & EDIT PACKAGES
+    // ============================================
+    async function loadPackages() {
+        const container = document.getElementById('packagesEditor');
+        try {
+            const snap = await db.collection('packages').get();
+            if (snap.empty) {
+                for (const [id, pkg] of Object.entries(DEFAULT_SAAS_PACKAGES)) {
+                    await db.collection('packages').doc(id).set(pkg);
+                }
+                renderPackages(DEFAULT_SAAS_PACKAGES);
+                return;
+            }
+
+            const pkgs = {};
+            snap.forEach(d => { pkgs[d.id] = d.data(); });
+            renderPackages(pkgs);
+        } catch (e) {
+            container.innerHTML = '<div class="error-inline">⚠️ Packages load failed: ' + e.message + '</div>';
+        }
+    }
+
+    function renderPackages(pkgs) {
+        const container = document.getElementById('packagesEditor');
+        let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px;">';
+
+        for (const [id, pkg] of Object.entries(pkgs)) {
+            const lim = pkg.limits || {};
+            const isMulti = pkg.type === 'multi' || (lim.maxBranches && lim.maxBranches > 1);
+
+            html += `
+            <div class="package-editor" data-pkg="${id}" style="border:1.5px solid #cbd5e1; border-radius:12px; padding:15px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.04); position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <div style="font-size:15px; font-weight:800; color:var(--primary);">
+                        ${pkg.name || id}
+                    </div>
+                    <span style="font-size:10px; font-weight:800; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:10px;">ID: ${id}</span>
+                </div>
+                <div style="font-size:12px; margin-bottom:12px;">
+                    <span class="branch-badge ${isMulti ? 'badge-pkg-multi' : 'badge-pkg-single'}">
+                        ${isMulti ? '🏢 Multi-Agency Tier' : '🏪 Single Agency Tier'}
+                    </span>
+                </div>
+
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:11px; font-weight:bold; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span>💵 Monthly Fee / Price (PKR)</span>
+                        <span style="color:#64748b; font-weight:normal;">ماہانہ فیس</span>
+                    </label>
+                    <input type="number" class="lim-fee" value="${pkg.fee !== undefined ? pkg.fee : 0}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0284c7;">
+                </div>
+
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:11px; font-weight:bold; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span>📄 Monthly Bills Limit</span>
+                        <span style="color:#64748b; font-weight:normal;">ماہانہ بلز کی لمٹ</span>
+                    </label>
+                    <input type="number" class="lim-bills" value="${lim.monthlyBills !== undefined ? lim.monthlyBills : 150}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                    <small style="font-size:10px; color:#64748b;">(99999 = لامحدود Unlimited Bills)</small>
+                </div>
+
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:11px; font-weight:bold; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span>📦 Max Stock Items</span>
+                        <span style="color:#64748b; font-weight:normal;">آئٹمز کی زیادہ سے زیادہ تعداد</span>
+                    </label>
+                    <input type="number" class="lim-items" value="${lim.maxItems !== undefined ? lim.maxItems : 50}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                    <small style="font-size:10px; color:#64748b;">(99999 = لامحدود Items)</small>
+                </div>
+
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:11px; font-weight:bold; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span>👥 Max Order Bookers / Staff</span>
+                        <span style="color:#64748b; font-weight:normal;">آرڈر بکرز لمٹ</span>
+                    </label>
+                    <input type="number" class="lim-bookers" value="${lim.maxBookers !== undefined ? lim.maxBookers : 1}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="font-size:11px; font-weight:bold; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span>🏢 Max Branches Allowed</span>
+                        <span style="color:#64748b; font-weight:normal;">برانچز لمٹ</span>
+                    </label>
+                    <input type="number" class="lim-branches" value="${lim.maxBranches || 1}" min="1" max="10" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                </div>
+
+                <button class="btn btn-sm btn-save-pkg" style="width:100%; background:#8b5cf6; color:#fff; font-weight:800; padding:8px; border-radius:8px; border:none; cursor:pointer;" onclick="savePackageLimits('${id}')">
+                    💾 Save ${pkg.name || id} Limits &amp; Price
+                </button>
+            </div>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    async function savePackageLimits(pkgId) {
+        const box = document.querySelector(`.package-editor[data-pkg="${pkgId}"]`);
+        const fee = parseInt(box.querySelector('.lim-fee').value) || 0;
+        const bills = parseInt(box.querySelector('.lim-bills').value) || 150;
+        const branches = parseInt(box.querySelector('.lim-branches').value) || 1;
+        const items = parseInt(box.querySelector('.lim-items').value) || 50;
+        const bookers = parseInt(box.querySelector('.lim-bookers').value) || 1;
+
+        try {
+            await db.collection('packages').doc(pkgId).set({
+                fee: fee,
+                type: branches > 1 ? 'multi' : 'single',
+                limits: {
+                    maxBranches: branches,
+                    monthlyBills: bills,
+                    maxItems: items,
+                    maxBookers: bookers
+                },
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 1800, icon: 'success', title: `✅ ${pkgId.toUpperCase()} limits & fee updated!`
+            });
+        } catch (e) {
+            Swal.fire('Error', 'Save failed: ' + e.message, 'error');
+        }
+    }
+
+    // ============================================
+    // 🏢 LOAD & RENDER AGENCIES + SUBSCRIPTION STATUS
+    // ============================================
+    let currentAgencyTypeFilter = 'all';
+    let currentAgencyStatusFilter = 'all';
+    let currentSearchQuery = '';
+
+    function initAgencyFilters() {
+        const catSel = document.getElementById('agencyCategoryFilter');
+        if (catSel && !catSel.dataset.initialized) {
+            if (window.BusinessCategories) {
+                window.BusinessCategories.populateSelect(catSel, 'all', { includeAll: true, allLabel: '📂 All Business Types' });
+            }
+            catSel.dataset.initialized = 'true';
+            catSel.addEventListener('change', function() {
+                currentAgencyTypeFilter = this.value;
+                renderAgenciesList();
+            });
+        }
+
+        const statSel = document.getElementById('agencyStatusFilter');
+        if (statSel && !statSel.dataset.initialized) {
+            statSel.dataset.initialized = 'true';
+            statSel.addEventListener('change', function() {
+                currentAgencyStatusFilter = this.value;
+                renderAgenciesList();
+            });
+        }
+
+        const searchInp = document.getElementById('agencySearchInput');
+        if (searchInp && !searchInp.dataset.initialized) {
+            searchInp.dataset.initialized = 'true';
+            searchInp.addEventListener('input', function() {
+                currentSearchQuery = this.value.toLowerCase().trim();
+                renderAgenciesList();
+            });
+        }
+    }
+
+    function renderAgenciesList() {
+        const container = document.getElementById('agenciesList');
+        if (!container) return;
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        let filtered = allAgencies.filter(ag => {
+            // Search query match (name, email, phone, city)
+            if (currentSearchQuery) {
+                const nameM = String(ag.name || '').toLowerCase().includes(currentSearchQuery);
+                const emailM = String(ag.ownerEmail || '').toLowerCase().includes(currentSearchQuery);
+                const phoneM = String(ag.mobile || ag.ownerMobile || '').toLowerCase().includes(currentSearchQuery);
+                const cityM = String(ag.city || '').toLowerCase().includes(currentSearchQuery);
+                if (!nameM && !emailM && !phoneM && !cityM) return false;
+            }
+
+            // Category filter match
+            if (currentAgencyTypeFilter !== 'all') {
+                const bType = String(ag.businessType || '').toLowerCase();
+                const target = currentAgencyTypeFilter.toLowerCase();
+                if (bType !== target) {
+                    if (window.BusinessCategories) {
+                        const cat = window.BusinessCategories.getById(bType);
+                        if (!cat || (cat.id !== target && (!Array.isArray(cat.aliasIds) || !cat.aliasIds.includes(target)))) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
+
+            // Status filter match
+            const expiry = ag.subscriptionExpiry || ag.expiryDate || '2026-12-31';
+            const isSuspended = ag.status === 'suspended' || ag.isSuspended === true;
+            const isExpired = expiry < todayStr;
+            const daysLeft = Math.ceil((new Date(expiry) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
+            const isDueSoon = !isExpired && daysLeft <= 7;
+
+            if (currentAgencyStatusFilter === 'suspended' && !isSuspended) return false;
+            if (currentAgencyStatusFilter === 'expired' && (!isExpired || isSuspended)) return false;
+            if (currentAgencyStatusFilter === 'due' && (!isDueSoon || isSuspended)) return false;
+            if (currentAgencyStatusFilter === 'active' && (isExpired || isSuspended)) return false;
+
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="empty-state">Koi client agency match nahi hui! Search ya filters tabdeel karein.</div>';
+            return;
+        }
+
+        let html = '';
+
+        filtered.forEach(ag => {
+            const expiry = ag.subscriptionExpiry || ag.expiryDate || '2026-12-31';
+            const fee = Number(ag.monthlyFee !== undefined ? ag.monthlyFee : 2000);
+            const pkg = ag.packageId || 'free';
+            const isSuspended = ag.status === 'suspended' || ag.isSuspended === true;
+
+            // Category badge
+            const catObj = window.BusinessCategories ? window.BusinessCategories.getById(ag.businessType) : null;
+            const catBadge = catObj 
+                ? `<span class="branch-badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;"><i class="fas fa-tag"></i> ${catObj.icon} ${catObj.nameEn}</span>`
+                : `<span class="branch-badge" style="background:#f1f5f9; color:#475569;"><i class="fas fa-tag"></i> 💼 ${ag.businessType || 'General'}</span>`;
+
+            // Status Evaluation
+            let statusBadge = '<span class="branch-badge badge-sub-active">🟢 Active</span>';
+            if (isSuspended) {
+                statusBadge = '<span class="branch-badge" style="background:#fee2e2; color:#991b1b; font-weight:bold;">⛔ SUSPENDED / FROZEN</span>';
+            } else if (expiry < todayStr) {
+                statusBadge = '<span class="branch-badge badge-sub-expired">🔴 Expired / Locked</span>';
+            } else {
+                const daysLeft = Math.ceil((new Date(expiry) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
+                if (daysLeft <= 7) {
+                    statusBadge = `<span class="branch-badge badge-sub-due">🟠 Expiring in ${daysLeft} Days</span>`;
+                }
+            }
+
+            // Suspend Button
+            const suspendBtn = isSuspended
+                ? `<button class="btn btn-sm" style="background:#10b981; color:#fff;" onclick="toggleAgencySuspend('${ag.id}', false, '${(ag.name || '').replace(/'/g, "\\'")}')">
+                    <i class="fas fa-play"></i> Unfreeze
+                   </button>`
+                : `<button class="btn btn-sm" style="background:#f59e0b; color:#fff;" onclick="toggleAgencySuspend('${ag.id}', true, '${(ag.name || '').replace(/'/g, "\\'")}')">
+                    <i class="fas fa-pause"></i> Freeze / Suspend
+                   </button>`;
+
+            html += `
+            <div class="agency-item" data-id="${ag.id}" style="${isSuspended ? 'border-left: 4px solid #ef4444; background:#fffafb;' : ''}">
+                <div class="agency-main">
+                    <div class="agency-name">
+                        <span>🏢 ${ag.name || 'Unnamed Agency'}</span>
+                        ${catBadge}
+                        ${statusBadge}
+                    </div>
+                    <div class="agency-meta">
+                        <span>📧 ${ag.ownerEmail || 'No Email'}</span>
+                        <span>📱 ${ag.mobile || ag.ownerMobile || '—'}</span>
+                        <span>💳 Package: <b>${pkg.toUpperCase()}</b></span>
+                        <span>💵 Fee: <b>Rs ${fee.toLocaleString()} / mo</b></span>
+                        <span>📅 Valid Till: <b>${expiry}</b></span>
+                    </div>
+                </div>
+                <div class="agency-actions">
+                    <button class="btn btn-sm" style="background:#10b981; color:#fff;" onclick="openPaymentModal('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}', ${fee}, '${expiry}')">
+                        💳 Record Fee &amp; Extend
+                    </button>
+                    <button class="btn btn-sm" style="background:#0284c7; color:#fff;" onclick="editPackageAndFee('${ag.id}')">
+                        ⚙️ Modules &amp; Tiers
+                    </button>
+                    ${suspendBtn}
+                    <button class="btn btn-sm" style="background:#ef4444; color:#fff;" onclick="deleteAgency('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}')">
+                        🗑️ Delete
+                    </button>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Toggle Agency Freeze / Suspend status
+    async function toggleAgencySuspend(agencyId, shouldSuspend, agencyName) {
+        const actionWord = shouldSuspend ? 'Freeze / Suspend' : 'Unfreeze / Activate';
+        const result = await Swal.fire({
+            title: `${actionWord} Account?`,
+            html: shouldSuspend
+                ? `<b>${agencyName}</b> ko عارضی طور پر سسپنڈ کرنا چاہتے ہیں؟<br><small style="color:#ef4444;">کلائنٹ کا سافٹ ویئر لاگ اِن اور ڈیش بورڈ بلاک ہو جائے گا جب تک آپ دوبارہ ایکٹیویٹ نہ کریں۔</small>`
+                : `<b>${agencyName}</b> کا اکاؤنٹ دوبارہ بحال (Activate) کرنا چاہتے ہیں؟`,
+            icon: shouldSuspend ? 'warning' : 'question',
+            showCancelButton: true,
+            confirmButtonColor: shouldSuspend ? '#f59e0b' : '#10b981',
+            confirmButtonText: shouldSuspend ? '⏸️ Freeze Account' : '🟢 Activate Account'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await db.collection('agencies').doc(agencyId).update({
+                    status: shouldSuspend ? 'suspended' : 'active',
+                    isSuspended: shouldSuspend,
+                    updatedAt: new Date().toISOString()
+                });
+                Swal.fire({
+                    toast: true, position: 'top-end', showConfirmButton: false,
+                    timer: 2000, icon: 'success',
+                    title: `✅ Agency ${shouldSuspend ? 'Frozen' : 'Activated'}!`
+                });
+                await loadAgencies();
+            } catch (e) {
+                Swal.fire('Error', 'Status change failed: ' + e.message, 'error');
+            }
+        }
+    }
+
+    async function loadAgencies() {
+        const container = document.getElementById('agenciesList');
+        try {
+            initAgencyFilters();
+            const snap = await db.collection('agencies').get();
+            allAgencies = [];
+            snap.forEach(d => allAgencies.push({ id: d.id, ...d.data() }));
+
+            document.getElementById('agencyCount').innerText = allAgencies.length;
+            calculateRevenueMetrics();
+
+            if (allAgencies.length === 0) {
+                container.innerHTML = '<div class="empty-state">No client agencies registered yet.</div>';
+                return;
+            }
+
+            renderAgenciesList();
+        } catch (e) {
+            console.error('Agencies load error:', e);
+            container.innerHTML = '<div class="error-inline">Failed to load agencies: ' + e.message + '</div>';
+        }
+    }
+
+    function calculateRevenueMetrics() {
+        let mrr = 0;
+        let activeSubs = 0;
+        let dueSubs = 0;
+        let expiredSubs = 0;
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        allAgencies.forEach(ag => {
+            const fee = Number(ag.monthlyFee !== undefined ? ag.monthlyFee : 2000);
+            const expiry = ag.subscriptionExpiry || ag.expiryDate || '2026-12-31';
+
+            if (expiry < todayStr) {
+                expiredSubs++;
+            } else {
+                activeSubs++;
+                mrr += fee;
+                const daysLeft = Math.ceil((new Date(expiry) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
+                if (daysLeft <= 7) dueSubs++;
+            }
+        });
+
+        document.getElementById('metricMRR').innerText = 'Rs ' + Math.round(mrr).toLocaleString();
+        document.getElementById('metricTotalAgencies').innerText = allAgencies.length;
+        document.getElementById('metricActiveSubs').innerText = activeSubs;
+        document.getElementById('metricDueSubs').innerText = dueSubs;
+        document.getElementById('metricExpiredSubs').innerText = expiredSubs;
+    }
+
+    // ============================================
+    // 💳 RECORD FEE PAYMENT & EXTEND SUBSCRIPTION
+    // ============================================
+    async function openPaymentModal(agencyId, agencyName, defaultFee, currentExpiry) {
+        const { value: formValues } = await Swal.fire({
+            title: `💳 Collect Fee: ${agencyName}`,
+            html: `
+                <div style="text-align:left; font-size:13px;">
+                    <label><b>Current Expiry Date:</b> <span style="color:#0284c7; font-weight:bold;">${currentExpiry}</span></label>
+                    <hr style="margin:8px 0; border:none; border-top:1px dashed #cbd5e1;">
+
+                    <label style="font-weight:bold;">📅 Extend Subscription By:</label>
+                    <select id="swalExtMonths" class="swal2-input" style="margin-top:4px; margin-bottom:10px;">
+                        <option value="1">+ 1 Month (30 Days)</option>
+                        <option value="3">+ 3 Months (Quarterly)</option>
+                        <option value="6">+ 6 Months (Bi-Annual)</option>
+                        <option value="12">+ 1 Year (Annual)</option>
+                    </select>
+
+                    <label style="font-weight:bold;">💵 Amount Received (PKR):</label>
+                    <input type="number" id="swalPayAmount" class="swal2-input" value="${defaultFee}" style="margin-top:4px; margin-bottom:10px;">
+
+                    <label style="font-weight:bold;">🏦 Payment Method:</label>
+                    <select id="swalPayMethod" class="swal2-input" style="margin-top:4px; margin-bottom:10px;">
+                        <option value="jazzcash">📱 JazzCash</option>
+                        <option value="easypaisa">📱 EasyPaisa</option>
+                        <option value="bank">🏦 Bank Transfer</option>
+                        <option value="cash">💵 Cash in Hand</option>
+                    </select>
+
+                    <label style="font-weight:bold;">📝 Trx ID / Reference Note:</label>
+                    <input type="text" id="swalPayNote" class="swal2-input" placeholder="e.g. Trx ID 982348" style="margin-top:4px;">
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: '✅ Record Fee & Extend Expiry',
+            confirmButtonColor: '#10b981',
+            preConfirm: () => {
+                return {
+                    months: parseInt(document.getElementById('swalExtMonths').value) || 1,
+                    amount: parseFloat(document.getElementById('swalPayAmount').value) || 0,
+                    method: document.getElementById('swalPayMethod').value,
+                    note: document.getElementById('swalPayNote').value.trim()
+                };
+            }
+        });
+
+        if (formValues) {
+            Swal.fire({ title: 'Extending Subscription...', didOpen: () => Swal.showLoading() });
+            try {
+                // Calculate new expiry
+                let baseDate = new Date();
+                const curExpDate = new Date(currentExpiry);
+                if (curExpDate > baseDate) {
+                    baseDate = curExpDate; // Extend from existing expiry
+                }
+                baseDate.setMonth(baseDate.getMonth() + formValues.months);
+                const newExpiryStr = baseDate.toISOString().slice(0, 10);
+
+                const paymentEntry = {
+                    amount: formValues.amount,
+                    monthsAdded: formValues.months,
+                    method: formValues.method,
+                    note: formValues.note,
+                    date: new Date().toISOString(),
+                    recordedBy: currentAdminUid
+                };
+
+                await db.collection('agencies').doc(agencyId).update({
+                    subscriptionExpiry: newExpiryStr,
+                    subscriptionStatus: 'active',
+                    lastPaymentDate: new Date().toISOString(),
+                    billingHistory: firebase.firestore.FieldValue.arrayUnion(paymentEntry)
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '🎉 Subscription Extended!',
+                    html: `<b>${agencyName}</b> ki validity ab <b>${newExpiryStr}</b> tak barha di gayi hai!<br>Fee: Rs ${formValues.amount.toLocaleString()}`
+                });
+
+                await loadAgencies();
+
+            } catch (e) {
+                console.error('Extend failed:', e);
+                Swal.fire('Error', 'Extension failed: ' + e.message, 'error');
+            }
+        }
+    }
+
+    // Edit package tier, custom limits, category, and agency permissions
+    async function editPackageAndFee(agencyId) {
+        const ag = allAgencies.find(x => x.id === agencyId);
+        if (!ag) return;
+
+        const curLimits = ag.customLimits || {};
+        const curPerms = ag.permissions || {
+            stock: true,
+            delivery_returns: true,
+            customers: true,
+            reports: true,
+            profit: true,
+            expenses: true,
+            owner: true,
+            backup: true,
+            alerts: true,
+            multi_agency: false
+        };
+
+        // Prepare Business Category Options
+        let catOptionsHtml = '';
+        if (window.BusinessCategories) {
+            window.BusinessCategories.getAll().forEach(c => {
+                const isSel = (ag.businessType === c.id || (Array.isArray(c.aliasIds) && c.aliasIds.includes(ag.businessType))) ? 'selected' : '';
+                catOptionsHtml += `<option value="${c.id}" ${isSel}>${c.icon} ${c.nameEn} — ${c.nameUr}</option>`;
+            });
+        }
+
+        const { value: formValues } = await Swal.fire({
+            title: `⚙️ Manage Agency: ${ag.name}`,
+            width: '680px',
+            html: `
+                <div style="text-align:left; font-size:13px; line-height:1.5;">
+                    <div style="margin-bottom:12px;">
+                        <label><b>🏪 Business Category (کاروبار کی قسم):</b></label>
+                        <select id="swalEditBizType" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px; font-weight:bold; color:#0f172a;">
+                            ${catOptionsHtml}
+                        </select>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                        <div>
+                            <label><b>Package Tier:</b></label>
+                            <select id="swalEditPkg" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
+                                <option value="free" ${ag.packageId === 'free' ? 'selected' : ''}>🆓 Free Starter</option>
+                                <option value="starter_single" ${ag.packageId === 'starter_single' ? 'selected' : ''}>🏪 Single Agency Pro</option>
+                                <option value="wholesale_dist" ${ag.packageId === 'wholesale_dist' ? 'selected' : ''}>📦 Wholesale Distribution</option>
+                                <option value="multi_pro" ${ag.packageId === 'multi_pro' ? 'selected' : ''}>🏢 Multi-Branch Pro</option>
+                                <option value="enterprise_multi" ${ag.packageId === 'enterprise_multi' ? 'selected' : ''}>👑 Enterprise Unlimited</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label><b>Monthly Fee (PKR):</b></label>
+                            <input type="number" id="swalEditFee" value="${ag.monthlyFee !== undefined ? ag.monthlyFee : 2000}" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
+                        </div>
+                    </div>
+
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:12px;">
+                        <b style="color:#0f172a; font-size:12px; display:block; margin-bottom:6px;">📊 Custom Package Limits:</b>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                            <div>
+                                <label style="font-size:11px; color:#475569;">Max Staff / Bookers</label>
+                                <input type="number" id="swalLimitBookers" value="${curLimits.maxBookers || 10}" style="width:100%; box-sizing:border-box; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+                            </div>
+                            <div>
+                                <label style="font-size:11px; color:#475569;">Max Stock Items</label>
+                                <input type="number" id="swalLimitItems" value="${curLimits.maxItems || 500}" style="width:100%; box-sizing:border-box; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+                            </div>
+                            <div>
+                                <label style="font-size:11px; color:#475569;">Monthly Bills</label>
+                                <input type="number" id="swalLimitBills" value="${curLimits.monthlyBills || 1500}" style="width:100%; box-sizing:border-box; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <b style="color:#166534; font-size:12px;"><i class="fas fa-lock"></i> SaaS Module Locks &amp; Permissions:</b>
+                            <small style="color:#15803d; font-size:11px;">(Uncheck to lock module for client)</small>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permStock" ${curPerms.stock !== false ? 'checked' : ''}> 📦 Stock &amp; Schemes
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permKhata" ${curPerms.customers !== false ? 'checked' : ''}> 👥 Customer Khata Ledger
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#b45309; font-weight:bold;">
+                                <input type="checkbox" id="permProfit" ${curPerms.profit !== false ? 'checked' : ''}> 💰 Profit Analytics (Premium)
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permExpenses" ${curPerms.expenses !== false ? 'checked' : ''}> 💸 Daily Expenses Register
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permReports" ${curPerms.reports !== false ? 'checked' : ''}> 📊 Advanced Sales Reports
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permDelivery" ${curPerms.delivery_returns !== false ? 'checked' : ''}> 🚚 Van Dispatch &amp; Return
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permOwner" ${curPerms.owner !== false ? 'checked' : ''}> 👥 Bookers &amp; Staff (PINs)
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permBackup" ${curPerms.backup !== false ? 'checked' : ''}> 💾 Backup &amp; Restore
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permAlerts" ${curPerms.alerts !== false ? 'checked' : ''}> 🔔 Low Stock Alerts
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#db2777; font-weight:bold;">
+                                <input type="checkbox" id="permMultiBranch" ${curPerms.multi_agency ? 'checked' : ''}> 🏢 Multi-Branch Hub
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: '💾 Save All Settings',
+            confirmButtonColor: '#0284c7',
+            preConfirm: () => {
+                return {
+                    businessType: document.getElementById('swalEditBizType').value,
+                    packageId: document.getElementById('swalEditPkg').value,
+                    monthlyFee: parseFloat(document.getElementById('swalEditFee').value) || 0,
+                    customLimits: {
+                        maxBookers: parseInt(document.getElementById('swalLimitBookers').value) || 10,
+                        maxItems: parseInt(document.getElementById('swalLimitItems').value) || 500,
+                        monthlyBills: parseInt(document.getElementById('swalLimitBills').value) || 1500
+                    },
+                    permissions: {
+                        stock: document.getElementById('permStock').checked,
+                        customers: document.getElementById('permKhata').checked,
+                        profit: document.getElementById('permProfit').checked,
+                        expenses: document.getElementById('permExpenses').checked,
+                        reports: document.getElementById('permReports').checked,
+                        delivery_returns: document.getElementById('permDelivery').checked,
+                        owner: document.getElementById('permOwner').checked,
+                        backup: document.getElementById('permBackup').checked,
+                        alerts: document.getElementById('permAlerts').checked,
+                        multi_agency: document.getElementById('permMultiBranch').checked
+                    }
+                };
+            }
+        });
+
+        if (formValues) {
+            try {
+                await db.collection('agencies').doc(agencyId).update({
+                    businessType: formValues.businessType,
+                    packageId: formValues.packageId,
+                    monthlyFee: formValues.monthlyFee,
+                    customLimits: formValues.customLimits,
+                    permissions: formValues.permissions,
+                    updatedAt: new Date().toISOString()
+                });
+
+                // Update default limits package for this agency
+                await db.collection('packages').doc(formValues.packageId).set({
+                    name: formValues.packageId,
+                    limits: formValues.customLimits
+                }, { merge: true });
+
+                Swal.fire({
+                    toast: true, position: 'top-end', showConfirmButton: false,
+                    timer: 2000, icon: 'success',
+                    title: `✅ ${ag.name} settings updated!`
+                });
+
+                await loadAgencies();
+
+            } catch (e) {
+                console.error('Update agency error:', e);
+                Swal.fire('Error', 'Update failed: ' + e.message, 'error');
+            }
+        }
+    }
+
+    // Delete agency
+    async function deleteAgency(agencyId, agencyName) {
+        const res = await Swal.fire({
+            title: `🗑️ Delete ${agencyName}?`,
+            text: 'Is agency ka sara record permanently delete ho jayega!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, Delete'
+        });
+        if (res.isConfirmed) {
+            try {
+                await db.collection('agencies').doc(agencyId).delete();
+                Swal.fire('Deleted!', 'Agency removed.', 'success');
+                await loadAgencies();
+            } catch (e) {
+                Swal.fire('Error', e.message, 'error');
+            }
+        }
+    }
+
+    // Refresh button
+    document.getElementById('refreshAdminBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('refreshAdminBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        btn.disabled = true;
+        await loadAgencies();
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Revenue';
+        btn.disabled = false;
+        Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, icon: 'success', title: 'Revenue updated!' });
+    });
+
+    // Create Agency Form Submit
+    document.getElementById('createAgencyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById('agName').value.trim();
+        const bizType = document.getElementById('agType').value;
+        const email = document.getElementById('agEmail').value.trim().toLowerCase();
+        const password = document.getElementById('agPassword').value;
+        const pkgId = document.getElementById('agPackage').value;
+        const monthlyFee = parseFloat(document.getElementById('agMonthlyFee').value) || 0;
+        const mobile = document.getElementById('agMobile').value.trim();
+        const durationMonths = parseInt(document.getElementById('agDuration').value) || 1;
+
+        if (!name || !email || password.length < 6) {
+            Swal.fire('⚠️', 'Tamam zaroori fields darj karein!', 'warning');
+            return;
+        }
+
+        const createBtn = document.getElementById('createAgencyBtn');
+        createBtn.disabled = true;
+        createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Agency & Owner...';
+
+        try {
+            // Secondary Firebase App to create user without logging out current Super Admin
+            const secondaryApp = firebase.initializeApp(firebaseConfig, 'SecondaryApp-' + Date.now());
+            const secAuth = secondaryApp.auth();
+
+            const cred = await secAuth.createUserWithEmailAndPassword(email, password);
+            const ownerUid = cred.user.uid;
+
+            await secAuth.signOut();
+            secondaryApp.delete();
+
+            // Calculate subscription expiry date
+            const expDate = new Date();
+            expDate.setMonth(expDate.getMonth() + durationMonths);
+            const expDateStr = expDate.toISOString().slice(0, 10);
+
+            // 1. Create Agency Doc
+            const agencyRef = await db.collection('agencies').add({
+                name: name,
+                businessType: bizType,
+                packageId: pkgId,
+                monthlyFee: monthlyFee,
+                subscriptionExpiry: expDateStr,
+                subscriptionStatus: 'active',
+                status: 'active',
+                ownerUid: ownerUid,
+                ownerEmail: email,
+                ownerMobile: mobile,
+                mobile: mobile,
+                billPrefixes: { stock: 'STK-' },
+                createdAt: new Date().toISOString(),
+                createdBy: currentAdminUid
+            });
+
+            // 2. Create Owner User Profile Doc
+            await db.collection('users').doc(ownerUid).set({
+                email: email,
+                name: name + ' (Owner)',
+                role: 'owner',
+                agencyId: agencyRef.id,
+                packageId: pkgId,
+                permissions: { instant: true, stock: true, ntn: true, agency: true, reports: true, backup: true },
+                createdAt: new Date().toISOString(),
+                createdBy: currentAdminUid
+            });
+
+            createBtn.disabled = false;
+            createBtn.innerHTML = '<i class="fas fa-check-circle"></i> CREATE AGENCY & ACTIVATE SUBSCRIPTION';
+            document.getElementById('createAgencyForm').reset();
+
+            Swal.fire({
+                icon: 'success',
+                title: '🎉 Agency Created & Subscription Active!',
+                html: `<b>${name}</b><br>Owner: <b>${email}</b><br>Validity Till: <b>${expDateStr}</b><br>Fee: Rs ${monthlyFee.toLocaleString()} / mo`
+            });
+
+            await loadAgencies();
+
+        } catch (error) {
+            createBtn.disabled = false;
+            createBtn.innerHTML = '<i class="fas fa-check-circle"></i> CREATE AGENCY & ACTIVATE SUBSCRIPTION';
+            console.error('Agency creation failed:', error);
+            Swal.fire('❌ Error', 'Agency create nahi hui: ' + error.message, 'error');
+        }
+    });
+
+    const lBtn = document.getElementById('logoutBtn');
+    if (lBtn) {
+        lBtn.addEventListener('click', async () => {
+            const res = await Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, Logout' });
+            if (res.isConfirmed) {
+                await auth.signOut();
+                window.location.href = 'auth.html';
+            }
+        });
+    }
+</script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Low Stock Alerts & Reorder (Phase 8)</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <style>
+        .swal2-container { z-index: 999999 !important; }
+
+        /* KPI Grid */
+        .alert-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .alert-kpi-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            position: relative;
+        }
+        .alert-kpi-val {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 4px;
+        }
+        .alert-kpi-lbl {
+            font-size: 11px;
+            font-weight: bold;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        /* Filter Toolbar */
+        .alerts-toolbar {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Badges */
+        .badge-out {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-low {
+            background: #fef3c7;
+            color: #b45309;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .alerts-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: #fff;
+            min-width: 650px;
+        }
+        .alerts-table th, .alerts-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: left;
+        }
+        .alerts-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 800;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .alerts-table tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* Push Notification Toggle Box */
+        .push-notify-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        @media print {
+            .panel-topbar, .alerts-toolbar, .push-notify-box, .btn-action-cell {
+                display: none !important;
+            }
+            body { background: #fff; padding: 0; }
+            .panel-card { box-shadow: none !important; border: none !important; padding: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 🔔 BROWSER PUSH NOTIFICATION SWITCH ===== -->
+    <div class="push-notify-box">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:24px;">📲</div>
+            <div>
+                <div style="font-size:13px; font-weight:800; color:#15803d;">
+                    Browser &amp; Desktop Push Notifications
+                </div>
+                <div style="font-size:11px; color:#166534;" id="pushStatusText">
+                    Enable push alerts to get notified whenever stock runs low during sales!
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-sm" id="btnTogglePush" style="background:#15803d; color:#fff; font-size:12px;">
+            <i class="fas fa-bell"></i> Enable Push Alerts
+        </button>
+    </div>
+
+    <!-- ===== 📊 LOW STOCK EXECUTIVE METRICS ===== -->
+    <div class="panel-card" style="border-top-color:#ef4444; padding:20px;">
+        <div class="alert-kpi-grid">
+            <div class="alert-kpi-card" style="border-left: 4px solid #ef4444;">
+                <div class="alert-kpi-lbl">Out of Stock (Zero)</div>
+                <div class="alert-kpi-val" id="kpiOutStock" style="color:#ef4444;">0</div>
+            </div>
+            <div class="alert-kpi-card" style="border-left: 4px solid #f59e0b;">
+                <div class="alert-kpi-lbl">Low Stock Warnings</div>
+                <div class="alert-kpi-val" id="kpiLowStock" style="color:#f59e0b;">0</div>
+            </div>
+            <div class="alert-kpi-card" style="border-left: 4px solid #0284c7;">
+                <div class="alert-kpi-lbl">Total Items Needing Reorder</div>
+                <div class="alert-kpi-val" id="kpiTotalAlerts">0</div>
+            </div>
+            <div class="alert-kpi-card" style="border-left: 4px solid #10b981;">
+                <div class="alert-kpi-lbl">Est. Replenishment Cost</div>
+                <div class="alert-kpi-val" id="kpiReorderCost" style="color:#10b981;">Rs 0</div>
+            </div>
+        </div>
+
+        <!-- Toolbar: Filters & Actions -->
+        <div class="alerts-toolbar">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1;">
+                <div style="position:relative; min-width:200px; flex:1; max-width:320px;">
+                    <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:12px;"></i>
+                    <input type="text" id="searchInput" placeholder="Search low stock item or barcode..." style="width:100%; padding:7px 10px 7px 30px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none;">
+                </div>
+                <select id="categoryFilter" style="padding:7px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#fff;">
+                    <option value="">All Categories</option>
+                </select>
+                <select id="severityFilter" style="padding:7px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; background:#fff;">
+                    <option value="all">All Alerts (Out + Low)</option>
+                    <option value="out">Out of Stock Only (0 Qty)</option>
+                    <option value="low">Low Stock Only (< Limit)</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-sm" id="btnSupplierWhatsApp" style="background:#10b981; color:#fff;" title="Send Reorder list to Supplier">
+                    <i class="fab fa-whatsapp"></i> Reorder Supplier
+                </button>
+                <button class="btn btn-sm" id="btnPrintChecklist" style="background:#475569; color:#fff;" title="Print Purchase Checklist">
+                    <i class="fas fa-print"></i> Print Checklist
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive">
+            <table class="alerts-table" id="alertsTable">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Current Qty</th>
+                        <th>Alert Limit</th>
+                        <th>Suggested Reorder</th>
+                        <th>Est. Cost</th>
+                        <th class="btn-action-cell">Quick Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="alertsTbody">
+                    <tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:30px;">Loading low stock items...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- 🔔 ALERTS CONTROLLER -->
+<script src="alerts.js"></script>
+</body>
+</html>

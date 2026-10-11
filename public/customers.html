@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Customers</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Customers CSS -->
+    <link rel="stylesheet" href="customers.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- 🆕 Z-INDEX FIX -->
+    <style>
+        .swal2-container { z-index: 999999 !important; }
+    </style>
+</head>
+<body>
+
+<div class="panel-container">
+
+    <!-- ===== 📊 TOP ACTIONS & CACHE BAR ===== -->
+    <div style="display:flex; justify-content:space-between; align-items:center; max-width:1000px; margin:0 auto 12px; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span class="cache-badge" id="custCacheBadge" style="display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:4px 10px; border-radius:20px; background:#dcfce7; color:#15803d; font-weight:700;">
+                <i class="fas fa-check-circle"></i> Live Synced
+            </span>
+            <span id="lastCustSyncTime" style="font-size:11px; color:#64748b;">Synced: Just now</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary" id="syncCustBtn" style="padding:6px 14px; font-size:12px; border-radius:8px; background:#0284c7; color:#fff; border:none; cursor:pointer; font-weight:bold;">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 📊 STATS CARDS ===== -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#3498db;">👥</div>
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total Customers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#e74c3c;">💰</div>
+            <div class="stat-value" id="statBalance">0</div>
+            <div class="stat-label">Total Market Udhaar</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#27ae60;">🧾</div>
+            <div class="stat-value" id="statActiveWithBills">0</div>
+            <div class="stat-label">Customers With Bills</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#f39c12;">⭐</div>
+            <div class="stat-value" id="statDueCount">0</div>
+            <div class="stat-label">Defaulters / Due List</div>
+        </div>
+    </div>
+
+    <!-- ===== 🔍 SEARCH & QUICK FILTER PILLS ===== -->
+    <div class="search-filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search by name, shop, mobile, route, city, booker...">
+        </div>
+        <!-- Quick Filter Tabs -->
+        <div class="cust-filter-tabs">
+            <button class="filter-tab active" data-filter="all">All (<span id="tabCountAll">0</span>)</button>
+            <button class="filter-tab" data-filter="due">💰 Udhaar / Balance (<span id="tabCountDue">0</span>)</button>
+            <button class="filter-tab" data-filter="clear">✅ Zero Balance (<span id="tabCountClear">0</span>)</button>
+            <button class="filter-tab" data-filter="wholesale">📦 Wholesale</button>
+            <button class="filter-tab" data-filter="retail">🛒 Retail</button>
+        </div>
+    </div>
+
+    <!-- ===== ➕ ADD CUSTOMER (Collapsible) ===== -->
+    <div class="panel-card">
+        <div class="add-item-header" id="addCustomerToggle">
+            <h2><i class="fas fa-user-plus"></i> Add New Customer</h2>
+            <i class="fas fa-chevron-down toggle-arrow" id="toggleArrow"></i>
+        </div>
+        <form id="addCustomerForm" class="panel-form" style="display:none;">
+            
+            <!-- 📕 ASSIGNED ORDER BOOKER (Auto-fills Route & City) -->
+            <div class="form-row" style="background:#f0f9ff; border:1px solid #bae6fd; padding:12px; border-radius:10px; margin-bottom:12px;">
+                <div class="form-group" style="margin-bottom:0; width:100%;">
+                    <label style="color:#0369a1; display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fas fa-user-tag"></i> <b>Assigned Order Booker (مخصوص فیلڈ آرڈر بکر)</b></span>
+                        <small id="bookerAutoFillHint" style="color:#0284c7; font-weight:bold; display:none;"><i class="fas fa-magic"></i> Auto-filled Route & City!</small>
+                    </label>
+                    <select id="custBookerSelect" class="select-input" style="width:100%; padding:10px 12px; border:2px solid #7dd3fc; border-radius:8px; font-weight:600; background:#fff; outline:none;">
+                        <option value="">— No Order Booker (Direct / General Customer) —</option>
+                    </select>
+                    <small style="color:#64748b; font-size:11px; margin-top:4px; display:block;">
+                        💡 بکر سلیکٹ کرنے سے اس کا روٹ اور شہر خودکار بھر جائے گا اور یہ دکان اس بکر کے فون پر آرڈر بکنگ کے لیے ظاہر ہو گی۔
+                    </small>
+                </div>
+            </div>
+
+            <!-- 🏪 BUSINESS INFO -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>👤 Customer Name *</label>
+                    <input type="text" id="custName" placeholder="e.g. Imtiaz Ali" required maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label>🏪 Shop Name (optional)</label>
+                    <input type="text" id="custShopName" placeholder="e.g. Al-Madina Store" maxlength="50">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🏷️ Customer Type (optional)</label>
+                    <select id="custType" class="select-input">
+                        <option value="">— Select —</option>
+                        <option value="retail">🛒 Retail</option>
+                        <option value="wholesale">📦 Wholesale</option>
+                        <option value="special">⭐ Special</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📱 Mobile (optional)</label>
+                    <input type="tel" id="custMobile" maxlength="15" placeholder="03xx-xxxxxxx">
+                </div>
+            </div>
+
+            <!-- 📍 LOCATION + ROUTE -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📍 Address (optional)</label>
+                    <input type="text" id="custAddress" maxlength="100" placeholder="Street, Area">
+                </div>
+                <div class="form-group">
+                    <label>🛣️ Route (optional)</label>
+                    <input type="text" id="custRoute" maxlength="50" placeholder="e.g. Main Bazar, Gali 6">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🏙️ City (optional)</label>
+                    <input type="text" id="custCity" maxlength="30" placeholder="City">
+                </div>
+                <div class="form-group">
+                    <label>📅 Payment Terms (optional)</label>
+                    <select id="custTerms" class="select-input">
+                        <option value="">— Select —</option>
+                        <option value="cash">💵 Cash</option>
+                        <option value="7">📅 7 Days</option>
+                        <option value="15">📅 15 Days</option>
+                        <option value="30">📅 30 Days</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 💰 FINANCE -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>💰 Previous Balance (optional — purani pending)</label>
+                    <input type="number" id="custPrevBalance" min="0" step="0.01" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>💳 Credit Limit (optional — max udhaar)</label>
+                    <input type="number" id="custCreditLimit" min="0" step="0.01" placeholder="0">
+                </div>
+            </div>
+
+            <!-- 🇵🇰 FBR NTN / STRN & FILER STATUS -->
+            <div class="form-row" style="background:#f8fafc; border:1px solid #e2e8f0; padding:10px 12px; border-radius:10px; margin-bottom:12px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>🔢 NTN / STRN / CNIC (optional)</label>
+                    <input type="text" id="custNTN" maxlength="30" placeholder="e.g. 1234567-8 or CNIC">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>🇵🇰 FBR Tax Category</label>
+                    <select id="custFbrStatus" class="select-input">
+                        <option value="non-filer">🔴 Non-Filer (نان فائلر — Higher Tax)</option>
+                        <option value="filer">🟢 Filer (فائلر — Lower Tax)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📝 Notes (optional)</label>
+                <input type="text" id="custNotes" maxlength="150" placeholder="Koi khas baat...">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="saveCustomerBtn">
+                <i class="fas fa-save"></i> SAVE CUSTOMER
+            </button>
+        </form>
+    </div>
+
+    <!-- ===== 👥 CUSTOMERS LIST ===== -->
+    <div class="panel-card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <h2><i class="fas fa-users"></i> Customers (<span id="custCount">0</span>/<span id="custLimit">50</span>)</h2>
+            <div style="font-size:12px; color:#7f8c8d;">
+                💡 Click <b>📜 History</b> on any customer to see all their invoices, items &amp; ledger!
+            </div>
+        </div>
+        <div id="customersList">
+            <div class="loading-inline">Loading customers...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== 📜 CUSTOMER LEDGER & BILLS HISTORY MODAL ===== -->
+<div id="historyModal" class="history-modal" style="display:none;">
+    <div class="history-modal-overlay" onclick="closeHistoryModal()"></div>
+    <div class="history-modal-content">
+        <!-- Header -->
+        <div class="history-modal-header">
+            <div class="modal-header-left">
+                <div class="cust-avatar-box">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div>
+                    <h3 id="modalCustName">Customer Ledger</h3>
+                    <div id="modalCustSub" class="history-modal-sub">Phone / Shop / Route</div>
+                </div>
+            </div>
+            <div class="modal-header-right">
+                <button class="btn-action-sm btn-payment-cust" onclick="recordQuickPayment()" title="Receive Money / Payment Recovery">
+                    <i class="fas fa-hand-holding-usd"></i> <span>Receive Payment</span>
+                </button>
+                <button class="btn-action-sm btn-new-bill-cust" onclick="createNewBillForThisCustomer()" title="Create New Bill">
+                    <i class="fas fa-plus-circle"></i> <span>New Bill</span>
+                </button>
+                <button class="btn-action-sm btn-print-ledger" onclick="printCustomerLedger()" title="Print Full Khata Statement">
+                    <i class="fas fa-print"></i> <span>Print Khata</span>
+                </button>
+                <button class="btn-action-sm btn-whatsapp-ledger" onclick="shareLedgerWhatsapp()" title="Share Khata Statement on WhatsApp">
+                    <i class="fab fa-whatsapp"></i> <span>WhatsApp</span>
+                </button>
+                <button class="btn-close-modal" onclick="closeHistoryModal()">&times;</button>
+            </div>
+        </div>
+
+        <!-- Summary KPIs inside Modal (Opening Bal, Total Billed, Total Paid, Net Balance, Credit Limit) -->
+        <div class="modal-kpi-grid">
+            <div class="modal-kpi-box">
+                <span class="kpi-title">Opening Balance</span>
+                <span class="kpi-val text-muted" id="modalOpeningBal">Rs 0</span>
+            </div>
+            <div class="modal-kpi-box">
+                <span class="kpi-title">Total Invoices (Dr)</span>
+                <span class="kpi-val text-primary" id="modalTotalBilled">Rs 0</span>
+            </div>
+            <div class="modal-kpi-box">
+                <span class="kpi-title">Total Received (Cr)</span>
+                <span class="kpi-val text-success" id="modalTotalPaid">Rs 0</span>
+            </div>
+            <div class="modal-kpi-box kpi-highlight" id="modalCurrentBalanceCard">
+                <span class="kpi-title">Current Khata Balance</span>
+                <span class="kpi-val text-danger" id="modalCurrentBalance">Rs 0</span>
+            </div>
+        </div>
+
+        <!-- Segmented Tab Navigation -->
+        <div class="ledger-tab-nav">
+            <button class="ledger-tab-btn active" data-tab="ledger" onclick="switchLedgerTab('ledger')">
+                <i class="fas fa-book"></i> <span>Khata Ledger Statement</span>
+            </button>
+            <button class="ledger-tab-btn" data-tab="bills" onclick="switchLedgerTab('bills')">
+                <i class="fas fa-file-invoice"></i> <span>Bills &amp; Invoices (<span id="modalTotalBillsBadge">0</span>)</span>
+            </button>
+            <button class="ledger-tab-btn" data-tab="payments" onclick="switchLedgerTab('payments')">
+                <i class="fas fa-money-check-alt"></i> <span>Payment History (<span id="modalTotalPaymentsBadge">0</span>)</span>
+            </button>
+        </div>
+
+        <!-- Quick Action & Filter Bar -->
+        <div class="modal-actions-bar">
+            <div class="search-mini">
+                <i class="fas fa-search"></i>
+                <input type="text" id="billSearchInput" placeholder="Filter bill #, receipt #, date, items, note...">
+            </div>
+            <div class="filter-controls-group">
+                <select id="modalDateFilter" class="select-mini" onchange="onModalFilterChange()">
+                    <option value="all">📅 All Time</option>
+                    <option value="today">Today</option>
+                    <option value="last7">Last 7 Days</option>
+                    <option value="thisMonth" selected>This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="thisYear">This Year</option>
+                </select>
+                <button class="btn-action-sm btn-outline-sm" onclick="adjustCustomerOpeningBalance()" title="Adjust Opening Balance">
+                    <i class="fas fa-sliders-h"></i> <span>Adjust Opening</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: Complete Ledger Statement (Running Balance) -->
+        <div id="tabContentLedger" class="history-table-container">
+            <table class="history-table ledger-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center;">#</th>
+                        <th>Date &amp; Time</th>
+                        <th>Type</th>
+                        <th>Voucher / Ref #</th>
+                        <th>Description / Details</th>
+                        <th style="text-align:right;">Debit (Dr)</th>
+                        <th style="text-align:right;">Credit (Cr)</th>
+                        <th style="text-align:right;">Running Balance</th>
+                        <th style="text-align:center; width:90px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="ledgerTableBody">
+                    <tr><td colspan="9" style="text-align:center; padding:25px;">Ledger statement load ho raha hai...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- TAB 2: Bills / Invoices List -->
+        <div id="tabContentBills" class="history-table-container" style="display:none;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Bill #</th>
+                        <th>Date &amp; Time</th>
+                        <th>Items Count</th>
+                        <th>Grand Total</th>
+                        <th>Received</th>
+                        <th>Bill Balance</th>
+                        <th>Status</th>
+                        <th style="text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="billsTableBody">
+                    <tr><td colspan="8" style="text-align:center; padding:25px;">Bills history load ho rahi hai...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- TAB 3: Payment History List -->
+        <div id="tabContentPayments" class="history-table-container" style="display:none;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Receipt #</th>
+                        <th>Date &amp; Time</th>
+                        <th>Method</th>
+                        <th>Remarks / Note</th>
+                        <th style="text-align:right;">Amount Received</th>
+                        <th style="text-align:right;">Balance After</th>
+                        <th style="text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentsTableBody">
+                    <tr><td colspan="7" style="text-align:center; padding:25px;">Payments history load ho rahi hai...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- ⚙️ PRINT ENGINE & TEMPLATES (Print support for statement/bills) -->
+<script src="print-settings.js"></script>
+<script src="bill-templates.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- ⚡ CLOUD SYNC & FIREBASE QUOTA SAVER -->
+<script src="sync-engine.js"></script>
+<script src="customers.js"></script>
+</body>
+</html>

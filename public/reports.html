@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Advanced Reports Engine (Phase 7)</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Panels & Global CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Reports CSS -->
+    <link rel="stylesheet" href="reports.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+</head>
+<body>
+
+<div class="panel-container" style="margin-top: 8px;">
+
+    <!-- ===== 📑 REPORT TABS NAVIGATION ===== -->
+    <div class="report-tabs-nav" id="reportTabsNav">
+        <a href="profit.html" class="report-tab-btn" style="background:#f0fdf4; border-color:#86efac; color:#15803d; text-decoration:none;">
+            <i class="fas fa-sack-dollar" style="color:#10b981;"></i> <b>Profit Analytics (منافع)</b>
+        </a>
+        <button class="report-tab-btn active" data-tab="sales">
+            <i class="fas fa-chart-line"></i> Sales &amp; Revenue
+        </button>
+        <button class="report-tab-btn" data-tab="bestsellers">
+            <i class="fas fa-trophy"></i> Best Sellers
+        </button>
+        <button class="report-tab-btn" data-tab="slow">
+            <i class="fas fa-hourglass-half"></i> Slow &amp; Dead Stock
+        </button>
+        <button class="report-tab-btn" data-tab="claims">
+            <i class="fas fa-rotate-left"></i> Claims &amp; Customer Returns
+        </button>
+        <button class="report-tab-btn" data-tab="damage">
+            <i class="fas fa-triangle-exclamation"></i> Damaged, Expired &amp; Lost
+        </button>
+        <button class="report-tab-btn" data-tab="bookers">
+            <i class="fas fa-users-gear"></i> Booker Performance
+        </button>
+        <button class="report-tab-btn" data-tab="khata">
+            <i class="fas fa-hand-holding-dollar"></i> Customer Khata Aging
+        </button>
+    </div>
+
+    <!-- ===== 📅 DATE FILTER & ACTION BAR ===== -->
+    <div class="date-filter-bar">
+        <div class="date-presets" id="datePresets">
+            <button class="date-preset-btn" data-preset="today">Today</button>
+            <button class="date-preset-btn" data-preset="yesterday">Yesterday</button>
+            <button class="date-preset-btn" data-preset="last7">Last 7 Days</button>
+            <button class="date-preset-btn active" data-preset="thismonth">This Month</button>
+            <button class="date-preset-btn" data-preset="lastmonth">Last Month</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div class="custom-date-inputs">
+                <input type="date" id="dateStart" title="Start Date">
+                <span style="font-size:12px; color:#64748b; font-weight:bold;">to</span>
+                <input type="date" id="dateEnd" title="End Date">
+                <button class="btn btn-sm" id="btnApplyDate" style="background:#0284c7; color:#fff;">
+                    Apply
+                </button>
+            </div>
+            
+            <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm btn-export-csv" id="btnExportCSV" style="background:#10b981; color:#fff;" title="Download Excel CSV">
+                    <i class="fas fa-file-excel"></i> Export CSV
+                </button>
+                <button class="btn btn-sm btn-print-report" id="btnPrintReport" style="background:#475569; color:#fff;" title="Print Report">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 📊 DYNAMIC REPORT CONTENT CONTAINER ===== -->
+    <div class="panel-card" id="reportContentCard">
+        <!-- KPI Metrics Grid (Injected dynamically) -->
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <!-- Report Table Header with Search -->
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px;">
+            <div>
+                <h2 id="reportTitle"><i class="fas fa-file-lines"></i> Sales Report</h2>
+                <small class="header-note" id="reportSubTitle">Loading report metrics...</small>
+            </div>
+            <div style="position:relative; width:100%; max-width:260px;">
+                <i class="fas fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:12px;"></i>
+                <input type="text" id="reportSearchInput" placeholder="Quick filter in results..." style="width:100%; padding:6px 10px 6px 30px; border:1px solid #cbd5e1; border-radius:8px; font-size:12px; outline:none;">
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive" id="tableContainer">
+            <div class="loading-inline">Loading report data...</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js"></script>
+<!-- 📊 REPORTS ENGINE SCRIPT -->
+<script src="reports.js"></script>
+</body>
+</html>

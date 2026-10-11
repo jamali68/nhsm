@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 📱 Progressive Web App (PWA) Standards -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EasyBill">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bill Generator — Login</title>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ✅ Auth CSS -->
+    <link rel="stylesheet" href="auth.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+</head>
+<body>
+
+<!-- ===== AUTH CARD ===== -->
+<div class="auth-wrapper" id="authWrapper" dir="ltr">
+    <div class="auth-card">
+        
+        <!-- 🌐 TOP BAR: LANGUAGE TOGGLE -->
+        <div class="auth-top-bar no-print">
+            <div class="lang-toggle-pill" role="group" aria-label="Language Selector">
+                <button type="button" id="langEn" class="lang-btn active" title="Switch to English">
+                    <span class="lang-flag">🇬🇧</span> English
+                </button>
+                <button type="button" id="langUr" class="lang-btn" title="اردو میں تبدیل کریں">
+                    <span class="lang-flag">🇵🇰</span> اردو
+                </button>
+            </div>
+        </div>
+
+        <!-- Logo / Title -->
+        <div class="auth-logo">
+            <div class="logo-icon">⚡</div>
+            <h1 class="app-title" data-i18n="appTitle">Easy Bill Generator</h1>
+            <p class="app-subtitle" data-i18n="appSubtitle">Smart Business Management</p>
+        </div>
+
+        <!-- TABS: Login / Signup -->
+        <div class="auth-tabs">
+            <button id="tabLogin" class="auth-tab active" data-i18n="tabLogin">Login</button>
+            <button id="tabSignup" class="auth-tab" data-i18n="tabSignup">Sign Up</button>
+        </div>
+
+        <!-- ===== LOGIN FORM ===== -->
+        <form id="loginForm" class="auth-form">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px; margin-bottom:14px; font-size:12px; color:#166534; line-height:1.5;">
+                <div style="font-weight:bold; margin-bottom:2px;"><i class="fas fa-id-badge"></i> فیلڈ اسٹاف (بکر اور سپلائر) لاگ اِن:</div>
+                ایڈمن کا دیا ہوا <b>ای میل یا فون نمبر</b> اور <b>پاسورڈ</b> (مثلاً <code>123456</code>) لکھ کر نیچے سبز بٹن <b>Login</b> دبائیں۔
+            </div>
+
+            <div class="input-group">
+                <i class="fas fa-user input-icon"></i>
+                <input type="text" id="loginEmail" placeholder="Email or Mobile / Username" required autocomplete="username">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password" minlength="6">
+                <i class="fas fa-eye toggle-pass" data-target="loginPassword"></i>
+            </div>
+            <button type="submit" class="auth-btn-main" id="loginBtn">
+                <span data-i18n="loginBtn">Login to POS</span>
+            </button>
+
+            <!-- 🌐 GOOGLE LOGIN -->
+            <div class="divider"><span>صرف بزنس اونر کے لیے</span></div>
+            <button type="button" class="google-btn" id="googleLoginBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span>Continue with Google (Owner Only)</span>
+            </button>
+            <div style="text-align:center; font-size:11px; color:#94a3b8; margin-top:6px;">
+                ⚠️ بکر اور سپلائر اوپر ای میل/موبائل اور پاسورڈ درج کر کے لاگ اِن کریں
+            </div>
+        </form>
+
+        <!-- ===== SIGNUP FORM (Hidden by default) ===== -->
+        <form id="signupForm" class="auth-form" style="display:none;">
+            
+            <!-- 🆕 BUSINESS INFO SECTION -->
+            <div class="section-title" data-i18n="bizSection">🏢 Business Information</div>
+            
+            <div class="input-group">
+                <i class="fas fa-store input-icon"></i>
+                <input type="text" id="bizName" placeholder="Business Name *" required maxlength="50" autocomplete="organization">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-tags input-icon"></i>
+                <select id="bizType" class="select-input" required>
+                    <option value="" data-i18n="selectType">Business Type *</option>
+                    <option value="books">📚 Book Depot &amp; Stationery (بک ڈپو، اسٹیشنری و بک پوائنٹ)</option>
+                    <option value="mobile">📱 Mobile Shop &amp; Accessories (موبائل اور ایسیسریز)</option>
+                    <option value="medical">💊 Medical Store &amp; Pharmacy (میڈیکل اسٹور و فارمیسی)</option>
+                    <option value="shoes">👟 Shoe Store &amp; Footwear (جوتے و فٹ ویئر)</option>
+                    <option value="garments">👕 Garments &amp; Clothing (گارمنٹس و ملبوسات)</option>
+                    <option value="general">🛒 General Store &amp; Kiryana (جنرل اسٹور و کریانہ)</option>
+                    <option value="wholesaler">📦 Wholesaler &amp; Bulk Distribution (تھوک ڈیلر)</option>
+                    <option value="confectionery">🍪 Confectionery &amp; Biscuits (کنفیکشنری و بسکٹ)</option>
+                    <option value="hardware">🔧 Hardware, Sanitary &amp; Paint (ہارڈویئر و سینیٹری)</option>
+                    <option value="electronics">💻 Electronics &amp; Home Appliances (الیکٹرانکس)</option>
+                    <option value="cosmetics">💄 Cosmetics &amp; Beauty (کاسمیٹکس)</option>
+                    <option value="auto_parts">🚗 Auto Parts &amp; Spare Parts (آٹو پارٹس)</option>
+                    <option value="bakery">🍞 Bakery, Sweets &amp; Cafe (بیکری و مٹھائی)</option>
+                    <option value="furniture">🪑 Furniture &amp; Decor (فرنیچر)</option>
+                    <option value="other">💼 Other Business (دیگر کاروبار)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-mobile-alt input-icon"></i>
+                <input type="tel" id="bizMobile" placeholder="Mobile Number (optional)" autocomplete="tel">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-city input-icon"></i>
+                <input type="text" id="bizCity" placeholder="City (optional)" maxlength="30">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-user input-icon"></i>
+                <input type="text" id="ownerName" placeholder="Your Full Name (optional)" maxlength="40" autocomplete="name">
+            </div>
+
+            <!-- 🆕 ACCOUNT SECTION -->
+            <div class="section-title" data-i18n="accSection">🔐 Account Details</div>
+
+            <div class="input-group">
+                <i class="fas fa-envelope input-icon"></i>
+                <input type="email" id="signupEmail" placeholder="Email" required autocomplete="email">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="signupPassword" placeholder="Password (min 6 characters)" required autocomplete="new-password" minlength="6">
+                <i class="fas fa-eye toggle-pass" data-target="signupPassword"></i>
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="signupConfirm" placeholder="Confirm Password" required minlength="6">
+            </div>
+            
+            <button type="submit" class="auth-btn-main" id="signupBtn">
+                <span data-i18n="signupBtn">Create Account — FREE</span>
+            </button>
+
+            <!-- 🌐 GOOGLE SIGNUP -->
+            <div class="divider"><span>OR</span></div>
+            <button type="button" class="google-btn" id="googleSignupBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span data-i18n="googleBtn">Continue with Google</span>
+            </button>
+
+            <p class="signup-note" data-i18n="signupNote">
+                🆓 FREE Package: 150 bills/month + 2 bookers!
+            </p>
+        </form>
+
+        <!-- Message Area -->
+        <div id="authMessage" class="auth-message"></div>
+
+    </div>
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🏢 Business Categories Registry -->
+<script src="business-categories.js"></script>
+
+<!-- 💎 SaaS Modules Registry & Paywall Guard -->
+<script src="saas-modules.js"></script>
+
+<!-- ✅ Auth JS -->
+<script src="auth.js"></script>
+</body>
+</html>
