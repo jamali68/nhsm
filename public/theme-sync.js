@@ -200,10 +200,12 @@
 
     window.addEventListener('appinstalled', () => {
         console.log('[PWA] EasyBill App was successfully installed!');
+        localStorage.setItem('eb_pwa_installed', 'true');
         deferredInstallPrompt = null;
         window.deferredInstallPrompt = null;
         const banner = document.getElementById('ebPwaInstallBanner');
         if (banner) banner.remove();
+        window.dispatchEvent(new CustomEvent('eb-pwa-state-changed'));
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 toast: true, position: 'top-end', timer: 3000,
@@ -264,8 +266,10 @@
             const choiceResult = await promptEvent.userChoice;
             if (choiceResult.outcome === 'accepted') {
                 console.log('[PWA] User accepted installation prompt');
+                localStorage.setItem('eb_pwa_installed', 'true');
                 const banner = document.getElementById('ebPwaInstallBanner');
                 if (banner) banner.remove();
+                window.dispatchEvent(new CustomEvent('eb-pwa-state-changed'));
             } else {
                 console.log('[PWA] User dismissed installation');
             }

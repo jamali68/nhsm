@@ -615,6 +615,9 @@
         </div>
     </div>
 
+    <!-- 📲 PWA WEB APP INSTALL PROMPT CARD -->
+    <div id="dashPwaInstallCard"></div>
+
     <!-- ============================================
          📕 ORDER BOOKER DEDICATED PERSONAL DASHBOARD
          ============================================ -->
@@ -1184,11 +1187,71 @@
             document.getElementById('loadingOverlay').style.display = 'none';
             document.getElementById('mainCard').style.display = 'block';
 
+            // 📲 Render PWA Install Card on Dashboard
+            renderDashPwaCard();
+
         } catch (e) {
             console.error('Dashboard init error:', e);
             document.getElementById('loadingText').innerText = '⚠️ Error: ' + e.message;
         }
     });
+
+    // 📲 PWA DASHBOARD INSTALL CARD LOGIC
+    function renderDashPwaCard() {
+        const container = document.getElementById('dashPwaInstallCard');
+        if (!container) return;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || localStorage.getItem('eb_pwa_installed') === 'true';
+
+        if (isStandalone) {
+            container.innerHTML = `
+                <div style="background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); border: 1.5px solid #10b981; border-radius: 14px; padding: 12px 18px; margin-bottom: 18px; color: #fff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 4px 15px rgba(16,185,129,0.15);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-check-circle" style="font-size: 26px; color: #34d399;"></i>
+                        <div>
+                            <div style="font-size: 14.5px; font-weight: 800; color: #ecfdf5; display: flex; align-items: center; gap: 8px;">
+                                <span>EasyBill App انسٹال ہو چکی ہے</span>
+                                <span style="background: #047857; color: #34d399; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 800; border: 1px solid #10b981;">✅ PWA Active</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: #a7f3d0; margin-top: 2px;">
+                                آف لائن موڈ تیار ہے — انٹرنیٹ کے بغیر بھی تمام اسٹاک اور کھاتہ خودکار محفوظ ہو رہا ہے۔
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="background: rgba(0,0,0,0.25); color: #6ee7b7; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(52,211,153,0.3);">
+                            ⚡ Standalone App
+                        </span>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1.5px solid #38bdf8; border-radius: 14px; padding: 14px 18px; margin-bottom: 18px; color: #fff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 4px 18px rgba(14,165,233,0.2);">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <img src="/icon-192.png" alt="EasyBill Logo" style="width: 44px; height: 44px; border-radius: 11px; border: 1.5px solid #38bdf8; object-fit: cover; flex-shrink: 0;">
+                        <div>
+                            <div style="font-size: 15px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 8px;">
+                                <span>📲 Install EasyBill Web App</span>
+                                <span style="background: #0284c7; color: #fff; font-size: 10.5px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">آف لائن ریڈی</span>
+                            </div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                                ایک کلک سے موبائل کی ہوم اسکرین پر لگائیں — تیز رفتار بلنگ اور کلاؤڈ سنک۔
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" onclick="window.installEasyBillPWA && window.installEasyBillPWA();" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; padding: 8px 18px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 3px 12px rgba(16,185,129,0.4);">
+                            <i class="fas fa-download"></i> ابھی انسٹال کریں (Install Now)
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    window.renderDashPwaCard = renderDashPwaCard;
+    window.addEventListener('appinstalled', renderDashPwaCard);
+    window.addEventListener('eb-pwa-ready', renderDashPwaCard);
+    window.addEventListener('eb-pwa-state-changed', renderDashPwaCard);
 
     // ============================================
     // 💎 SYNC SAAS MODULE CARDS ON DASHBOARD (LOCK BADGES & UPGRADE)

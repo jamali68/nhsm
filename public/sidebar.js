@@ -628,22 +628,37 @@
             transform: scale(1.05);
         }
         .eb-install-btn {
-            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-            color: #fff !important;
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: #ffffff !important;
             font-weight: 800 !important;
             font-size: 11.5px !important;
-            border: 1px solid #fbbf24 !important;
+            border: 1px solid #34d399 !important;
             border-radius: 8px !important;
             padding: 0 10px !important;
-            width: auto !important;
+            height: 32px !important;
+            display: inline-flex !important;
+            align-items: center !important;
             gap: 5px !important;
-            animation: pulseInstall 2.5s infinite ease-in-out;
+            animation: pulseInstall 2.2s infinite ease-in-out;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.45);
+            white-space: nowrap !important;
+            transition: all 0.25s ease;
+        }
+        .eb-install-btn:hover {
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6);
+        }
+        .eb-install-btn.is-installed {
+            background: #064e3b !important;
+            color: #34d399 !important;
+            border: 1.5px solid #059669 !important;
+            animation: none !important;
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3) !important;
         }
         @keyframes pulseInstall {
-            0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4); }
-            50% { transform: scale(1.04); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.7); }
+            0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4); }
+            50% { transform: scale(1.04); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.7); }
         }
         .eb-offline-badge {
             background: #ef4444;
@@ -1131,10 +1146,10 @@
                         ${agencyPackageState.isExpired ? 'EXPIRED' : (agencyPackageState.isPaid ? 'PRO' : 'FREE')}
                     </span>
 
-                    <!-- 📥 Install App Prompt Button (Hidden if already standalone/installed) -->
-                    <button type="button" class="eb-topbar-btn eb-install-btn" id="ebTopInstallBtn" title="Install Easy Bill App on PC or Mobile" style="display:none;">
+                    <!-- 📥 Install App Prompt Button (Always visible with dynamic state) -->
+                    <button type="button" class="eb-topbar-btn eb-install-btn" id="ebTopInstallBtn" title="Install Easy Bill App on PC or Mobile">
                         <i class="fas fa-download"></i>
-                        <span>Install App</span>
+                        <span>Install</span>
                     </button>
 
                     <button type="button" class="eb-topbar-btn eb-topbar-sync" id="ebTopSyncBtn" title="⚡ Cloud Sync & Quota Protection">
@@ -1169,6 +1184,51 @@
         if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleSidebar);
         const topbarMenuBtns = document.querySelectorAll('.topbar-menu-btn, #dashMenuBtn');
         topbarMenuBtns.forEach(btn => btn.addEventListener('click', toggleSidebar));
+
+        // 📲 PWA Topbar Install Button State & Click
+        const topInstallBtn = document.getElementById('ebTopInstallBtn');
+        if (topInstallBtn) {
+            function updateTopInstallBtnState() {
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || localStorage.getItem('eb_pwa_installed') === 'true';
+                if (isStandalone) {
+                    topInstallBtn.classList.add('is-installed');
+                    topInstallBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#34d399;"></i> <span>Installed</span>';
+                    topInstallBtn.title = 'EasyBill App is Installed & Ready (Offline Supported)';
+                } else {
+                    topInstallBtn.classList.remove('is-installed');
+                    topInstallBtn.innerHTML = '<i class="fas fa-download"></i> <span>Install</span>';
+                    topInstallBtn.title = 'Install EasyBill App on Mobile / PC';
+                }
+            }
+
+            updateTopInstallBtnState();
+            window.addEventListener('appinstalled', () => {
+                localStorage.setItem('eb_pwa_installed', 'true');
+                updateTopInstallBtnState();
+                if (window.renderDashPwaCard) window.renderDashPwaCard();
+            });
+            window.addEventListener('eb-pwa-ready', updateTopInstallBtnState);
+            window.addEventListener('eb-pwa-state-changed', updateTopInstallBtnState);
+
+            topInstallBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || localStorage.getItem('eb_pwa_installed') === 'true';
+                if (isStandalone) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✅ EasyBill App انسٹال ہے!',
+                            text: 'یہ ایپ آپ کے موبائل یا کمپیوٹر پر کامیابی سے انسٹال ہے۔ آپ آف لائن بھی بغیر انٹرنیٹ کام کر سکتے ہیں۔',
+                            confirmButtonColor: '#10b981'
+                        });
+                    }
+                } else {
+                    if (window.installEasyBillPWA) {
+                        window.installEasyBillPWA();
+                    }
+                }
+            });
+        }
 
         // ⚡ Cloud Sync trigger from topbar: Direct Navigation to Cloud Sync & Shift Schedule in Settings
         const topSyncBtn = document.getElementById('ebTopSyncBtn');
