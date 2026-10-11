@@ -121,6 +121,9 @@
         <button class="settings-tab-btn" data-target="secSecurity">
             <i class="fas fa-shield-halved"></i> Security &amp; Cache
         </button>
+        <button class="settings-tab-btn" data-target="secModules">
+            <i class="fas fa-cubes"></i> Packages &amp; Modules <span class="ur-sub">(ماڈیولز ان لاکر)</span>
+        </button>
     </div>
 
     <!-- ===== 🏢 SECTION 1: AGENCY IDENTITY & PROFILE ===== -->
@@ -647,6 +650,101 @@
                     </div>
                     <button class="btn btn-sm" id="btnClearCache" style="background:#ef4444; color:#fff;">
                         <i class="fas fa-rotate"></i> Reset Offline Cache
+                    </button>
+                </div>
+    <!-- ===== 💎 SECTION 6: PACKAGES & MODULES MANAGER ===== -->
+    <div class="settings-section" id="secModules">
+        <div class="panel-card" style="border-top-color:#10b981;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h2><i class="fas fa-cubes"></i> SaaS Packages &amp; Module Paywall Manager</h2>
+                    <small class="header-note">تمام لاک شدہ ماڈیولز کو 1-کلک میں ان لاک کریں یا پیکیج تبدیل کریں</small>
+                </div>
+                <button class="btn btn-sm" id="btnUnlockAllModulesQuick" style="background:#10b981; color:#fff; font-weight:800; padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 8px rgba(16,185,129,0.35);">
+                    <i class="fas fa-lock-open"></i> ⚡ 1-Click Unlock All Modules
+                </button>
+            </div>
+
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:16px; margin-bottom:18px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <div style="font-size:15px; font-weight:800; color:#14532d;">
+                            موجودہ پیکیج اسٹیٹس: <span id="currentPkgBadge" style="background:#10b981; color:#fff; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold;">Loading...</span>
+                        </div>
+                        <div style="font-size:12px; color:#166534; margin-top:4px;">
+                            اگر آپ تمام ماڈیولز (آرڈر بکر، وین ڈسپیچ، منافع، کلیمز، روزانہ اخراجات) استعمال کرنا چاہتے ہیں تو اوپر والا سبز بٹن دبائیں!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Master Package Selector -->
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:18px;">
+                <label style="font-weight:700; font-size:13px; color:#0f172a; display:block; margin-bottom:6px;">
+                    📦 تبدیل کریں پیکیج پلان (Package Plan):
+                </label>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <select id="selAgencyPackage" style="flex:1; min-width:240px; padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; font-weight:600;">
+                        <option value="free">🆓 Free Starter (صرف بنیادی ماڈیولز)</option>
+                        <option value="starter_single">🏪 Single Agency Pro (تمام معیاری ماڈیولز)</option>
+                        <option value="wholesale_dist">📦 Wholesale Distribution Pro (ہول سیل فیچرز)</option>
+                        <option value="multi_pro">🏢 Multi-Branch Pro (ملٹی برانچ)</option>
+                        <option value="enterprise_multi">👑 Enterprise Unlimited (سب کچھ ان لاک)</option>
+                    </select>
+                    <button class="btn btn-sm" id="btnApplyPackage" style="background:#0284c7; color:#fff; font-weight:bold; padding:9px 18px; border-radius:8px;">
+                        <i class="fas fa-check"></i> پیکیج لاگو کریں
+                    </button>
+                </div>
+            </div>
+
+            <!-- Individual Module Permissions Toggles -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <div style="font-weight:800; font-size:13px; color:#0f172a;">
+                        <i class="fas fa-toggle-on"></i> انفرادی ماڈیولز آن / آف (Individual Module Toggles):
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn btn-sm" id="btnSelectAllPerms" style="background:#e0f2fe; color:#0369a1; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold;">سب آن کریں</button>
+                        <button type="button" class="btn btn-sm" id="btnUnselectAllPerms" style="background:#f1f5f9; color:#475569; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold;">سب آف کریں</button>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:10px; font-size:12.5px;" id="modulesCheckboxGrid">
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermBookerOrders"> 📋 Booker Orders &amp; Dispatch
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermDelivery"> 🚚 Delivery &amp; Van Dispatch
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermClaims"> ⚠️ Damage, Expire &amp; Claims
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermExpenses"> 💸 Daily Expenses Register
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermAlerts"> 🔔 Low Stock Alerts
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermProfit"> 💰 Profit Analytics
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermReports"> 📊 Advanced Sales Reports
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermOwner"> 👥 Staff &amp; Booker PINs
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermBackup"> 💾 Backup &amp; Restore
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px;">
+                        <input type="checkbox" id="setPermMultiAgency"> 🏢 Multi-Agency Control
+                    </label>
+                </div>
+
+                <div style="margin-top:14px; text-align:right;">
+                    <button class="btn btn-sm" id="btnSaveModulePermissions" style="background:#10b981; color:#fff; font-weight:bold; padding:8px 18px; border-radius:8px;">
+                        <i class="fas fa-save"></i> ماڈیولز سیٹنگز محفوظ کریں
                     </button>
                 </div>
             </div>

@@ -345,7 +345,18 @@
             };
         }
 
-        // B. Check Explicit Super Admin Permissions Toggle
+        // A2. Master 1-Click Unlock for Agency or Super Admin Bypass
+        if (agencyData && (agencyData.allModulesUnlocked === true || agencyData.unlockAll === true || agencyData.packageId === 'enterprise_multi')) {
+            return {
+                allowed: true,
+                locked: false,
+                reason: 'master_unlocked',
+                badgeText: '',
+                module: mod
+            };
+        }
+
+        // B. Check Explicit Permissions Toggle (if admin unlocked or locked)
         if (customPermissions && typeof customPermissions === 'object') {
             const permKey = moduleId === 'delivery_returns' || moduleId === 'claims' ? 'delivery_returns' : moduleId;
             if (customPermissions[permKey] === false) {
@@ -354,7 +365,17 @@
                     locked: true,
                     reason: 'admin_locked',
                     badgeText: 'LOCKED',
-                    lockReasonUr: 'یہ ماڈیول سپر ایڈمن کی طرف سے لاک کیا گیا ہے',
+                    lockReasonUr: 'یہ ماڈیول ایڈمن کی طرف سے لاک کیا گیا ہے',
+                    module: mod
+                };
+            }
+            // If explicitly allowed in permissions, grant access immediately!
+            if (customPermissions[permKey] === true || customPermissions['all'] === true) {
+                return {
+                    allowed: true,
+                    locked: false,
+                    reason: 'permission_granted',
+                    badgeText: '',
                     module: mod
                 };
             }

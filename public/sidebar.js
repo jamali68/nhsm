@@ -132,6 +132,7 @@
                 { icon: 'fa-cloud-arrow-up', text: 'Backup & Restore <span class="ur-sub">(بیک اپ و ڈیٹا بحالی)</span>', url: 'backup.html', roles: ['super-admin', 'owner'] },
                 { icon: 'fa-gear', text: 'Settings <span class="ur-sub">(ایجنسی سیٹنگز)</span>', url: 'settings.html', roles: ['super-admin', 'owner'] },
                 { icon: 'fa-cloud-arrow-down', text: 'Cloud Sync & Shifts <span class="ur-sub">(کلاؤڈ سنک و شفٹس)</span>', url: 'settings.html?tab=secSyncSchedule', roles: ['booker'] },
+                { icon: 'fa-mobile-screen-button', text: 'Install App <span class="ur-sub">(ایپ انسٹال کریں)</span>', url: '#install-pwa', roles: ['super-admin', 'owner', 'booker', 'supplier'] },
             ]
         }
     ];
@@ -942,7 +943,7 @@
                     </a>`;
                 } else {
                     menuHtml += `
-                    <a class="eb-menu-item ${isActive}" href="${item.url}">
+                    <a class="eb-menu-item ${isActive}" href="${item.url === '#install-pwa' ? 'javascript:void(0)' : item.url}" ${item.url === '#install-pwa' ? 'onclick="window.installEasyBillPWA && window.installEasyBillPWA(); return false;"' : ''}>
                         <i class="fas ${itemIcon}"></i>
                         <div class="eb-item-content">
                             <div class="eb-item-topline">

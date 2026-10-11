@@ -812,8 +812,11 @@
                     </div>
                 </div>
                 <div class="agency-actions">
-                    <button class="btn btn-sm" style="background:#10b981; color:#fff;" onclick="openPaymentModal('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}', ${fee}, '${expiry}')">
-                        💳 Record Fee &amp; Extend
+                    <button class="btn btn-sm" style="background:#10b981; color:#fff;" onclick="quickUnlockAgency('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}')">
+                        ⚡ 1-Click Unlock
+                    </button>
+                    <button class="btn btn-sm" style="background:#059669; color:#fff;" onclick="openPaymentModal('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}', ${fee}, '${expiry}')">
+                        💳 Record Fee
                     </button>
                     <button class="btn btn-sm" style="background:#0284c7; color:#fff;" onclick="editPackageAndFee('${ag.id}')">
                         ⚙️ Modules &amp; Tiers
@@ -827,6 +830,45 @@
         });
 
         container.innerHTML = html;
+    }
+
+    // ⚡ 1-Click Quick Unlock All Modules for an Agency
+    async function quickUnlockAgency(agencyId, agencyName) {
+        const res = await Swal.fire({
+            title: `🔓 Unlock All Modules?`,
+            html: `کیا آپ <b>${agencyName}</b> کے لیے تمام ماڈیولز (Enterprise Unlimited) ایک کلک میں ان لاک کرنا چاہتے ہیں؟`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: '⚡ جی ہاں، سب ان لاک کریں!',
+            cancelButtonText: 'منسوخ'
+        });
+
+        if (res.isConfirmed) {
+            try {
+                Swal.showLoading();
+                await db.collection('agencies').doc(agencyId).update({
+                    packageId: 'enterprise_multi',
+                    allModulesUnlocked: true,
+                    subscriptionExpiry: '2030-12-31',
+                    status: 'active',
+                    isSuspended: false,
+                    permissions: {
+                        stock: true, customers: true, profit: true, expenses: true,
+                        reports: true, delivery_returns: true, owner: true,
+                        backup: true, alerts: true, multi_agency: true
+                    },
+                    updatedAt: new Date().toISOString()
+                });
+                Swal.fire({
+                    toast: true, position: 'top-end', timer: 2500,
+                    icon: 'success', title: `🎉 ${agencyName} ke tamam modules unlock ho gaye!`
+                });
+                await loadAgencies();
+            } catch (e) {
+                Swal.fire('Error', e.message, 'error');
+            }
+        }
     }
 
     // Toggle Agency Freeze / Suspend status
