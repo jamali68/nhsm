@@ -1,4 +1,7 @@
 // Global Theme & Module Communication Handler for Easy Bill Generator
+// 🏷️ Central Application Version (Single source of truth)
+window.EASYBILL_VERSION = '4.0.0';
+
 (function initGlobalTheme() {
     // 🛡️ Ensure App Guard & Domain Lock is loaded across all pages
     if (!document.getElementById('eb-app-guard-script') && typeof window.EB_GUARD === 'undefined') {
@@ -178,23 +181,13 @@
         });
     }
 
-    // 📲 PWA Install Engine & Floating Prompt Banner
+    // 📲 PWA Install Event Handler
     let deferredInstallPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
         // Prevent default mini-infobar
         e.preventDefault();
         deferredInstallPrompt = e;
         window.deferredInstallPrompt = e;
-
-        // If not dismissed recently, show sleek floating install banner
-        const isDismissed = sessionStorage.getItem('eb_pwa_banner_dismissed') === 'true';
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-        if (!isDismissed && !isStandalone) {
-            renderPwaInstallBanner();
-        }
-
-        // Notify other components (e.g. sidebar or settings)
         window.dispatchEvent(new CustomEvent('eb-pwa-ready'));
     });
 
@@ -203,60 +196,8 @@
         localStorage.setItem('eb_pwa_installed', 'true');
         deferredInstallPrompt = null;
         window.deferredInstallPrompt = null;
-        const banner = document.getElementById('ebPwaInstallBanner');
-        if (banner) banner.remove();
         window.dispatchEvent(new CustomEvent('eb-pwa-state-changed'));
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                toast: true, position: 'top-end', timer: 3000,
-                icon: 'success', title: '🎉 EasyBill App successfully installed!'
-            });
-        }
     });
-
-    function renderPwaInstallBanner() {
-        if (document.getElementById('ebPwaInstallBanner')) return;
-        const banner = document.createElement('div');
-        banner.id = 'ebPwaInstallBanner';
-        banner.style.cssText = 'position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:12px 16px; border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,0.5); z-index:999999; display:flex; align-items:center; gap:12px; border:1px solid #334155; max-width:94%; width:440px; animation:slideUpPwa 0.35s ease-out;';
-        
-        banner.innerHTML = `
-            <img src="/icon-192.png" alt="EasyBill" style="width:40px; height:40px; border-radius:10px; flex-shrink:0; object-fit:cover; border:1px solid #475569;">
-            <div style="flex:1; min-width:0;">
-                <div style="font-weight:800; font-size:13px; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    📲 Install EasyBill App
-                </div>
-                <div style="font-size:11px; color:#94a3b8; line-height:1.2;">
-                    آف لائن بلنگ اور ایک کلک سے ایپ کھولنے کے لیے
-                </div>
-            </div>
-            <button id="ebPwaBannerInstallBtn" style="background:#10b981; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer; flex-shrink:0; box-shadow:0 2px 8px rgba(16,185,129,0.3);">
-                انسٹال کریں
-            </button>
-            <button id="ebPwaBannerCloseBtn" aria-label="Close" style="background:transparent; color:#94a3b8; border:none; font-size:20px; line-height:1; cursor:pointer; padding:0 4px; flex-shrink:0;">
-                &times;
-            </button>
-        `;
-
-        // Inject keyframes if missing
-        if (!document.getElementById('eb-pwa-keyframes')) {
-            const kf = document.createElement('style');
-            kf.id = 'eb-pwa-keyframes';
-            kf.textContent = '@keyframes slideUpPwa { from { transform: translate(-50%, 100px); opacity:0; } to { transform: translate(-50%, 0); opacity:1; } }';
-            document.head.appendChild(kf);
-        }
-
-        document.body.appendChild(banner);
-
-        document.getElementById('ebPwaBannerInstallBtn').addEventListener('click', () => {
-            window.installEasyBillPWA();
-        });
-
-        document.getElementById('ebPwaBannerCloseBtn').addEventListener('click', () => {
-            banner.remove();
-            sessionStorage.setItem('eb_pwa_banner_dismissed', 'true');
-        });
-    }
 
     // Global install helper callable from any button
     window.installEasyBillPWA = async function() {

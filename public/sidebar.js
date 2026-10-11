@@ -7,6 +7,8 @@
 // ✅ Role-aware menu (Booker ko limited)
 // ============================================
 
+window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
+
 (function initSidebar() {
     // Inject dark-theme.css link dynamically if not present
     if (!document.getElementById('eb-dark-theme-style')) {
@@ -132,7 +134,6 @@
                 { icon: 'fa-cloud-arrow-up', text: 'Backup & Restore <span class="ur-sub">(بیک اپ و ڈیٹا بحالی)</span>', url: 'backup.html', roles: ['super-admin', 'owner'] },
                 { icon: 'fa-gear', text: 'Settings <span class="ur-sub">(ایجنسی سیٹنگز)</span>', url: 'settings.html', roles: ['super-admin', 'owner'] },
                 { icon: 'fa-cloud-arrow-down', text: 'Cloud Sync & Shifts <span class="ur-sub">(کلاؤڈ سنک و شفٹس)</span>', url: 'settings.html?tab=secSyncSchedule', roles: ['booker'] },
-                { icon: 'fa-mobile-screen-button', text: 'Install App <span class="ur-sub">(ایپ انسٹال کریں)</span>', url: '#install-pwa', roles: ['super-admin', 'owner', 'booker', 'supplier'] },
             ]
         }
     ];
@@ -883,7 +884,7 @@
                 <div class="eb-sidebar-appname">Easy Bill Generator</div>
             </div>
             <div class="eb-sidebar-agency">🏢 ${myProfile.agencyName || myProfile.name || 'My Business'}</div>
-            <div class="eb-sidebar-version">Version 1.0</div>
+            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.0.0'}</div>
         </div>`;
 
         MENU.forEach(section => {
@@ -1146,12 +1147,6 @@
                         ${agencyPackageState.isExpired ? 'EXPIRED' : (agencyPackageState.isPaid ? 'PRO' : 'FREE')}
                     </span>
 
-                    <!-- 📥 Install App Prompt Button (Always visible with dynamic state) -->
-                    <button type="button" class="eb-topbar-btn eb-install-btn" id="ebTopInstallBtn" title="Install Easy Bill App on PC or Mobile">
-                        <i class="fas fa-download"></i>
-                        <span>Install</span>
-                    </button>
-
                     <button type="button" class="eb-topbar-btn eb-topbar-sync" id="ebTopSyncBtn" title="⚡ Cloud Sync & Quota Protection">
                         <i class="fas fa-cloud"></i>
                         <span class="eb-sync-badge" id="ebTopSyncDot"></span>
@@ -1184,51 +1179,6 @@
         if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleSidebar);
         const topbarMenuBtns = document.querySelectorAll('.topbar-menu-btn, #dashMenuBtn');
         topbarMenuBtns.forEach(btn => btn.addEventListener('click', toggleSidebar));
-
-        // 📲 PWA Topbar Install Button State & Click
-        const topInstallBtn = document.getElementById('ebTopInstallBtn');
-        if (topInstallBtn) {
-            function updateTopInstallBtnState() {
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || localStorage.getItem('eb_pwa_installed') === 'true';
-                if (isStandalone) {
-                    topInstallBtn.classList.add('is-installed');
-                    topInstallBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#34d399;"></i> <span>Installed</span>';
-                    topInstallBtn.title = 'EasyBill App is Installed & Ready (Offline Supported)';
-                } else {
-                    topInstallBtn.classList.remove('is-installed');
-                    topInstallBtn.innerHTML = '<i class="fas fa-download"></i> <span>Install</span>';
-                    topInstallBtn.title = 'Install EasyBill App on Mobile / PC';
-                }
-            }
-
-            updateTopInstallBtnState();
-            window.addEventListener('appinstalled', () => {
-                localStorage.setItem('eb_pwa_installed', 'true');
-                updateTopInstallBtnState();
-                if (window.renderDashPwaCard) window.renderDashPwaCard();
-            });
-            window.addEventListener('eb-pwa-ready', updateTopInstallBtnState);
-            window.addEventListener('eb-pwa-state-changed', updateTopInstallBtnState);
-
-            topInstallBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || localStorage.getItem('eb_pwa_installed') === 'true';
-                if (isStandalone) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: '✅ EasyBill App انسٹال ہے!',
-                            text: 'یہ ایپ آپ کے موبائل یا کمپیوٹر پر کامیابی سے انسٹال ہے۔ آپ آف لائن بھی بغیر انٹرنیٹ کام کر سکتے ہیں۔',
-                            confirmButtonColor: '#10b981'
-                        });
-                    }
-                } else {
-                    if (window.installEasyBillPWA) {
-                        window.installEasyBillPWA();
-                    }
-                }
-            });
-        }
 
         // ⚡ Cloud Sync trigger from topbar: Direct Navigation to Cloud Sync & Shift Schedule in Settings
         const topSyncBtn = document.getElementById('ebTopSyncBtn');

@@ -854,8 +854,8 @@
                     status: 'active',
                     isSuspended: false,
                     permissions: {
-                        stock: true, customers: true, profit: true, expenses: true,
-                        reports: true, delivery_returns: true, owner: true,
+                        booker_orders: true, stock: true, customers: true, profit: true, expenses: true,
+                        reports: true, claims: true, delivery_returns: true, owner: true,
                         backup: true, alerts: true, multi_agency: true
                     },
                     updatedAt: new Date().toISOString()
@@ -1128,6 +1128,9 @@
                         </div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
                             <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permBookerOrders" ${curPerms.booker_orders !== false ? 'checked' : ''}> 📋 Booker Orders
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
                                 <input type="checkbox" id="permStock" ${curPerms.stock !== false ? 'checked' : ''}> 📦 Stock &amp; Schemes
                             </label>
                             <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
@@ -1141,6 +1144,9 @@
                             </label>
                             <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
                                 <input type="checkbox" id="permReports" ${curPerms.reports !== false ? 'checked' : ''}> 📊 Advanced Sales Reports
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="permClaims" ${curPerms.claims !== false ? 'checked' : ''}> ⚠️ Damage &amp; Claims
                             </label>
                             <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
                                 <input type="checkbox" id="permDelivery" ${curPerms.delivery_returns !== false ? 'checked' : ''}> 🚚 Van Dispatch &amp; Return
@@ -1176,11 +1182,13 @@
                         monthlyBills: parseInt(document.getElementById('swalLimitBills').value) || 1500
                     },
                     permissions: {
+                        booker_orders: document.getElementById('permBookerOrders') ? document.getElementById('permBookerOrders').checked : true,
                         stock: document.getElementById('permStock').checked,
                         customers: document.getElementById('permKhata').checked,
                         profit: document.getElementById('permProfit').checked,
                         expenses: document.getElementById('permExpenses').checked,
                         reports: document.getElementById('permReports').checked,
+                        claims: document.getElementById('permClaims') ? document.getElementById('permClaims').checked : true,
                         delivery_returns: document.getElementById('permDelivery').checked,
                         owner: document.getElementById('permOwner').checked,
                         backup: document.getElementById('permBackup').checked,
