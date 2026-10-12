@@ -31,6 +31,8 @@
 
     <!-- 💎 SaaS Modules Registry & Paywall Guard -->
     <script src="saas-modules.js"></script>
+    <!-- 🗜️ SMART IMAGE OPTIMIZER & QUOTA SHIELD -->
+    <script src="image-optimizer.js"></script>
 </head>
 <body>
 <span id="myEmail" style="display:none;"></span>
@@ -194,7 +196,8 @@
                 <div class="form-group">
                     <label>🖼️ Agency Logo (optional — bill left side par)</label>
                     <input type="file" id="pfBizLogo" accept="image/*" style="padding:8px; background:#fff; border:2px solid #e0e6e8; border-radius:10px;">
-                    <small id="logoStatus" style="color:#27ae60; font-weight:bold; display:none;">✅ Logo selected — Save dabayen!</small>
+                    <small id="logoStatus" style="color:#27ae60; font-weight:bold; display:none;">✅ Logo ready — Save dabayen!</small>
+                    <div id="logoCompressStats" style="display:none;"></div>
                 </div>
                 <div class="form-group">
                     <label>💳 Pay Type Default (CASH / CREDIT)</label>
@@ -604,30 +607,60 @@
     // ============================================
     // 🖼️ LOGO UPLOAD (compress → base64 ready!)
     // ============================================
-    document.getElementById('pfBizLogo').addEventListener('change', function(e) {
+    document.getElementById('pfBizLogo').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            // 🗜️ Compress: 200px max (chota base64 = Firestore safe!)
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const scale = Math.min(200 / img.width, 200 / img.height, 1);
-                canvas.width = img.width * scale;
-                canvas.height = img.height * scale;
-                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                pendingLogoBase64 = canvas.toDataURL('image/png');
+        const status = document.getElementById('logoStatus');
+        const statsEl = document.getElementById('logoCompressStats');
 
-                // Status + preview
-                const status = document.getElementById('logoStatus');
+        try {
+            if (status) {
                 status.style.display = 'inline';
-                status.innerText = '✅ Logo ready — Save dabayen!';
-            };
-            img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
+                status.innerText = '⏳ Optimizing logo...';
+            }
+
+            if (window.ImageOptimizer) {
+                // 🗜️ Ultra-compact logo compression (250px max, micro size 8KB - 15KB)
+                const optimized = await window.ImageOptimizer.compressFile(file, {
+                    maxDimension: 250,
+                    quality: 0.82,
+                    targetMaxBytes: 25 * 1024
+                });
+                pendingLogoBase64 = optimized.dataUrl;
+
+                if (status) {
+                    status.style.display = 'inline';
+                    status.innerText = '✅ Logo ready — Save dabayen!';
+                }
+                if (statsEl) {
+                    window.ImageOptimizer.renderStatsBadge(statsEl, optimized);
+                }
+            } else {
+                // Fallback
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const scale = Math.min(220 / img.width, 220 / img.height, 1);
+                        canvas.width = img.width * scale;
+                        canvas.height = img.height * scale;
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        pendingLogoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                        if (status) {
+                            status.style.display = 'inline';
+                            status.innerText = '✅ Logo ready — Save dabayen!';
+                        }
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        } catch (err) {
+            console.error('Logo optimize error:', err);
+            Swal.fire('Logo Error', err.message || 'Could not optimize logo', 'warning');
+        }
     });
 
     // ============================================

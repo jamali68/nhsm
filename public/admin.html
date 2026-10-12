@@ -12,10 +12,15 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Easy Bill Generator — Super Admin & SaaS Monetization (Phase 6)</title>
+    <title>Easy Bill Generator — Super Admin &amp; SaaS Monetization Command Center</title>
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Preconnect for Lightning Fast CDN Handshakes -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+
+    <!-- SweetAlert2 (Deferred) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -35,32 +40,91 @@
     <style>
         .swal2-container { z-index: 999999 !important; }
 
-        /* SaaS Revenue Grid */
+        /* Executive Tabs Navigation */
+        .admin-nav {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #e2e8f0;
+            scrollbar-width: thin;
+        }
+        .admin-nav-btn {
+            background: #f8fafc;
+            border: 1.5px solid #cbd5e1;
+            padding: 9px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .admin-nav-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .admin-nav-btn.active {
+            background: #8b5cf6;
+            color: #fff;
+            border-color: #7c3aed;
+            box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+        }
+        .admin-tab-pane {
+            display: none;
+        }
+        .admin-tab-pane.active {
+            display: block;
+            animation: adminFadeIn 0.25s ease-out;
+        }
+        @keyframes adminFadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* SaaS Revenue & Intelligence Grid */
         .saas-metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 12px;
             margin-bottom: 20px;
         }
         .saas-metric-card {
             background: #fff;
             border-radius: 12px;
-            padding: 16px;
+            padding: 14px 16px;
             border: 1px solid #e2e8f0;
             text-align: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+        }
+        .saas-metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--card-accent, #8b5cf6);
         }
         .saas-metric-val {
             font-size: 22px;
             font-weight: 800;
-            color: var(--primary);
+            color: var(--primary, #0f172a);
             margin-top: 4px;
         }
         .saas-metric-lbl {
             font-size: 11px;
-            font-weight: bold;
+            font-weight: 700;
             color: #64748b;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Package Badges */
@@ -70,30 +134,32 @@
         .badge-sub-due { background: #fef3c7; color: #b45309; }
         .badge-sub-expired { background: #fee2e2; color: #b91c1c; }
 
+        /* Store Card */
         .agency-item {
             background: #fff;
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            transition: all 0.2s;
+        }
+        .agency-item:hover {
+            box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+            border-color: #cbd5e1;
+        }
+        .agency-header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
-            transition: all 0.2s;
-        }
-        .agency-item:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        }
-        .agency-main {
-            flex: 1;
-            min-width: 280px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
         .agency-name {
-            font-size: 16px;
+            font-size: 16.5px;
             font-weight: 800;
-            color: var(--primary);
+            color: #0f172a;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -102,16 +168,80 @@
         .agency-meta {
             font-size: 12px;
             color: #64748b;
-            margin-top: 5px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .agency-stats-bar {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
         }
         .agency-actions {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
+            justify-content: flex-end;
         }
+
+        /* Leaderboard & Analytics Tables */
+        .leaderboard-card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 16px;
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .leaderboard-table th {
+            background: #f8fafc;
+            padding: 10px 12px;
+            font-weight: 800;
+            color: #475569;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 11.5px;
+            text-transform: uppercase;
+        }
+        .leaderboard-table td {
+            padding: 11px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .rank-medal {
+            font-size: 15px;
+            font-weight: 800;
+            width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .rank-1 { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .rank-2 { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .rank-3 { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
     </style>
 </head>
 <body>
@@ -119,198 +249,378 @@
 
 <div class="panel-container" style="margin-top: 8px;">
 
-    <!-- ===== 💰 SAAS REVENUE & MONETIZATION DASHBOARD ===== -->
-    <div class="panel-card" style="border-top-color:#10b981;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div>
-                <h2><i class="fas fa-coins"></i> SaaS Revenue & Subscriptions Overview</h2>
-                <small class="header-note">ماہانہ فیس کی وصولی، ایکٹو سبسکرپشنز اور کلائنٹس مانیٹرنگ</small>
-            </div>
-            <button class="btn btn-sm" id="refreshAdminBtn" style="background:#0284c7; color:#fff;">
-                <i class="fas fa-sync-alt"></i> Refresh Revenue
-            </button>
-        </div>
-
-        <div class="saas-metrics-grid">
-            <div class="saas-metric-card">
-                <div class="saas-metric-lbl">Monthly Recurring Revenue (MRR)</div>
-                <div class="saas-metric-val" id="metricMRR" style="color:#10b981;">Rs 0</div>
-            </div>
-            <div class="saas-metric-card">
-                <div class="saas-metric-lbl">Total Registered Agencies</div>
-                <div class="saas-metric-val" id="metricTotalAgencies">0</div>
-            </div>
-            <div class="saas-metric-card">
-                <div class="saas-metric-lbl">Active Paid Subscriptions</div>
-                <div class="saas-metric-val" id="metricActiveSubs" style="color:#0284c7;">0</div>
-            </div>
-            <div class="saas-metric-card">
-                <div class="saas-metric-lbl">Expiring Soon (7 Days)</div>
-                <div class="saas-metric-val" id="metricDueSubs" style="color:#f59e0b;">0</div>
-            </div>
-            <div class="saas-metric-card">
-                <div class="saas-metric-lbl">Expired / Overdue</div>
-                <div class="saas-metric-val" id="metricExpiredSubs" style="color:#ef4444;">0</div>
-            </div>
-        </div>
+    <!-- ===== 📑 SUPER ADMIN EXECUTIVE TABS ===== -->
+    <div class="admin-nav" id="adminTabsNav">
+        <button type="button" class="admin-nav-btn active" data-tab="tabOverview">
+            <i class="fas fa-chart-pie"></i> Executive Overview <span class="ur-sub">(پلیٹ فارم خلاصہ)</span>
+        </button>
+        <button type="button" class="admin-nav-btn" data-tab="tabLeaderboard">
+            <i class="fas fa-trophy"></i> Rankings &amp; Store Intelligence <span class="ur-sub">(رینکنگ و کارکردگی)</span>
+        </button>
+        <button type="button" class="admin-nav-btn" data-tab="tabAgencies">
+            <i class="fas fa-building"></i> Client Stores &amp; Agencies (<span id="tabAgencyCountBadge">0</span>)
+        </button>
+        <button type="button" class="admin-nav-btn" data-tab="tabPackages">
+            <i class="fas fa-cubes"></i> Customizable Packages <span class="ur-sub">(پیکیج مینیجر)</span>
+        </button>
+        <button type="button" class="admin-nav-btn" data-tab="tabRequests">
+            <i class="fas fa-inbox"></i> Upgrade Requests (<span id="tabUpgradeCountBadge">0</span>)
+        </button>
+        <button type="button" class="admin-nav-btn" data-tab="tabCreateAgency">
+            <i class="fas fa-plus-circle"></i> Register Store <span class="ur-sub">(نئی دکان رجسٹریشن)</span>
+        </button>
     </div>
 
-    <!-- ===== ➕ CREATE NEW AGENCY / CLIENT ===== -->
-    <div class="panel-card" style="border-top-color:#3b82f6;">
-        <div class="card-header">
-            <h2><i class="fas fa-plus-circle"></i> Create New Agency & Assign Package</h2>
-            <small class="header-note">نیا کلائنٹ رجسٹر کریں، پیکیج منتخب کریں اور فیس مقرر کریں</small>
-        </div>
-        <form id="createAgencyForm" class="panel-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>🏢 Agency / Business Name *</label>
-                    <input type="text" id="agName" placeholder="e.g. GS Bag House" required maxlength="60">
-                </div>
-                <div class="form-group">
-                    <label>🏪 Business Type *</label>
-                    <select id="agType" required>
-                        <option value="books">📚 Book Depot &amp; Stationery (بک ڈپو و اسٹیشنری / بک پوائنٹ)</option>
-                        <option value="mobile">📱 Mobile Shop &amp; Accessories (موبائل اور ایسیسریز)</option>
-                        <option value="medical">💊 Medical Store &amp; Pharmacy (میڈیکل اسٹور و فارمیسی)</option>
-                        <option value="shoes">👟 Shoe Store &amp; Footwear (جوتے و فٹ ویئر)</option>
-                        <option value="garments">👕 Garments &amp; Clothing (گارمنٹس و ملبوسات)</option>
-                        <option value="general">🛒 General Store &amp; Kiryana (جنرل اسٹور و کریانہ)</option>
-                        <option value="wholesaler">📦 Wholesaler &amp; Bulk Distribution (تھوک ڈیلر)</option>
-                        <option value="confectionery">🍪 Confectionery &amp; Biscuits (کنفیکشنری و بسکٹ)</option>
-                        <option value="hardware">🔧 Hardware, Sanitary &amp; Paint (ہارڈویئر و سینیٹری)</option>
-                        <option value="electronics">💻 Electronics &amp; Home Appliances (الیکٹرانکس)</option>
-                        <option value="cosmetics">💄 Cosmetics &amp; Beauty (کاسمیٹکس)</option>
-                        <option value="auto_parts">🚗 Auto Parts &amp; Spare Parts (آٹو پارٹس)</option>
-                        <option value="bakery">🍞 Bakery, Sweets &amp; Cafe (بیکری و مٹھائی)</option>
-                        <option value="furniture">🪑 Furniture &amp; Decor (فرنیچر)</option>
-                        <option value="other">💼 Other Business (دیگر کاروبار)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>📧 Owner Email (Login ID) *</label>
-                    <input type="email" id="agEmail" placeholder="client@example.com" required>
-                </div>
-                <div class="form-group">
-                    <label>🔑 Owner Password (min 6 chars) *</label>
-                    <input type="text" id="agPassword" placeholder="Default Password" required minlength="6">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>💳 SaaS Package Tier *</label>
-                    <select id="agPackage" required>
-                        <option value="free">🆓 Free Starter (1 Branch, 50 Items, 150 Bills, Rs. 0/mo)</option>
-                        <option value="starter_single" selected>🏪 Single Agency Pro (1 Branch, 500 Items, Unlimited Bills, Rs. 2,000/mo)</option>
-                        <option value="wholesale_dist">📦 Wholesale Distribution Pro (1 Branch, 1,500 Items, 6 Bookers, Rs. 3,500/mo)</option>
-                        <option value="multi_pro">🏢 Multi-Agency Pro (Up to 3 Branches, 3,000 Items, 12 Bookers, Rs. 5,000/mo)</option>
-                        <option value="enterprise_multi">👑 Enterprise Mega Multi (Up to 10 Branches, Unlimited, Rs. 10,000/mo)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>💵 Monthly Fee Charged (PKR) *</label>
-                    <input type="number" id="agMonthlyFee" placeholder="e.g. 2000" value="2000" min="0" required>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>📱 Owner Mobile (For WhatsApp Bills)</label>
-                    <input type="tel" id="agMobile" placeholder="03001234567">
-                </div>
-                <div class="form-group">
-                    <label>📅 Subscription Duration *</label>
-                    <select id="agDuration">
-                        <option value="1">1 Month (30 Days)</option>
-                        <option value="3">3 Months (Quarterly)</option>
-                        <option value="6">6 Months (Bi-Annual)</option>
-                        <option value="12">1 Year (Annual)</option>
-                    </select>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" id="createAgencyBtn" style="background:#10b981;">
-                <i class="fas fa-check-circle"></i> CREATE AGENCY & ACTIVATE SUBSCRIPTION
-            </button>
-        </form>
-    </div>
-
-    <!-- ===== 📩 INCOMING PACKAGE UPGRADE & FEE PAYMENT REQUESTS ===== -->
-    <div class="panel-card" id="upgradeRequestsCard" style="border-top-color:#10b981;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div>
-                <h2><i class="fas fa-inbox"></i> Incoming Package Upgrade &amp; Fee Requests (<span id="upgradeReqCount">0</span>)</h2>
-                <small class="header-note">کلائنٹس کی طرف سے پیکیج اپ گریڈ اور فیس ادائیگی کی درخواستیں — 1 کلک میں ان لاک کریں</small>
-            </div>
-            <button class="btn btn-sm" style="background:#0284c7; color:#fff;" onclick="loadUpgradeRequests()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-        </div>
-        <div id="upgradeRequestsList">
-            <div class="loading-inline">Loading requests...</div>
-        </div>
-    </div>
-
-    <!-- ===== 💎 EDIT SAAS PACKAGES & LIMITS ===== -->
-    <div class="panel-card" style="border-top-color:#8b5cf6;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div>
-                <h2><i class="fas fa-cubes"></i> SaaS Package Tiers, Limits &amp; Pricing Controls</h2>
-                <small class="header-note">سپر ایڈمن کنٹرولز: ہر پیکیج کے بلز کی لمٹ، آرڈر بکر لمٹ، آئٹمز لمٹ اور قیمت (فیس) کم یا زیادہ کریں</small>
-            </div>
-            <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Super%20Admin%20Panel%20Support" target="_blank" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                <i class="fab fa-whatsapp"></i> Developer WhatsApp: +923346800959
-            </a>
-        </div>
-
-        <!-- Developer Contact Banner -->
-        <div style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:#fff; border-radius:10px; padding:12px 16px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:38px; height:38px; border-radius:50%; background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">
-                    <i class="fab fa-whatsapp"></i>
-                </div>
+    <!-- ============================================
+         📊 TAB 1: EXECUTIVE OVERVIEW & PLATFORM METRICS
+         ============================================ -->
+    <div class="admin-tab-pane active" id="tabOverview">
+        <div class="panel-card" style="border-top-color:#10b981;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div>
-                    <div style="font-size:13px; font-weight:800; color:#f8fafc;">سافٹ ویئر ڈویلپر سپورٹ (Developer Official WhatsApp): <span style="color:#22c55e;">+923346800959</span></div>
-                    <div style="font-size:11px; color:#94a3b8;">کسی بھی پیکیج کی کسٹم کنفیگریشن، بلز و بکرز لمٹس کے لیے ڈویلپر سے براہ راست واٹس ایپ پر رابطہ کیا جا سکتا ہے۔</div>
+                    <h2><i class="fas fa-coins"></i> SaaS Platform Executive Command Center</h2>
+                    <small class="header-note">تمام رجسٹرڈ ایجنسیوں کی مجموعی سیلز، بلز، اسٹاک اور ماہانہ آمدنی کا لائیو جائزہ</small>
+                </div>
+                <button class="btn btn-sm" id="refreshAdminBtn" style="background:#0284c7; color:#fff; font-weight:bold;">
+                    <i class="fas fa-sync-alt"></i> Refresh Platform Data
+                </button>
+            </div>
+
+            <!-- 9-Card Platform KPI Matrix -->
+            <div class="saas-metrics-grid">
+                <div class="saas-metric-card" style="--card-accent:#10b981;">
+                    <div class="saas-metric-lbl">Monthly Recurring Revenue (MRR)</div>
+                    <div class="saas-metric-val" id="metricMRR" style="color:#10b981;">Rs 0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#0284c7;">
+                    <div class="saas-metric-lbl">Total Registered Stores</div>
+                    <div class="saas-metric-val" id="metricTotalAgencies">0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#16a34a;">
+                    <div class="saas-metric-lbl">Active Paid Subscriptions</div>
+                    <div class="saas-metric-val" id="metricActiveSubs" style="color:#16a34a;">0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#f59e0b;">
+                    <div class="saas-metric-lbl">Expiring in 7 Days</div>
+                    <div class="saas-metric-val" id="metricDueSubs" style="color:#f59e0b;">0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#ef4444;">
+                    <div class="saas-metric-lbl">Expired / Overdue Stores</div>
+                    <div class="saas-metric-val" id="metricExpiredSubs" style="color:#ef4444;">0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#64748b;">
+                    <div class="saas-metric-lbl">Inactive / Suspended Stores</div>
+                    <div class="saas-metric-val" id="metricSuspendedSubs" style="color:#64748b;">0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#8b5cf6;">
+                    <div class="saas-metric-lbl">Total Platform Gross Sales</div>
+                    <div class="saas-metric-val" id="metricTotalPlatformSales" style="color:#8b5cf6;">Rs 0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#0ea5e9;">
+                    <div class="saas-metric-lbl">Total Invoices &amp; Bills Printed</div>
+                    <div class="saas-metric-val" id="metricTotalPlatformBills" style="color:#0ea5e9;">0</div>
+                </div>
+                <div class="saas-metric-card" style="--card-accent:#10b981;">
+                    <div class="saas-metric-lbl">Today's Platform Bills</div>
+                    <div class="saas-metric-val" id="metricTodayPlatformBills" style="color:#10b981;">0</div>
                 </div>
             </div>
-            <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Super%20Admin%20Support" target="_blank" style="background:#25D366; color:#fff; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:bold; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
-                <i class="fab fa-whatsapp"></i> WhatsApp Chat
-            </a>
-        </div>
 
-        <div id="packagesEditor">
-            <div class="loading-inline">Loading packages...</div>
+            <!-- Developer & System Integrity Status Strip -->
+            <div style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:#fff; border-radius:12px; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:42px; height:42px; border-radius:50%; background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:13.5px; font-weight:800; color:#f8fafc;">
+                            Developer Support &amp; Cloud SLA: <span style="color:#22c55e;">+923346800959</span>
+                        </div>
+                        <div style="font-size:11.5px; color:#94a3b8;">
+                            سافٹ ویئر کے لائیو سرورز، نیٹلی فائی سرور لیس فنکشنز اور فائر بیس کلاؤڈ الرٹس فعال ہیں۔
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <a href="https://wa.me/923346800959?text=Assalam-o-Alaikum%20Developer!%20Super%20Admin%20Support" target="_blank" class="btn btn-sm" style="background:#25D366; color:#fff; text-decoration:none; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+                        <i class="fab fa-whatsapp"></i> WhatsApp Dev
+                    </a>
+                    <button type="button" class="btn btn-sm" style="background:#8b5cf6; color:#fff; font-weight:800;" onclick="switchAdminTab('tabLeaderboard')">
+                        <i class="fas fa-trophy"></i> View Rankings
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ===== 🏢 ALL REGISTERED AGENCIES ===== -->
-    <div class="panel-card" style="border-top-color:#f59e0b;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div>
-                <h2><i class="fas fa-building"></i> Client Agencies & Subscription Management (<span id="agencyCount">0</span>)</h2>
-                <small class="header-note">کلائنٹس کنٹرول، ماڈیولز لاک/ان لاک، سسپنڈ اور فیس کی تجدید</small>
+    <!-- ============================================
+         🏆 TAB 2: STORE RANKINGS, LEADERBOARD & GRADING
+         ============================================ -->
+    <div class="admin-tab-pane" id="tabLeaderboard">
+        <!-- Performance & Stock Grading Summary Banner -->
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <div style="font-weight:800; font-size:15px; color:#0f172a;">
+                    <i class="fas fa-graduation-cap" style="color:#8b5cf6;"></i> Store Performance &amp; Stock Grading Intelligence (کارکردگی و اسٹاک درجہ بندی)
+                </div>
+                <small style="color:#64748b;">سیلز، بلنگ اسپیڈ اور گودام کے اسٹاک والیم کے مطابق مکمل تجزیہ</small>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <input type="text" id="agencySearchInput" placeholder="🔍 Search name, email, phone..." style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; min-width:200px; background:#fff; outline:none; color:#1e293b;">
-                <select id="agencyCategoryFilter" style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
-                    <option value="all">📂 All Business Types</option>
-                </select>
-                <select id="agencyStatusFilter" style="padding:6px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
-                    <option value="all">⚡ All Statuses</option>
-                    <option value="active">🟢 Active</option>
-                    <option value="due">🟠 Expiring in 7 Days</option>
-                    <option value="expired">🔴 Expired</option>
-                    <option value="suspended">⛔ Suspended / Frozen</option>
-                </select>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+                <div style="background:#fef3c7; border:1px solid #fde68a; border-radius:10px; padding:10px 14px;">
+                    <div style="font-weight:800; color:#b45309; font-size:12.5px;">⭐ Grade A (Top Performer)</div>
+                    <div style="font-size:11px; color:#92400e; margin-top:2px;">سیلز &gt; Rs 50,000 یا 30+ بلز — ٹاپ حجم</div>
+                </div>
+                <div style="background:#e0f2fe; border:1px solid #bae6fd; border-radius:10px; padding:10px 14px;">
+                    <div style="font-weight:800; color:#0369a1; font-size:12.5px;">🥈 Grade B (Steady Medium)</div>
+                    <div style="font-size:11px; color:#075985; margin-top:2px;">سیلز Rs 15k - 50k یا 10 - 30 بلز</div>
+                </div>
+                <div style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:10px; padding:10px 14px;">
+                    <div style="font-weight:800; color:#475569; font-size:12.5px;">🥉 Grade C (Starter)</div>
+                    <div style="font-size:11px; color:#334155; margin-top:2px;">شروعاتی سیلز و کم بلز حجم</div>
+                </div>
+                <div style="background:#dcfce7; border:1px solid #86efac; border-radius:10px; padding:10px 14px;">
+                    <div style="font-weight:800; color:#15803d; font-size:12.5px;">🟢 High Stock (Top Warehouse)</div>
+                    <div style="font-size:11px; color:#166534; margin-top:2px;">500+ یونٹس یا 100+ ورائٹی آئٹمز</div>
+                </div>
+                <div style="background:#fef9c3; border:1px solid #fde047; border-radius:10px; padding:10px 14px;">
+                    <div style="font-weight:800; color:#854d0e; font-size:12.5px;">🟡 Medium Stock (Standard)</div>
+                    <div style="font-size:11px; color:#713f12; margin-top:2px;">50 تا 500 یونٹس معتدل اسٹاک</div>
+                </div>
+                <div style="background:#fee2e2; border:1px solid #fca5a5; border-radius:10px; padding:10px 14px;">
+                    <div style="font-weight:800; color:#b91c1c; font-size:12.5px;">🔴 Low Stock (Alert / Restock)</div>
+                    <div style="font-size:11px; color:#991b1b; margin-top:2px;">50 سے کم یونٹس یا الرٹ پر آئٹمز</div>
+                </div>
             </div>
         </div>
-        <div id="agenciesList">
-            <div class="loading-inline">Loading client agencies...</div>
+
+        <!-- 2-Column Leaderboards Grid -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:16px;">
+            <!-- 🥇 Leaderboard 1: Top Sales Volume -->
+            <div class="leaderboard-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-weight:800; font-size:14px; color:#0f172a;">
+                        🏆 Top Sales Leaderboard <span class="ur-sub">(سب سے زیادہ سیلز)</span>
+                    </div>
+                    <span class="branch-badge" style="background:#fef3c7; color:#b45309; font-weight:800;">By Revenue</span>
+                </div>
+                <div id="leaderboardSalesList" style="overflow-x:auto;">
+                    <div class="loading-inline">Loading sales ranking...</div>
+                </div>
+            </div>
+
+            <!-- 🧾 Leaderboard 2: Top Bill Generators -->
+            <div class="leaderboard-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-weight:800; font-size:14px; color:#0f172a;">
+                        🧾 Top Bill Generators <span class="ur-sub">(سب سے زیادہ بل بنانے والے)</span>
+                    </div>
+                    <span class="branch-badge" style="background:#e0f2fe; color:#0369a1; font-weight:800;">By Total Invoices</span>
+                </div>
+                <div id="leaderboardBillsList" style="overflow-x:auto;">
+                    <div class="loading-inline">Loading bills ranking...</div>
+                </div>
+            </div>
+
+            <!-- 📦 Leaderboard 3: Top Stock Holdings -->
+            <div class="leaderboard-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-weight:800; font-size:14px; color:#0f172a;">
+                        📦 Top Inventory Holding <span class="ur-sub">(سب سے بڑا اسٹاک رکھنے والی دکانیں)</span>
+                    </div>
+                    <span class="branch-badge" style="background:#dcfce7; color:#15803d; font-weight:800;">By Stock Items</span>
+                </div>
+                <div id="leaderboardStockList" style="overflow-x:auto;">
+                    <div class="loading-inline">Loading stock ranking...</div>
+                </div>
+            </div>
+
+            <!-- ⚠️ Leaderboard 4: Low Stock Alert Watchlist -->
+            <div class="leaderboard-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-weight:800; font-size:14px; color:#b91c1c;">
+                        ⚠️ Stock Alert Watchlist <span class="ur-sub">(کم اسٹاک کی الرٹ واچ لسٹ)</span>
+                    </div>
+                    <span class="branch-badge" style="background:#fee2e2; color:#b91c1c; font-weight:800;">Needs Reorder</span>
+                </div>
+                <div id="leaderboardAlertsList" style="overflow-x:auto;">
+                    <div class="loading-inline">Loading stock warnings...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         🏢 TAB 3: REGISTERED AGENCIES & CLIENT MANAGEMENT
+         ============================================ -->
+    <div class="admin-tab-pane" id="tabAgencies">
+        <div class="panel-card" style="border-top-color:#f59e0b;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h2><i class="fas fa-building"></i> Client Agencies &amp; Store Governance (<span id="agencyCount">0</span>)</h2>
+                    <small class="header-note">دکانوں کی مکمل نگرانی، ماڈیولز لاک و ان لاک، سسپنڈ اور فیس کی تجدید</small>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <input type="text" id="agencySearchInput" placeholder="🔍 Search name, email, phone..." style="padding:7px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12.5px; min-width:180px; background:#fff; outline:none; color:#1e293b;">
+                    <select id="agencyCategoryFilter" style="padding:7px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
+                        <option value="all">📂 All Business Types</option>
+                    </select>
+                    <select id="agencyStatusFilter" style="padding:7px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
+                        <option value="all">⚡ All Statuses</option>
+                        <option value="active">🟢 Active</option>
+                        <option value="due">🟠 Expiring in 7 Days</option>
+                        <option value="expired">🔴 Expired</option>
+                        <option value="suspended">⛔ Suspended / Frozen</option>
+                    </select>
+                    <select id="agencyGradeFilter" style="padding:7px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
+                        <option value="all">⭐ All Grades</option>
+                        <option value="A">⭐ Grade A (Top Performer)</option>
+                        <option value="B">🥈 Grade B (Medium)</option>
+                        <option value="C">🥉 Grade C (Starter)</option>
+                    </select>
+                    <select id="agencyStockFilter" style="padding:7px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
+                        <option value="all">📦 All Stock Levels</option>
+                        <option value="high">🟢 High Stock (Top Inventory)</option>
+                        <option value="medium">🟡 Medium Stock (Moderate)</option>
+                        <option value="low">🔴 Low Stock (Alert / Restock)</option>
+                    </select>
+                    <select id="agencySortFilter" style="padding:7px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; outline:none; color:#1e293b;">
+                        <option value="sales">💰 Sort: Highest Sales</option>
+                        <option value="bills">🧾 Sort: Most Bills</option>
+                        <option value="today">⚡ Sort: Most Today Bills</option>
+                        <option value="stockHigh">📦 Sort: Highest Stock</option>
+                        <option value="stockLow">⚠️ Sort: Lowest Stock</option>
+                    </select>
+                </div>
+            </div>
+            <div id="agenciesList">
+                <div class="loading-inline">Loading client agencies and live performance metrics...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         📦 TAB 4: CUSTOMIZABLE SAAS PACKAGES & LIMITS
+         ============================================ -->
+    <div class="admin-tab-pane" id="tabPackages">
+        <div class="panel-card" style="border-top-color:#8b5cf6;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h2><i class="fas fa-cubes"></i> Customizable SaaS Package Tiers &amp; Pricing Controls</h2>
+                    <small class="header-note">تمام پیکیجز کے نام، قیمت، بلز، آئٹمز اور بکرز کی لمٹس 100% کسٹمائز کریں یا نیا پیکیج بنائیں</small>
+                </div>
+                <button type="button" class="btn btn-sm" id="btnAddNewPackage" style="background:#10b981; color:#fff; font-weight:800; padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fas fa-plus"></i> ➕ Create New Custom Package
+                </button>
+            </div>
+
+            <div id="packagesEditor">
+                <div class="loading-inline">Loading customizable packages...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         📩 TAB 5: INCOMING UPGRADE REQUESTS
+         ============================================ -->
+    <div class="admin-tab-pane" id="tabRequests">
+        <div class="panel-card" style="border-top-color:#10b981;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h2><i class="fas fa-inbox"></i> Incoming Package Upgrade &amp; Fee Requests (<span id="upgradeReqCount">0</span>)</h2>
+                    <small class="header-note">کلائنٹس کی طرف سے پیکیج اپ گریڈ اور فیس ادائیگی کی درخواستیں — 1 کلک میں ان لاک کریں</small>
+                </div>
+                <button class="btn btn-sm" style="background:#0284c7; color:#fff; font-weight:bold;" onclick="loadUpgradeRequests()">
+                    <i class="fas fa-sync-alt"></i> Refresh Requests
+                </button>
+            </div>
+            <div id="upgradeRequestsList">
+                <div class="loading-inline">Loading requests...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         ➕ TAB 6: REGISTER NEW AGENCY / STORE
+         ============================================ -->
+    <div class="admin-tab-pane" id="tabCreateAgency">
+        <div class="panel-card" style="border-top-color:#3b82f6;">
+            <div class="card-header">
+                <h2><i class="fas fa-plus-circle"></i> Register New Store &amp; Assign Package</h2>
+                <small class="header-note">نیا کلائنٹ رجسٹر کریں۔ ازخود بنیادی 🆓 Free Starter پیکیج منتخب رہے گا</small>
+            </div>
+            <form id="createAgencyForm" class="panel-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>🏢 Agency / Store Business Name *</label>
+                        <input type="text" id="agName" placeholder="e.g. GS Bag House" required maxlength="60">
+                    </div>
+                    <div class="form-group">
+                        <label>🏪 Business Type Category *</label>
+                        <select id="agType" required>
+                            <option value="books">📚 Book Depot &amp; Stationery (بک ڈپو و اسٹیشنری / بک پوائنٹ)</option>
+                            <option value="mobile">📱 Mobile Shop &amp; Accessories (موبائل اور ایسیسریز)</option>
+                            <option value="medical">💊 Medical Store &amp; Pharmacy (میڈیکل اسٹور و فارمیسی)</option>
+                            <option value="shoes">👟 Shoe Store &amp; Footwear (جوتے و فٹ ویئر)</option>
+                            <option value="garments">👕 Garments &amp; Clothing (گارمنٹس و ملبوسات)</option>
+                            <option value="general">🛒 General Store &amp; Kiryana (جنرل اسٹور و کریانہ)</option>
+                            <option value="wholesaler">📦 Wholesaler &amp; Bulk Distribution (تھوک ڈیلر)</option>
+                            <option value="confectionery">🍪 Confectionery &amp; Biscuits (کنفیکشنری و بسکٹ)</option>
+                            <option value="hardware">🔧 Hardware, Sanitary &amp; Paint (ہارڈویئر و سینیٹری)</option>
+                            <option value="electronics">💻 Electronics &amp; Home Appliances (الیکٹرانکس)</option>
+                            <option value="cosmetics">💄 Cosmetics &amp; Beauty (کاسمیٹکس)</option>
+                            <option value="auto_parts">🚗 Auto Parts &amp; Spare Parts (آٹو پارٹس)</option>
+                            <option value="bakery">🍞 Bakery, Sweets &amp; Cafe (بیکری و مٹھائی)</option>
+                            <option value="furniture">🪑 Furniture &amp; Decor (فرنیچر)</option>
+                            <option value="other">💼 Other Business (دیگر کاروبار)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📧 Owner Email (Login ID) *</label>
+                        <input type="email" id="agEmail" placeholder="client@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>🔑 Owner Password (min 6 chars) *</label>
+                        <input type="text" id="agPassword" placeholder="Default Password" required minlength="6">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>💳 SaaS Package Tier (Default: Free) *</label>
+                        <select id="agPackage" required>
+                            <!-- Dynamically populated, default Free -->
+                            <option value="free" selected>🆓 Free Starter (Rs. 0 / mo)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>💵 Monthly Fee Charged (PKR) *</label>
+                        <input type="number" id="agMonthlyFee" placeholder="0" value="0" min="0" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>📱 Owner Mobile (For WhatsApp Bills)</label>
+                        <input type="tel" id="agMobile" placeholder="03001234567">
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Subscription Duration *</label>
+                        <select id="agDuration">
+                            <option value="1">1 Month (30 Days)</option>
+                            <option value="3">3 Months (Quarterly)</option>
+                            <option value="6">6 Months (Bi-Annual)</option>
+                            <option value="12">1 Year (Annual)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="createAgencyBtn" style="background:#10b981; font-weight:800; padding:12px;">
+                    <i class="fas fa-check-circle"></i> CREATE AGENCY &amp; ACTIVATE SUBSCRIPTION
+                </button>
+            </form>
         </div>
     </div>
 
@@ -338,12 +648,19 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // ⚡ Enable Firestore local persistence for 10x faster local reads
+    try {
+        db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    } catch (_) {}
+
     let currentAdminUid = null;
     let allAgencies = [];
+    let allLoadedPackages = {};
 
-    // Master Default Packages
+    // Master Default Packages (Fallbacks & Initial Seed)
     const DEFAULT_SAAS_PACKAGES = {
         free: {
+            id: 'free',
             name: '🆓 Free Starter',
             type: 'single',
             fee: 0,
@@ -351,6 +668,7 @@
             allowedTemplates: ['template4', 'template1']
         },
         starter_single: {
+            id: 'starter_single',
             name: '🏪 Single Agency Pro',
             type: 'single',
             fee: 2000,
@@ -358,6 +676,7 @@
             allowedTemplates: ['template4', 'template1', 'template6']
         },
         wholesale_dist: {
+            id: 'wholesale_dist',
             name: '📦 Wholesale Distribution Pro',
             type: 'single',
             fee: 3500,
@@ -365,6 +684,7 @@
             allowedTemplates: ['template4', 'template1', 'template6', 'template2']
         },
         multi_pro: {
+            id: 'multi_pro',
             name: '🏢 Multi-Agency Pro',
             type: 'multi',
             fee: 5000,
@@ -372,7 +692,8 @@
             allowedTemplates: ['template4', 'template1', 'template2', 'template6', 'template7']
         },
         enterprise_multi: {
-            name: '👑 Enterprise Mega Multi',
+            id: 'enterprise_multi',
+            name: '👑 Enterprise Unlimited',
             type: 'multi',
             fee: 10000,
             limits: { maxBranches: 10, maxItems: 99999, monthlyBills: 99999, maxBookers: 50 },
@@ -380,7 +701,42 @@
         }
     };
 
-    // Auth Guard
+    // ============================================
+    // 📑 EXECUTIVE TABS NAVIGATION SYSTEM
+    // ============================================
+    function switchAdminTab(targetTabId) {
+        document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === targetTabId);
+        });
+        document.querySelectorAll('.admin-tab-pane').forEach(pane => {
+            pane.classList.toggle('active', pane.id === targetTabId);
+        });
+        // Update URL hash without reload
+        if (window.location.hash !== '#' + targetTabId) {
+            history.replaceState(null, null, '#' + targetTabId);
+        }
+    }
+
+    document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            switchAdminTab(this.getAttribute('data-tab'));
+        });
+    });
+
+    // Check URL hash on load
+    function checkInitialHash() {
+        const hash = (window.location.hash || '').replace('#', '');
+        const validTabs = ['tabOverview', 'tabLeaderboard', 'tabAgencies', 'tabPackages', 'tabRequests', 'tabCreateAgency'];
+        if (validTabs.includes(hash)) {
+            switchAdminTab(hash);
+        }
+    }
+
+    window.addEventListener('hashchange', checkInitialHash);
+
+    // ============================================
+    // 🛡️ AUTH GUARD
+    // ============================================
     auth.onAuthStateChanged(async (user) => {
         if (!user) {
             window.location.href = 'auth.html';
@@ -396,195 +752,94 @@
             currentAdminUid = user.uid;
             document.getElementById('adminEmail').innerText = user.email;
 
-            await loadPackages();
-            await loadUpgradeRequests();
-            await loadAgencies();
+            checkInitialHash();
+            await Promise.all([
+                loadPackages(),
+                loadUpgradeRequests(),
+                loadAgencies()
+            ]);
         } catch (e) {
             console.error('Super Admin init error:', e);
         }
     });
 
-    // Auto-fill suggested fee on package change
-    document.getElementById('agPackage').addEventListener('change', function() {
-        const fees = { 'free': 0, 'starter_single': 2000, 'wholesale_dist': 3500, 'multi_pro': 5000, 'enterprise_multi': 10000 };
-        document.getElementById('agMonthlyFee').value = fees[this.value] !== undefined ? fees[this.value] : 2000;
-    });
-
     // ============================================
-    // 📩 INCOMING PACKAGE UPGRADE & FEE PAYMENT REQUESTS
-    // ============================================
-    async function loadUpgradeRequests() {
-        const container = document.getElementById('upgradeRequestsList');
-        if (!container) return;
-        try {
-            const snap = await db.collection('upgradeRequests').orderBy('createdAt', 'desc').limit(25).get();
-            if (snap.empty) {
-                container.innerHTML = '<div class="empty-state" style="padding:15px; color:#64748b; font-size:12.5px;">کوئی زیر التواء درخواست نہیں ہے۔ سب کلائنٹس ایکٹو ہیں!</div>';
-                const countBadge = document.getElementById('upgradeReqCount');
-                if (countBadge) countBadge.innerText = '0';
-                return;
-            }
-
-            let pendingCount = 0;
-            let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">';
-            snap.forEach(doc => {
-                const req = doc.data();
-                const isPending = req.status === 'pending';
-                if (isPending) pendingCount++;
-
-                const dateStr = req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent';
-                const pkgName = req.requestedPackageId ? req.requestedPackageId.toUpperCase() : 'PRO';
-
-                html += `
-                <div style="border:1.5px solid ${isPending ? '#10b981' : '#e2e8f0'}; border-radius:10px; padding:12px; background:${isPending ? '#f0fdf4' : '#f8fafc'};">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <b style="font-size:13.5px; color:#0f172a;">🏢 ${req.agencyName || 'Agency'}</b>
-                        <span class="branch-badge" style="background:${isPending ? '#dcfce7' : '#f1f5f9'}; color:${isPending ? '#15803d' : '#64748b'}; font-weight:800; font-size:10px;">
-                            ${isPending ? '⏳ PENDING' : '✅ APPROVED'}
-                        </span>
-                    </div>
-                    <div style="font-size:11.5px; color:#475569; margin-bottom:4px;">
-                        <span>📧 ${req.userEmail || '—'}</span> &nbsp;|&nbsp; <span>📅 ${dateStr}</span>
-                    </div>
-                    <div style="font-size:12px; margin-bottom:6px;">
-                        Target: <b style="color:#0284c7;">${pkgName}</b>
-                        ${req.requestedModule ? ` &nbsp;|&nbsp; Module: <b style="color:#8b5cf6;">${req.requestedModule}</b>` : ''}
-                    </div>
-                    ${req.paymentNote ? `<div style="background:#fff; border:1px dashed #cbd5e1; border-radius:6px; padding:5px 8px; font-size:11.5px; color:#334155; margin-bottom:8px;">📝 Trx / Note: <b>${req.paymentNote}</b></div>` : ''}
-                    
-                    ${isPending ? `
-                    <div style="display:flex; gap:6px; margin-top:8px;">
-                        <button class="btn btn-sm" style="flex:1; background:#10b981; color:#fff;" onclick="approveUpgradeRequest('${doc.id}', '${req.agencyId}', '${req.requestedPackageId || 'starter_single'}', '${(req.agencyName || '').replace(/'/g, "\\'")}')">
-                            <i class="fas fa-check"></i> Approve &amp; Unlock
-                        </button>
-                        <button class="btn btn-sm" style="background:#ef4444; color:#fff;" onclick="dismissUpgradeRequest('${doc.id}')" title="Dismiss">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    ` : `<div style="font-size:11px; color:#10b981; font-weight:bold; margin-top:4px;">✅ Unlocked &amp; Activated</div>`}
-                </div>`;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-            const countBadge = document.getElementById('upgradeReqCount');
-            if (countBadge) countBadge.innerText = pendingCount;
-        } catch (e) {
-            console.warn('Load requests error:', e);
-            container.innerHTML = '<div class="empty-state" style="padding:10px; font-size:12px;">Requests history loaded</div>';
-        }
-    }
-
-    async function approveUpgradeRequest(reqId, agencyId, targetPackageId, agencyName) {
-        const pkgFeeMap = { 'free': 0, 'starter_single': 2000, 'wholesale_dist': 3500, 'multi_pro': 5000, 'enterprise_multi': 10000 };
-        const fee = pkgFeeMap[targetPackageId] || 2000;
-
-        const res = await Swal.fire({
-            title: `Approve & Unlock Package?`,
-            html: `Agency: <b>${agencyName}</b><br>Target: <b>${targetPackageId.toUpperCase()}</b> (Rs ${fee.toLocaleString()}/mo)<br><br><small style="color:#10b981;">کلائنٹ کا پیکیج فوری ایکٹو ہو جائے گا اور لاک شدہ تمام ماڈیولز ان لاک ہو جائیں گے۔</small>`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            confirmButtonText: '✅ Approve & Unlock Now'
-        });
-
-        if (res.isConfirmed) {
-            Swal.fire({ title: 'Unlocking Package...', didOpen: () => Swal.showLoading() });
-            try {
-                const baseDate = new Date();
-                baseDate.setMonth(baseDate.getMonth() + 1);
-                const newExpiryStr = baseDate.toISOString().slice(0, 10);
-
-                await db.collection('agencies').doc(agencyId).update({
-                    packageId: targetPackageId,
-                    monthlyFee: fee,
-                    subscriptionExpiry: newExpiryStr,
-                    subscriptionStatus: 'active',
-                    status: 'active',
-                    isSuspended: false,
-                    lastUnlockedAt: new Date().toISOString()
-                });
-
-                await db.collection('upgradeRequests').doc(reqId).update({
-                    status: 'approved',
-                    approvedAt: new Date().toISOString()
-                });
-
-                Swal.fire({
-                    icon: 'success',
-                    title: '🎉 Package Unlocked!',
-                    html: `<b>${agencyName}</b> ko <b>${targetPackageId.toUpperCase()}</b> par unlock kar diya gaya hai!<br>Valid till: <b>${newExpiryStr}</b>`
-                });
-
-                await loadUpgradeRequests();
-                await loadAgencies();
-            } catch (e) {
-                console.error('Approve upgrade error:', e);
-                Swal.fire('Error', 'Approval failed: ' + e.message, 'error');
-            }
-        }
-    }
-
-    async function dismissUpgradeRequest(reqId) {
-        const res = await Swal.fire({
-            title: 'Dismiss Request?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            confirmButtonText: 'Yes, Dismiss'
-        });
-        if (res.isConfirmed) {
-            try {
-                await db.collection('upgradeRequests').doc(reqId).update({ status: 'dismissed' });
-                await loadUpgradeRequests();
-            } catch (e) {
-                console.warn(e);
-            }
-        }
-    }
-
-    // ============================================
-    // 💳 LOAD & EDIT PACKAGES
+    // 📦 LOAD & EDIT CUSTOMIZABLE PACKAGES
     // ============================================
     async function loadPackages() {
         const container = document.getElementById('packagesEditor');
         try {
             const snap = await db.collection('packages').get();
+            allLoadedPackages = {};
+
             if (snap.empty) {
+                // Seed Firestore with defaults
                 for (const [id, pkg] of Object.entries(DEFAULT_SAAS_PACKAGES)) {
                     await db.collection('packages').doc(id).set(pkg);
+                    allLoadedPackages[id] = pkg;
                 }
-                renderPackages(DEFAULT_SAAS_PACKAGES);
-                return;
+            } else {
+                snap.forEach(d => {
+                    allLoadedPackages[d.id] = { id: d.id, ...d.data() };
+                });
             }
 
-            const pkgs = {};
-            snap.forEach(d => { pkgs[d.id] = d.data(); });
-            renderPackages(pkgs);
+            renderPackages(allLoadedPackages);
+            populateCreateAgencyPackageSelect();
+
         } catch (e) {
-            container.innerHTML = '<div class="error-inline">⚠️ Packages load failed: ' + e.message + '</div>';
+            console.error('Load packages error:', e);
+            if (container) {
+                container.innerHTML = '<div class="error-inline">⚠️ Packages load failed: ' + e.message + '</div>';
+            }
         }
+    }
+
+    function populateCreateAgencyPackageSelect() {
+        const sel = document.getElementById('agPackage');
+        if (!sel) return;
+
+        let html = '';
+        for (const [id, pkg] of Object.entries(allLoadedPackages)) {
+            const isSelected = (id === 'free') ? 'selected' : '';
+            const feeText = pkg.fee ? `Rs. ${Number(pkg.fee).toLocaleString()} / mo` : 'Rs. 0 / mo';
+            html += `<option value="${id}" ${isSelected}>${pkg.name || id} (${feeText})</option>`;
+        }
+        sel.innerHTML = html;
+
+        // Auto-fill suggested fee on package change
+        sel.onchange = function() {
+            const selectedPkg = allLoadedPackages[this.value];
+            document.getElementById('agMonthlyFee').value = selectedPkg && selectedPkg.fee !== undefined ? selectedPkg.fee : 0;
+        };
     }
 
     function renderPackages(pkgs) {
         const container = document.getElementById('packagesEditor');
-        let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px;">';
+        if (!container) return;
+
+        let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">';
 
         for (const [id, pkg] of Object.entries(pkgs)) {
             const lim = pkg.limits || {};
             const isMulti = pkg.type === 'multi' || (lim.maxBranches && lim.maxBranches > 1);
+            const isCustom = !DEFAULT_SAAS_PACKAGES[id];
 
             html += `
-            <div class="package-editor" data-pkg="${id}" style="border:1.5px solid #cbd5e1; border-radius:12px; padding:15px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.04); position:relative;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <div style="font-size:15px; font-weight:800; color:var(--primary);">
-                        ${pkg.name || id}
-                    </div>
-                    <span style="font-size:10px; font-weight:800; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:10px;">ID: ${id}</span>
-                </div>
-                <div style="font-size:12px; margin-bottom:12px;">
+            <div class="package-editor" data-pkg="${id}" style="border:1.5px solid #cbd5e1; border-radius:14px; padding:18px; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,0.04); position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span style="font-size:10.5px; font-weight:800; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:10px;">ID: ${id}</span>
                     <span class="branch-badge ${isMulti ? 'badge-pkg-multi' : 'badge-pkg-single'}">
-                        ${isMulti ? '🏢 Multi-Agency Tier' : '🏪 Single Agency Tier'}
+                        ${isMulti ? '🏢 Multi-Agency' : '🏪 Single Agency'}
                     </span>
+                </div>
+
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:11px; font-weight:bold; color:#0f172a; display:flex; justify-content:space-between;">
+                        <span>✏️ Package Display Name</span>
+                        <span style="color:#64748b; font-weight:normal;">پیکیج کا نام</span>
+                    </label>
+                    <input type="text" class="lim-name" value="${(pkg.name || id).replace(/"/g, '&quot;')}" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
                 </div>
 
                 <div class="form-group" style="margin-bottom:8px;">
@@ -592,7 +847,7 @@
                         <span>💵 Monthly Fee / Price (PKR)</span>
                         <span style="color:#64748b; font-weight:normal;">ماہانہ فیس</span>
                     </label>
-                    <input type="number" class="lim-fee" value="${pkg.fee !== undefined ? pkg.fee : 0}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0284c7;">
+                    <input type="number" class="lim-fee" value="${pkg.fee !== undefined ? pkg.fee : 0}" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0284c7;">
                 </div>
 
                 <div class="form-group" style="margin-bottom:8px;">
@@ -600,7 +855,7 @@
                         <span>📄 Monthly Bills Limit</span>
                         <span style="color:#64748b; font-weight:normal;">ماہانہ بلز کی لمٹ</span>
                     </label>
-                    <input type="number" class="lim-bills" value="${lim.monthlyBills !== undefined ? lim.monthlyBills : 150}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                    <input type="number" class="lim-bills" value="${lim.monthlyBills !== undefined ? lim.monthlyBills : 150}" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
                     <small style="font-size:10px; color:#64748b;">(99999 = لامحدود Unlimited Bills)</small>
                 </div>
 
@@ -609,7 +864,7 @@
                         <span>📦 Max Stock Items</span>
                         <span style="color:#64748b; font-weight:normal;">آئٹمز کی زیادہ سے زیادہ تعداد</span>
                     </label>
-                    <input type="number" class="lim-items" value="${lim.maxItems !== undefined ? lim.maxItems : 50}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                    <input type="number" class="lim-items" value="${lim.maxItems !== undefined ? lim.maxItems : 50}" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
                     <small style="font-size:10px; color:#64748b;">(99999 = لامحدود Items)</small>
                 </div>
 
@@ -618,7 +873,7 @@
                         <span>👥 Max Order Bookers / Staff</span>
                         <span style="color:#64748b; font-weight:normal;">آرڈر بکرز لمٹ</span>
                     </label>
-                    <input type="number" class="lim-bookers" value="${lim.maxBookers !== undefined ? lim.maxBookers : 1}" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                    <input type="number" class="lim-bookers" value="${lim.maxBookers !== undefined ? lim.maxBookers : 1}" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
                 </div>
 
                 <div class="form-group" style="margin-bottom:12px;">
@@ -626,12 +881,19 @@
                         <span>🏢 Max Branches Allowed</span>
                         <span style="color:#64748b; font-weight:normal;">برانچز لمٹ</span>
                     </label>
-                    <input type="number" class="lim-branches" value="${lim.maxBranches || 1}" min="1" max="10" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
+                    <input type="number" class="lim-branches" value="${lim.maxBranches || 1}" min="1" max="25" style="width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:800; color:#0f172a;">
                 </div>
 
-                <button class="btn btn-sm btn-save-pkg" style="width:100%; background:#8b5cf6; color:#fff; font-weight:800; padding:8px; border-radius:8px; border:none; cursor:pointer;" onclick="savePackageLimits('${id}')">
-                    💾 Save ${pkg.name || id} Limits &amp; Price
-                </button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-sm btn-save-pkg" style="flex:1; background:#8b5cf6; color:#fff; font-weight:800; padding:8px; border-radius:8px; border:none; cursor:pointer;" onclick="savePackageLimits('${id}')">
+                        💾 Save Changes
+                    </button>
+                    ${isCustom ? `
+                    <button class="btn btn-sm" style="background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; padding:8px 12px; border-radius:8px; font-weight:bold;" onclick="deletePackageTier('${id}')" title="Delete Custom Package">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    ` : ''}
+                </div>
             </div>`;
         }
         html += '</div>';
@@ -640,6 +902,9 @@
 
     async function savePackageLimits(pkgId) {
         const box = document.querySelector(`.package-editor[data-pkg="${pkgId}"]`);
+        if (!box) return;
+
+        const name = box.querySelector('.lim-name').value.trim() || pkgId;
         const fee = parseInt(box.querySelector('.lim-fee').value) || 0;
         const bills = parseInt(box.querySelector('.lim-bills').value) || 150;
         const branches = parseInt(box.querySelector('.lim-branches').value) || 1;
@@ -647,7 +912,9 @@
         const bookers = parseInt(box.querySelector('.lim-bookers').value) || 1;
 
         try {
+            Swal.showLoading();
             await db.collection('packages').doc(pkgId).set({
+                name: name,
                 fee: fee,
                 type: branches > 1 ? 'multi' : 'single',
                 limits: {
@@ -661,18 +928,124 @@
 
             Swal.fire({
                 toast: true, position: 'top-end', showConfirmButton: false,
-                timer: 1800, icon: 'success', title: `✅ ${pkgId.toUpperCase()} limits & fee updated!`
+                timer: 1800, icon: 'success', title: `✅ ${name} saved successfully!`
             });
+            await loadPackages();
         } catch (e) {
             Swal.fire('Error', 'Save failed: ' + e.message, 'error');
         }
     }
 
+    // ➕ Add New Custom Package Tier Action
+    const btnNewPkg = document.getElementById('btnAddNewPackage');
+    if (btnNewPkg) {
+        btnNewPkg.onclick = async () => {
+            const { value: formValues } = await Swal.fire({
+                title: '➕ Create New Package Plan',
+                html: `
+                    <div style="text-align:left; font-size:13px; display:flex; flex-direction:column; gap:10px;">
+                        <div>
+                            <label><b>Package ID (unique lowercase, no spaces):</b></label>
+                            <input id="newPkgId" class="swal2-input" placeholder="e.g. vip_diamond" style="width:100%; margin:4px 0 0; padding:8px; font-size:13px;">
+                        </div>
+                        <div>
+                            <label><b>Display Name:</b></label>
+                            <input id="newPkgName" class="swal2-input" placeholder="e.g. 💎 VIP Diamond Unlimited" style="width:100%; margin:4px 0 0; padding:8px; font-size:13px;">
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                            <div>
+                                <label><b>Monthly Fee (PKR):</b></label>
+                                <input type="number" id="newPkgFee" class="swal2-input" placeholder="7000" value="7000" style="width:100%; margin:4px 0 0; padding:8px; font-size:13px;">
+                            </div>
+                            <div>
+                                <label><b>Max Branches:</b></label>
+                                <input type="number" id="newPkgBranches" class="swal2-input" value="5" style="width:100%; margin:4px 0 0; padding:8px; font-size:13px;">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                            <div>
+                                <label><b>Max Items Limit:</b></label>
+                                <input type="number" id="newPkgItems" class="swal2-input" value="5000" style="width:100%; margin:4px 0 0; padding:8px; font-size:13px;">
+                            </div>
+                            <div>
+                                <label><b>Monthly Bills Limit:</b></label>
+                                <input type="number" id="newPkgBills" class="swal2-input" value="99999" style="width:100%; margin:4px 0 0; padding:8px; font-size:13px;">
+                            </div>
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Create Package',
+                confirmButtonColor: '#10b981',
+                preConfirm: () => {
+                    const rawId = document.getElementById('newPkgId').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                    const name = document.getElementById('newPkgName').value.trim();
+                    const fee = parseInt(document.getElementById('newPkgFee').value) || 0;
+                    const branches = parseInt(document.getElementById('newPkgBranches').value) || 1;
+                    const items = parseInt(document.getElementById('newPkgItems').value) || 500;
+                    const bills = parseInt(document.getElementById('newPkgBills').value) || 99999;
+                    if (!rawId || !name) {
+                        Swal.showValidationMessage('ID aur Name darj karein!');
+                        return false;
+                    }
+                    return { id: rawId, name, fee, branches, items, bills };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    Swal.showLoading();
+                    await db.collection('packages').doc(formValues.id).set({
+                        id: formValues.id,
+                        name: formValues.name,
+                        fee: formValues.fee,
+                        type: formValues.branches > 1 ? 'multi' : 'single',
+                        limits: {
+                            maxBranches: formValues.branches,
+                            monthlyBills: formValues.bills,
+                            maxItems: formValues.items,
+                            maxBookers: 10
+                        },
+                        createdAt: new Date().toISOString()
+                    });
+                    Swal.fire('Success', `Package ${formValues.name} ban gaya!`, 'success');
+                    await loadPackages();
+                } catch (e) {
+                    Swal.fire('Error', e.message, 'error');
+                }
+            }
+        };
+    }
+
+    async function deletePackageTier(pkgId) {
+        const res = await Swal.fire({
+            title: `Delete Package ${pkgId}?`,
+            text: 'Is package ko delete kar diya jayega.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, Delete'
+        });
+        if (res.isConfirmed) {
+            try {
+                await db.collection('packages').doc(pkgId).delete();
+                Swal.fire('Deleted', 'Package removed.', 'success');
+                await loadPackages();
+            } catch (e) {
+                Swal.fire('Error', e.message, 'error');
+            }
+        }
+    }
+
     // ============================================
-    // 🏢 LOAD & RENDER AGENCIES + SUBSCRIPTION STATUS
+    // 🏢 LOAD & RENDER AGENCIES + STORE INTELLIGENCE
     // ============================================
     let currentAgencyTypeFilter = 'all';
     let currentAgencyStatusFilter = 'all';
+    let currentAgencyGradeFilter = 'all';
+    let currentAgencyStockFilter = 'all';
+    let currentAgencySortFilter = 'sales';
     let currentSearchQuery = '';
 
     function initAgencyFilters() {
@@ -697,6 +1070,33 @@
             });
         }
 
+        const gradeSel = document.getElementById('agencyGradeFilter');
+        if (gradeSel && !gradeSel.dataset.initialized) {
+            gradeSel.dataset.initialized = 'true';
+            gradeSel.addEventListener('change', function() {
+                currentAgencyGradeFilter = this.value;
+                renderAgenciesList();
+            });
+        }
+
+        const stockSel = document.getElementById('agencyStockFilter');
+        if (stockSel && !stockSel.dataset.initialized) {
+            stockSel.dataset.initialized = 'true';
+            stockSel.addEventListener('change', function() {
+                currentAgencyStockFilter = this.value;
+                renderAgenciesList();
+            });
+        }
+
+        const sortSel = document.getElementById('agencySortFilter');
+        if (sortSel && !sortSel.dataset.initialized) {
+            sortSel.dataset.initialized = 'true';
+            sortSel.addEventListener('change', function() {
+                currentAgencySortFilter = this.value;
+                renderAgenciesList();
+            });
+        }
+
         const searchInp = document.getElementById('agencySearchInput');
         if (searchInp && !searchInp.dataset.initialized) {
             searchInp.dataset.initialized = 'true';
@@ -707,6 +1107,281 @@
         }
     }
 
+    async function loadAgencies() {
+        const container = document.getElementById('agenciesList');
+        try {
+            initAgencyFilters();
+            const snap = await db.collection('agencies').get();
+            allAgencies = [];
+            snap.forEach(d => allAgencies.push({ id: d.id, ...d.data() }));
+
+            document.getElementById('agencyCount').innerText = allAgencies.length;
+            document.getElementById('tabAgencyCountBadge').innerText = allAgencies.length;
+
+            if (allAgencies.length === 0) {
+                container.innerHTML = '<div class="empty-state">No client agencies registered yet.</div>';
+                calculateRevenueMetrics();
+                return;
+            }
+
+            // ⚡ Instant initial render of agencies and revenue overview
+            calculateRevenueMetrics();
+            renderAgenciesList();
+
+            // 🧠 Compute Live Performance Metrics from bills & stock in parallel without blocking UI
+            computeAgencyStoreMetrics().then(() => {
+                calculateRevenueMetrics();
+                renderLeaderboards();
+                renderAgenciesList();
+            });
+
+        } catch (e) {
+            console.error('Agencies load error:', e);
+            if (container) {
+                container.innerHTML = '<div class="error-inline">Failed to load agencies: ' + e.message + '</div>';
+            }
+        }
+    }
+
+    async function computeAgencyStoreMetrics() {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        let allBills = [];
+        let allStock = [];
+
+        try {
+            const [billsSnap, stockSnap] = await Promise.all([
+                db.collection('bills').get().catch(e => { console.warn('Bills read:', e); return null; }),
+                db.collection('stock').get().catch(e => { console.warn('Stock read:', e); return null; })
+            ]);
+            if (billsSnap) billsSnap.forEach(d => allBills.push({ id: d.id, ...d.data() }));
+            if (stockSnap) stockSnap.forEach(d => allStock.push({ id: d.id, ...d.data() }));
+        } catch (e) {
+            console.warn('Store metrics parallel read error:', e);
+        }
+
+        allAgencies.forEach(ag => {
+            const agBills = allBills.filter(b => b.agencyId === ag.id);
+            const agStock = allStock.filter(s => s.agencyId === ag.id);
+
+            const totalSales = agBills.reduce((sum, b) => sum + Number(b.netTotal || b.grandTotal || b.total || 0), 0);
+            const totalBillsCount = agBills.length;
+            const todayBillsCount = agBills.filter(b => {
+                const dStr = (b.createdAt || b.date || '').slice(0, 10);
+                return dStr === todayStr;
+            }).length;
+
+            const stockItemsCount = agStock.length;
+            const lowStockCount = agStock.filter(s => Number(s.qty || s.quantity || 0) <= Number(s.minStock || s.alertQty || 5)).length;
+            const totalStockUnits = agStock.reduce((sum, s) => sum + Number(s.qty || s.quantity || 0), 0);
+
+            // Performance Grading (A, B, C)
+            let grade = 'C';
+            let gradeBadge = '<span class="branch-badge" style="background:#f1f5f9; color:#475569; font-weight:800; border:1px solid #cbd5e1;">🥉 Grade C (Starter)</span>';
+            if (totalSales >= 50000 || totalBillsCount >= 30) {
+                grade = 'A';
+                gradeBadge = '<span class="branch-badge" style="background:#fef3c7; color:#b45309; font-weight:800; border:1px solid #fde68a;">⭐ Grade A (Top Performer)</span>';
+            } else if (totalSales >= 15000 || totalBillsCount >= 10) {
+                grade = 'B';
+                gradeBadge = '<span class="branch-badge" style="background:#e0f2fe; color:#0369a1; font-weight:800; border:1px solid #bae6fd;">🥈 Grade B (Steady Medium)</span>';
+            }
+
+            // Stock Level Grading (High, Medium, Low)
+            let stockGrade = 'medium';
+            let stockGradeBadge = '<span class="branch-badge" style="background:#fef9c3; color:#854d0e; font-weight:800; border:1px solid #fde047;">🟡 Medium Stock</span>';
+            if (totalStockUnits >= 500 || stockItemsCount >= 100) {
+                stockGrade = 'high';
+                stockGradeBadge = '<span class="branch-badge" style="background:#dcfce7; color:#15803d; font-weight:800; border:1px solid #86efac;">🟢 High Stock (Top)</span>';
+            } else if (totalStockUnits < 50 || lowStockCount > 3 || stockItemsCount < 20) {
+                stockGrade = 'low';
+                stockGradeBadge = '<span class="branch-badge" style="background:#fee2e2; color:#b91c1c; font-weight:800; border:1px solid #fca5a5;">🔴 Low Stock</span>';
+            }
+
+            // Bill Printing Generator Velocity Status
+            let billVelocity = 'starter';
+            let billVelocityBadge = '<span class="stat-pill" style="font-size:11px; color:#64748b;">⏳ Starter Volume</span>';
+            if (todayBillsCount >= 10 || totalBillsCount >= 50) {
+                billVelocity = 'top';
+                billVelocityBadge = '<span class="stat-pill" style="background:#dbeafe; color:#1d4ed8; font-weight:800; border:1px solid #93c5fd;">⚡ Top Bill Generator</span>';
+            } else if (todayBillsCount >= 3 || totalBillsCount >= 15) {
+                billVelocity = 'steady';
+                billVelocityBadge = '<span class="stat-pill" style="background:#f1f5f9; color:#0369a1; font-weight:700;">📄 Steady Generator</span>';
+            }
+
+            ag.totalSales = totalSales;
+            ag.totalBills = totalBillsCount;
+            ag.todayBills = todayBillsCount;
+            ag.stockCount = stockItemsCount;
+            ag.stockUnits = totalStockUnits;
+            ag.lowStockCount = lowStockCount;
+            ag.grade = grade;
+            ag.gradeBadge = gradeBadge;
+            ag.stockGrade = stockGrade;
+            ag.stockGradeBadge = stockGradeBadge;
+            ag.billVelocity = billVelocity;
+            ag.billVelocityBadge = billVelocityBadge;
+        });
+    }
+
+    function calculateRevenueMetrics() {
+        let mrr = 0;
+        let activeSubs = 0;
+        let dueSubs = 0;
+        let expiredSubs = 0;
+        let suspendedSubs = 0;
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        let platformSales = 0;
+        let platformBills = 0;
+        let platformTodayBills = 0;
+
+        allAgencies.forEach(ag => {
+            const fee = Number(ag.monthlyFee !== undefined ? ag.monthlyFee : 0);
+            const expiry = ag.subscriptionExpiry || ag.expiryDate || '2026-12-31';
+            const isSuspended = ag.status === 'suspended' || ag.isSuspended === true;
+
+            if (isSuspended) {
+                suspendedSubs++;
+            } else if (expiry < todayStr) {
+                expiredSubs++;
+            } else {
+                activeSubs++;
+                mrr += fee;
+                const daysLeft = Math.ceil((new Date(expiry) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
+                if (daysLeft <= 7) dueSubs++;
+            }
+
+            platformSales += (ag.totalSales || 0);
+            platformBills += (ag.totalBills || 0);
+            platformTodayBills += (ag.todayBills || 0);
+        });
+
+        document.getElementById('metricMRR').innerText = 'Rs ' + Math.round(mrr).toLocaleString();
+        document.getElementById('metricTotalAgencies').innerText = allAgencies.length;
+        document.getElementById('metricActiveSubs').innerText = activeSubs;
+        document.getElementById('metricDueSubs').innerText = dueSubs;
+        document.getElementById('metricExpiredSubs').innerText = expiredSubs;
+        const suspEl = document.getElementById('metricSuspendedSubs');
+        if (suspEl) suspEl.innerText = suspendedSubs;
+
+        document.getElementById('metricTotalPlatformSales').innerText = 'Rs ' + Math.round(platformSales).toLocaleString();
+        document.getElementById('metricTotalPlatformBills').innerText = platformBills.toLocaleString();
+        document.getElementById('metricTodayPlatformBills').innerText = platformTodayBills.toLocaleString();
+    }
+
+    // ============================================
+    // 🏆 RENDER LEADERBOARDS & RANKINGS
+    // ============================================
+    function renderLeaderboards() {
+        // 1. Top Sales Leaderboard
+        const salesSorted = [...allAgencies].sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0));
+        const salesEl = document.getElementById('leaderboardSalesList');
+        if (salesEl) {
+            if (salesSorted.length === 0) {
+                salesEl.innerHTML = '<div class="empty-state">No sales data recorded yet.</div>';
+            } else {
+                let html = '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Store Name</th><th>Category</th><th>Total Sales</th><th>Bills</th><th>Grade</th></tr></thead><tbody>';
+                salesSorted.slice(0, 10).forEach((ag, idx) => {
+                    const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+                    const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+                    html += `
+                    <tr>
+                        <td><span class="rank-medal ${rankClass}">${medal}</span></td>
+                        <td>
+                            <b>${ag.name || 'Store'}</b>
+                            <div style="font-size:11px; color:#64748b;">${ag.ownerEmail || ''}</div>
+                        </td>
+                        <td><span style="font-size:11px; background:#f1f5f9; padding:2px 6px; border-radius:4px;">${ag.businessType || 'General'}</span></td>
+                        <td><b style="color:#10b981; font-size:14px;">Rs ${(ag.totalSales || 0).toLocaleString()}</b></td>
+                        <td><span class="stat-pill">🧾 ${ag.totalBills || 0}</span></td>
+                        <td>${ag.gradeBadge || ''}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                salesEl.innerHTML = html;
+            }
+        }
+
+        // 2. Top Bill Generators Leaderboard
+        const billsSorted = [...allAgencies].sort((a, b) => (b.totalBills || 0) - (a.totalBills || 0));
+        const billsEl = document.getElementById('leaderboardBillsList');
+        if (billsEl) {
+            if (billsSorted.length === 0) {
+                billsEl.innerHTML = '<div class="empty-state">No bills recorded yet.</div>';
+            } else {
+                let html = '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Store Name</th><th>Total Bills</th><th>Today</th><th>Printing Velocity</th><th>Grade</th></tr></thead><tbody>';
+                billsSorted.slice(0, 10).forEach((ag, idx) => {
+                    const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+                    const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+                    html += `
+                    <tr>
+                        <td><span class="rank-medal ${rankClass}">${medal}</span></td>
+                        <td>
+                            <b>${ag.name || 'Store'}</b>
+                            <div style="font-size:11px; color:#64748b;">${ag.ownerMobile || ag.mobile || ''}</div>
+                        </td>
+                        <td><b style="color:#0284c7; font-size:14px;">${ag.totalBills || 0}</b></td>
+                        <td><span style="background:#dcfce7; color:#15803d; font-size:11px; font-weight:800; padding:2px 8px; border-radius:10px;">⚡ ${ag.todayBills || 0}</span></td>
+                        <td>${ag.billVelocityBadge || ''}</td>
+                        <td>${ag.gradeBadge || ''}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                billsEl.innerHTML = html;
+            }
+        }
+
+        // 3. Top Stock Holdings Leaderboard
+        const stockSorted = [...allAgencies].sort((a, b) => (b.stockUnits || 0) - (a.stockUnits || 0));
+        const stockEl = document.getElementById('leaderboardStockList');
+        if (stockEl) {
+            if (stockSorted.length === 0) {
+                stockEl.innerHTML = '<div class="empty-state">No stock items found.</div>';
+            } else {
+                let html = '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Store Name</th><th>Distinct Items</th><th>Total Units</th><th>Stock Level</th></tr></thead><tbody>';
+                stockSorted.slice(0, 10).forEach((ag, idx) => {
+                    const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+                    const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+                    html += `
+                    <tr>
+                        <td><span class="rank-medal ${rankClass}">${medal}</span></td>
+                        <td><b>${ag.name || 'Store'}</b></td>
+                        <td><b style="color:#8b5cf6; font-size:13.5px;">📦 ${ag.stockCount || 0} Items</b></td>
+                        <td><span class="stat-pill" style="font-weight:bold;">${(ag.stockUnits || 0).toLocaleString()} Units</span></td>
+                        <td>${ag.stockGradeBadge || ''}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                stockEl.innerHTML = html;
+            }
+        }
+
+        // 4. Low Stock Watchlist
+        const alertList = allAgencies.filter(a => (a.lowStockCount || 0) > 0 || a.stockGrade === 'low').sort((a, b) => (b.lowStockCount || 0) - (a.lowStockCount || 0));
+        const alertEl = document.getElementById('leaderboardAlertsList');
+        if (alertEl) {
+            if (alertList.length === 0) {
+                alertEl.innerHTML = '<div style="padding:15px; color:#15803d; font-size:12.5px; text-align:center;">✅ All stores have adequate inventory stock!</div>';
+            } else {
+                let html = '<table class="leaderboard-table"><thead><tr><th>Store Name</th><th>Category</th><th>Low Stock Items</th><th>Stock Status</th><th>Contact</th></tr></thead><tbody>';
+                alertList.slice(0, 10).forEach(ag => {
+                    html += `
+                    <tr>
+                        <td><b>${ag.name || 'Store'}</b></td>
+                        <td><span style="font-size:11px;">${ag.businessType || 'General'}</span></td>
+                        <td><span style="background:#fee2e2; color:#b91c1c; font-weight:800; font-size:11.5px; padding:3px 8px; border-radius:8px;">⚠️ ${ag.lowStockCount || 0} Items Low</span></td>
+                        <td>${ag.stockGradeBadge || ''}</td>
+                        <td><a href="https://wa.me/${(ag.mobile || ag.ownerMobile || '').replace(/[^0-9]/g, '')}?text=Assalam-o-Alaikum!%20Your%20stock%20needs%20reorder." target="_blank" style="color:#25D366; text-decoration:none; font-weight:bold;"><i class="fab fa-whatsapp"></i> ${ag.mobile || ag.ownerMobile || '—'}</a></td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                alertEl.innerHTML = html;
+            }
+        }
+    }
+
+    // ============================================
+    // 🏢 RENDER CLIENT AGENCIES LIST
+    // ============================================
     function renderAgenciesList() {
         const container = document.getElementById('agenciesList');
         if (!container) return;
@@ -714,7 +1389,7 @@
         const todayStr = new Date().toISOString().slice(0, 10);
 
         let filtered = allAgencies.filter(ag => {
-            // Search query match (name, email, phone, city)
+            // Search query match
             if (currentSearchQuery) {
                 const nameM = String(ag.name || '').toLowerCase().includes(currentSearchQuery);
                 const emailM = String(ag.ownerEmail || '').toLowerCase().includes(currentSearchQuery);
@@ -751,7 +1426,35 @@
             if (currentAgencyStatusFilter === 'due' && (!isDueSoon || isSuspended)) return false;
             if (currentAgencyStatusFilter === 'active' && (isExpired || isSuspended)) return false;
 
+            // Grade filter match
+            if (currentAgencyGradeFilter !== 'all' && ag.grade !== currentAgencyGradeFilter) {
+                return false;
+            }
+
+            // Stock level filter match
+            if (currentAgencyStockFilter !== 'all' && ag.stockGrade !== currentAgencyStockFilter) {
+                return false;
+            }
+
             return true;
+        });
+
+        // Sort agencies
+        filtered.sort((a, b) => {
+            if (currentAgencySortFilter === 'bills') {
+                return (b.totalBills || 0) - (a.totalBills || 0);
+            }
+            if (currentAgencySortFilter === 'today') {
+                return (b.todayBills || 0) - (a.todayBills || 0);
+            }
+            if (currentAgencySortFilter === 'stockHigh') {
+                return (b.stockUnits || 0) - (a.stockUnits || 0);
+            }
+            if (currentAgencySortFilter === 'stockLow') {
+                return (a.stockUnits || 0) - (b.stockUnits || 0);
+            }
+            // default 'sales'
+            return (b.totalSales || 0) - (a.totalSales || 0);
         });
 
         if (filtered.length === 0) {
@@ -763,8 +1466,9 @@
 
         filtered.forEach(ag => {
             const expiry = ag.subscriptionExpiry || ag.expiryDate || '2026-12-31';
-            const fee = Number(ag.monthlyFee !== undefined ? ag.monthlyFee : 2000);
-            const pkg = ag.packageId || 'free';
+            const fee = Number(ag.monthlyFee !== undefined ? ag.monthlyFee : 0);
+            const pkgId = ag.packageId || 'free';
+            const pkgObj = allLoadedPackages[pkgId] || DEFAULT_SAAS_PACKAGES[pkgId] || { name: pkgId.toUpperCase() };
             const isSuspended = ag.status === 'suspended' || ag.isSuspended === true;
 
             // Category badge
@@ -797,29 +1501,56 @@
 
             html += `
             <div class="agency-item" data-id="${ag.id}" style="${isSuspended ? 'border-left: 4px solid #ef4444; background:#fffafb;' : ''}">
-                <div class="agency-main">
+                <div class="agency-header-row">
                     <div class="agency-name">
                         <span>🏢 ${ag.name || 'Unnamed Agency'}</span>
                         ${catBadge}
                         ${statusBadge}
+                        ${ag.gradeBadge || ''}
+                        ${ag.stockGradeBadge || ''}
                     </div>
-                    <div class="agency-meta">
-                        <span>📧 ${ag.ownerEmail || 'No Email'}</span>
-                        <span>📱 ${ag.mobile || ag.ownerMobile || '—'}</span>
-                        <span>💳 Package: <b>${pkg.toUpperCase()}</b></span>
-                        <span>💵 Fee: <b>Rs ${fee.toLocaleString()} / mo</b></span>
-                        <span>📅 Valid Till: <b>${expiry}</b></span>
+                    <div style="font-size:12px; font-weight:bold; color:#0f172a;">
+                        💳 Plan: <span style="background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:6px;">${pkgObj.name || pkgId.toUpperCase()}</span>
                     </div>
                 </div>
+
+                <div class="agency-meta">
+                    <span>📧 ${ag.ownerEmail || 'No Email'}</span>
+                    <span>📱 ${ag.mobile || ag.ownerMobile || '—'}</span>
+                    <span>💵 Fee: <b>Rs ${fee.toLocaleString()} / mo</b></span>
+                    <span>📅 Valid Till: <b>${expiry}</b></span>
+                </div>
+
+                <!-- 📊 Live Store Intelligence & Performance Bar -->
+                <div class="agency-stats-bar">
+                    <div class="stat-pill" title="Total Lifetime Gross Sales">
+                        <i class="fas fa-sack-dollar" style="color:#10b981;"></i> Lifetime Sales: <b style="color:#10b981;">Rs ${(ag.totalSales || 0).toLocaleString()}</b>
+                    </div>
+                    <div class="stat-pill" title="Total Invoices Created">
+                        <i class="fas fa-file-invoice" style="color:#0284c7;"></i> Bills: <b>${ag.totalBills || 0}</b>
+                    </div>
+                    <div class="stat-pill" title="Bills Created Today">
+                        <i class="fas fa-bolt" style="color:#f59e0b;"></i> Today: <b style="color:#059669;">${ag.todayBills || 0}</b>
+                    </div>
+                    ${ag.billVelocityBadge || ''}
+                    <div class="stat-pill" title="Total Stock Items & Units">
+                        <i class="fas fa-boxes-stacked" style="color:#8b5cf6;"></i> Stock: <b>${ag.stockCount || 0} Items</b> (<span style="color:#6366f1; font-weight:bold;">${(ag.stockUnits || 0).toLocaleString()} Units</span>)
+                        ${(ag.lowStockCount || 0) > 0 ? `<span style="background:#fee2e2; color:#ef4444; padding:1px 6px; border-radius:10px; font-size:10px; margin-left:4px;">${ag.lowStockCount} Low Alert</span>` : ''}
+                    </div>
+                </div>
+
                 <div class="agency-actions">
-                    <button class="btn btn-sm" style="background:#10b981; color:#fff;" onclick="quickUnlockAgency('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}')">
+                    <button class="btn btn-sm" style="background:#10b981; color:#fff;" onclick="quickUnlockAgency('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}')" title="Unlock all features instantly">
                         ⚡ 1-Click Unlock
+                    </button>
+                    <button class="btn btn-sm" style="background:#0284c7; color:#fff;" onclick="editPackageAndFee('${ag.id}')" title="Configure packages & module locks">
+                        ⚙️ Modules &amp; Tiers
                     </button>
                     <button class="btn btn-sm" style="background:#059669; color:#fff;" onclick="openPaymentModal('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}', ${fee}, '${expiry}')">
                         💳 Record Fee
                     </button>
-                    <button class="btn btn-sm" style="background:#0284c7; color:#fff;" onclick="editPackageAndFee('${ag.id}')">
-                        ⚙️ Modules &amp; Tiers
+                    <button class="btn btn-sm" style="background:#6366f1; color:#fff;" onclick="inspectAgencyStore('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}')" title="View shop as owner">
+                        👁️ Inspect Store
                     </button>
                     ${suspendBtn}
                     <button class="btn btn-sm" style="background:#ef4444; color:#fff;" onclick="deleteAgency('${ag.id}', '${(ag.name || '').replace(/'/g, "\\'")}')">
@@ -830,6 +1561,19 @@
         });
 
         container.innerHTML = html;
+    }
+
+    // 👁️ Inspect Agency Store Action
+    function inspectAgencyStore(agencyId, agencyName) {
+        try {
+            localStorage.setItem('eb_active_agency', agencyId);
+            localStorage.setItem('eb_agency_name', agencyName);
+            localStorage.setItem('eb_inspecting_mode', 'true');
+            window.location.href = 'dashboard.html';
+        } catch (e) {
+            console.error(e);
+            window.location.href = 'dashboard.html';
+        }
     }
 
     // ⚡ 1-Click Quick Unlock All Modules for an Agency
@@ -871,31 +1615,28 @@
         }
     }
 
-    // Toggle Agency Freeze / Suspend status
-    async function toggleAgencySuspend(agencyId, shouldSuspend, agencyName) {
-        const actionWord = shouldSuspend ? 'Freeze / Suspend' : 'Unfreeze / Activate';
-        const result = await Swal.fire({
-            title: `${actionWord} Account?`,
-            html: shouldSuspend
-                ? `<b>${agencyName}</b> ko عارضی طور پر سسپنڈ کرنا چاہتے ہیں؟<br><small style="color:#ef4444;">کلائنٹ کا سافٹ ویئر لاگ اِن اور ڈیش بورڈ بلاک ہو جائے گا جب تک آپ دوبارہ ایکٹیویٹ نہ کریں۔</small>`
-                : `<b>${agencyName}</b> کا اکاؤنٹ دوبارہ بحال (Activate) کرنا چاہتے ہیں؟`,
-            icon: shouldSuspend ? 'warning' : 'question',
+    // Freeze / Suspend Agency Toggle
+    async function toggleAgencySuspend(agencyId, doSuspend, agencyName) {
+        const actionText = doSuspend ? 'Freeze / Suspend' : 'Unfreeze / Activate';
+        const res = await Swal.fire({
+            title: `${actionText} Agency?`,
+            html: `Are you sure you want to <b>${actionText}</b> <b>${agencyName}</b>?`,
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: shouldSuspend ? '#f59e0b' : '#10b981',
-            confirmButtonText: shouldSuspend ? '⏸️ Freeze Account' : '🟢 Activate Account'
+            confirmButtonColor: doSuspend ? '#ef4444' : '#10b981',
+            confirmButtonText: `Yes, ${actionText}`
         });
 
-        if (result.isConfirmed) {
+        if (res.isConfirmed) {
             try {
                 await db.collection('agencies').doc(agencyId).update({
-                    status: shouldSuspend ? 'suspended' : 'active',
-                    isSuspended: shouldSuspend,
+                    status: doSuspend ? 'suspended' : 'active',
+                    isSuspended: doSuspend,
                     updatedAt: new Date().toISOString()
                 });
                 Swal.fire({
-                    toast: true, position: 'top-end', showConfirmButton: false,
-                    timer: 2000, icon: 'success',
-                    title: `✅ Agency ${shouldSuspend ? 'Frozen' : 'Activated'}!`
+                    toast: true, position: 'top-end', timer: 2000,
+                    icon: 'success', title: `Agency ${doSuspend ? 'Frozen' : 'Activated'}!`
                 });
                 await loadAgencies();
             } catch (e) {
@@ -904,99 +1645,50 @@
         }
     }
 
-    async function loadAgencies() {
-        const container = document.getElementById('agenciesList');
-        try {
-            initAgencyFilters();
-            const snap = await db.collection('agencies').get();
-            allAgencies = [];
-            snap.forEach(d => allAgencies.push({ id: d.id, ...d.data() }));
-
-            document.getElementById('agencyCount').innerText = allAgencies.length;
-            calculateRevenueMetrics();
-
-            if (allAgencies.length === 0) {
-                container.innerHTML = '<div class="empty-state">No client agencies registered yet.</div>';
-                return;
-            }
-
-            renderAgenciesList();
-        } catch (e) {
-            console.error('Agencies load error:', e);
-            container.innerHTML = '<div class="error-inline">Failed to load agencies: ' + e.message + '</div>';
-        }
-    }
-
-    function calculateRevenueMetrics() {
-        let mrr = 0;
-        let activeSubs = 0;
-        let dueSubs = 0;
-        let expiredSubs = 0;
-        const todayStr = new Date().toISOString().slice(0, 10);
-
-        allAgencies.forEach(ag => {
-            const fee = Number(ag.monthlyFee !== undefined ? ag.monthlyFee : 2000);
-            const expiry = ag.subscriptionExpiry || ag.expiryDate || '2026-12-31';
-
-            if (expiry < todayStr) {
-                expiredSubs++;
-            } else {
-                activeSubs++;
-                mrr += fee;
-                const daysLeft = Math.ceil((new Date(expiry) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
-                if (daysLeft <= 7) dueSubs++;
-            }
-        });
-
-        document.getElementById('metricMRR').innerText = 'Rs ' + Math.round(mrr).toLocaleString();
-        document.getElementById('metricTotalAgencies').innerText = allAgencies.length;
-        document.getElementById('metricActiveSubs').innerText = activeSubs;
-        document.getElementById('metricDueSubs').innerText = dueSubs;
-        document.getElementById('metricExpiredSubs').innerText = expiredSubs;
-    }
-
     // ============================================
     // 💳 RECORD FEE PAYMENT & EXTEND SUBSCRIPTION
     // ============================================
-    async function openPaymentModal(agencyId, agencyName, defaultFee, currentExpiry) {
+    async function openPaymentModal(agencyId, agencyName, currentFee, currentExpiry) {
         const { value: formValues } = await Swal.fire({
-            title: `💳 Collect Fee: ${agencyName}`,
+            title: `💳 Record Fee for ${agencyName}`,
             html: `
                 <div style="text-align:left; font-size:13px;">
-                    <label><b>Current Expiry Date:</b> <span style="color:#0284c7; font-weight:bold;">${currentExpiry}</span></label>
-                    <hr style="margin:8px 0; border:none; border-top:1px dashed #cbd5e1;">
-
-                    <label style="font-weight:bold;">📅 Extend Subscription By:</label>
-                    <select id="swalExtMonths" class="swal2-input" style="margin-top:4px; margin-bottom:10px;">
-                        <option value="1">+ 1 Month (30 Days)</option>
-                        <option value="3">+ 3 Months (Quarterly)</option>
-                        <option value="6">+ 6 Months (Bi-Annual)</option>
-                        <option value="12">+ 1 Year (Annual)</option>
-                    </select>
-
-                    <label style="font-weight:bold;">💵 Amount Received (PKR):</label>
-                    <input type="number" id="swalPayAmount" class="swal2-input" value="${defaultFee}" style="margin-top:4px; margin-bottom:10px;">
-
-                    <label style="font-weight:bold;">🏦 Payment Method:</label>
-                    <select id="swalPayMethod" class="swal2-input" style="margin-top:4px; margin-bottom:10px;">
-                        <option value="jazzcash">📱 JazzCash</option>
-                        <option value="easypaisa">📱 EasyPaisa</option>
-                        <option value="bank">🏦 Bank Transfer</option>
-                        <option value="cash">💵 Cash in Hand</option>
-                    </select>
-
-                    <label style="font-weight:bold;">📝 Trx ID / Reference Note:</label>
-                    <input type="text" id="swalPayNote" class="swal2-input" placeholder="e.g. Trx ID 982348" style="margin-top:4px;">
+                    <div style="margin-bottom:12px;">
+                        <label><b>Fee Amount (PKR):</b></label>
+                        <input type="number" id="swalFeeAmount" value="${currentFee}" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label><b>Extend Duration:</b></label>
+                        <select id="swalExtendMonths" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
+                            <option value="1">1 Month (30 Days)</option>
+                            <option value="3">3 Months (Quarterly)</option>
+                            <option value="6">6 Months (Bi-Annual)</option>
+                            <option value="12">1 Year (Annual)</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label><b>Payment Method:</b></label>
+                        <select id="swalPayMethod" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
+                            <option value="cash">Cash in Hand</option>
+                            <option value="easypaisa">Easypaisa</option>
+                            <option value="jazzcash">JazzCash</option>
+                            <option value="bank">Bank Transfer / Raast</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label><b>Payment Note / Reference ID:</b></label>
+                        <input type="text" id="swalPayNote" placeholder="e.g. Received via JazzCash Trx 83948" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
+                    </div>
                 </div>
             `,
             focusConfirm: false,
             showCancelButton: true,
-            confirmButtonText: '✅ Record Fee & Extend Expiry',
+            confirmButtonText: 'Record Payment &amp; Extend',
             confirmButtonColor: '#10b981',
             preConfirm: () => {
                 return {
-                    months: parseInt(document.getElementById('swalExtMonths').value) || 1,
-                    amount: parseFloat(document.getElementById('swalPayAmount').value) || 0,
+                    amount: parseFloat(document.getElementById('swalFeeAmount').value) || 0,
+                    months: parseInt(document.getElementById('swalExtendMonths').value) || 1,
                     method: document.getElementById('swalPayMethod').value,
                     note: document.getElementById('swalPayNote').value.trim()
                 };
@@ -1004,78 +1696,79 @@
         });
 
         if (formValues) {
-            Swal.fire({ title: 'Extending Subscription...', didOpen: () => Swal.showLoading() });
             try {
-                // Calculate new expiry
-                let baseDate = new Date();
-                const curExpDate = new Date(currentExpiry);
-                if (curExpDate > baseDate) {
-                    baseDate = curExpDate; // Extend from existing expiry
-                }
+                // Calculate new expiry date
+                const today = new Date();
+                const curExp = new Date(currentExpiry);
+                const baseDate = curExp > today ? curExp : today;
                 baseDate.setMonth(baseDate.getMonth() + formValues.months);
                 const newExpiryStr = baseDate.toISOString().slice(0, 10);
 
-                const paymentEntry = {
-                    amount: formValues.amount,
-                    monthsAdded: formValues.months,
-                    method: formValues.method,
-                    note: formValues.note,
-                    date: new Date().toISOString(),
-                    recordedBy: currentAdminUid
-                };
-
+                // Update agency record
                 await db.collection('agencies').doc(agencyId).update({
                     subscriptionExpiry: newExpiryStr,
                     subscriptionStatus: 'active',
+                    status: 'active',
+                    isSuspended: false,
                     lastPaymentDate: new Date().toISOString(),
-                    billingHistory: firebase.firestore.FieldValue.arrayUnion(paymentEntry)
+                    lastPaymentAmount: formValues.amount,
+                    lastPaymentMethod: formValues.method
+                });
+
+                // Record payment transaction document
+                await db.collection('payments').add({
+                    agencyId: agencyId,
+                    agencyName: agencyName,
+                    amount: formValues.amount,
+                    monthsAdded: formValues.months,
+                    newExpiry: newExpiryStr,
+                    method: formValues.method,
+                    note: formValues.note,
+                    recordedBy: currentAdminUid,
+                    recordedAt: new Date().toISOString()
                 });
 
                 Swal.fire({
                     icon: 'success',
-                    title: '🎉 Subscription Extended!',
-                    html: `<b>${agencyName}</b> ki validity ab <b>${newExpiryStr}</b> tak barha di gayi hai!<br>Fee: Rs ${formValues.amount.toLocaleString()}`
+                    title: 'Payment Recorded!',
+                    html: `<b>${agencyName}</b> subscription extended till: <b>${newExpiryStr}</b>`
                 });
 
                 await loadAgencies();
 
             } catch (e) {
-                console.error('Extend failed:', e);
-                Swal.fire('Error', 'Extension failed: ' + e.message, 'error');
+                console.error('Payment record error:', e);
+                Swal.fire('Error', 'Payment record failed: ' + e.message, 'error');
             }
         }
     }
 
-    // Edit package tier, custom limits, category, and agency permissions
+    // ============================================
+    // ⚙️ EDIT AGENCY PACKAGE, FEES & MODULE PERMISSIONS
+    // ============================================
     async function editPackageAndFee(agencyId) {
-        const ag = allAgencies.find(x => x.id === agencyId);
+        const ag = allAgencies.find(a => a.id === agencyId);
         if (!ag) return;
 
-        const curLimits = ag.customLimits || {};
-        const curPerms = ag.permissions || {
-            stock: true,
-            delivery_returns: true,
-            customers: true,
-            reports: true,
-            profit: true,
-            expenses: true,
-            owner: true,
-            backup: true,
-            alerts: true,
-            multi_agency: false
-        };
-
-        // Prepare Business Category Options
         let catOptionsHtml = '';
         if (window.BusinessCategories) {
             window.BusinessCategories.getAll().forEach(c => {
-                const isSel = (ag.businessType === c.id || (Array.isArray(c.aliasIds) && c.aliasIds.includes(ag.businessType))) ? 'selected' : '';
-                catOptionsHtml += `<option value="${c.id}" ${isSel}>${c.icon} ${c.nameEn} — ${c.nameUr}</option>`;
+                catOptionsHtml += `<option value="${c.id}" ${ag.businessType === c.id ? 'selected' : ''}>${c.icon} ${c.nameUr} (${c.nameEn})</option>`;
             });
         }
 
+        // Dynamic package options
+        let pkgOptionsHtml = '';
+        for (const [id, pkg] of Object.entries(allLoadedPackages)) {
+            const isSelected = ag.packageId === id ? 'selected' : '';
+            pkgOptionsHtml += `<option value="${id}" ${isSelected}>${pkg.name || id}</option>`;
+        }
+
+        const curLimits = ag.customLimits || {};
+        const curPerms = ag.permissions || {};
+
         const { value: formValues } = await Swal.fire({
-            title: `⚙️ Manage Agency: ${ag.name}`,
+            title: `⚙️ Modules &amp; Tiers: ${ag.name}`,
             width: '680px',
             html: `
                 <div style="text-align:left; font-size:13px; line-height:1.5;">
@@ -1090,16 +1783,12 @@
                         <div>
                             <label><b>Package Tier:</b></label>
                             <select id="swalEditPkg" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
-                                <option value="free" ${ag.packageId === 'free' ? 'selected' : ''}>🆓 Free Starter</option>
-                                <option value="starter_single" ${ag.packageId === 'starter_single' ? 'selected' : ''}>🏪 Single Agency Pro</option>
-                                <option value="wholesale_dist" ${ag.packageId === 'wholesale_dist' ? 'selected' : ''}>📦 Wholesale Distribution</option>
-                                <option value="multi_pro" ${ag.packageId === 'multi_pro' ? 'selected' : ''}>🏢 Multi-Branch Pro</option>
-                                <option value="enterprise_multi" ${ag.packageId === 'enterprise_multi' ? 'selected' : ''}>👑 Enterprise Unlimited</option>
+                                ${pkgOptionsHtml}
                             </select>
                         </div>
                         <div>
                             <label><b>Monthly Fee (PKR):</b></label>
-                            <input type="number" id="swalEditFee" value="${ag.monthlyFee !== undefined ? ag.monthlyFee : 2000}" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
+                            <input type="number" id="swalEditFee" value="${ag.monthlyFee !== undefined ? ag.monthlyFee : 0}" style="width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px;">
                         </div>
                     </div>
 
@@ -1171,6 +1860,23 @@
             showCancelButton: true,
             confirmButtonText: '💾 Save All Settings',
             confirmButtonColor: '#0284c7',
+            didOpen: () => {
+                const pkgSel = document.getElementById('swalEditPkg');
+                if (pkgSel) {
+                    pkgSel.addEventListener('change', function() {
+                        const chosen = allLoadedPackages[this.value] || DEFAULT_SAAS_PACKAGES[this.value];
+                        if (chosen) {
+                            if (chosen.fee !== undefined) {
+                                document.getElementById('swalEditFee').value = chosen.fee;
+                            }
+                            const lim = chosen.limits || {};
+                            if (lim.maxBookers !== undefined) document.getElementById('swalLimitBookers').value = lim.maxBookers;
+                            if (lim.maxItems !== undefined) document.getElementById('swalLimitItems').value = lim.maxItems;
+                            if (lim.monthlyBills !== undefined) document.getElementById('swalLimitBills').value = lim.monthlyBills;
+                        }
+                    });
+                }
+            },
             preConfirm: () => {
                 return {
                     businessType: document.getElementById('swalEditBizType').value,
@@ -1210,12 +1916,6 @@
                     updatedAt: new Date().toISOString()
                 });
 
-                // Update default limits package for this agency
-                await db.collection('packages').doc(formValues.packageId).set({
-                    name: formValues.packageId,
-                    limits: formValues.customLimits
-                }, { merge: true });
-
                 Swal.fire({
                     toast: true, position: 'top-end', showConfirmButton: false,
                     timer: 2000, icon: 'success',
@@ -1252,18 +1952,152 @@
         }
     }
 
+    // ============================================
+    // 📩 INCOMING PACKAGE UPGRADE & FEE PAYMENT REQUESTS
+    // ============================================
+    async function loadUpgradeRequests() {
+        const container = document.getElementById('upgradeRequestsList');
+        if (!container) return;
+        try {
+            const snap = await db.collection('upgradeRequests').orderBy('createdAt', 'desc').limit(25).get();
+            if (snap.empty) {
+                container.innerHTML = '<div class="empty-state" style="padding:15px; color:#64748b; font-size:12.5px;">کوئی زیر التواء درخواست نہیں ہے۔ سب کلائنٹس ایکٹو ہیں!</div>';
+                const countBadge = document.getElementById('upgradeReqCount');
+                if (countBadge) countBadge.innerText = '0';
+                const tabBadge = document.getElementById('tabUpgradeCountBadge');
+                if (tabBadge) tabBadge.innerText = '0';
+                return;
+            }
+
+            let pendingCount = 0;
+            let html = '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">';
+            snap.forEach(doc => {
+                const req = doc.data();
+                const isPending = req.status === 'pending';
+                if (isPending) pendingCount++;
+
+                const dateStr = req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent';
+                const pkgName = req.requestedPackageId ? req.requestedPackageId.toUpperCase() : 'PRO';
+
+                html += `
+                <div style="border:1.5px solid ${isPending ? '#10b981' : '#e2e8f0'}; border-radius:10px; padding:12px; background:${isPending ? '#f0fdf4' : '#f8fafc'};">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <b style="font-size:13.5px; color:#0f172a;">🏢 ${req.agencyName || 'Agency'}</b>
+                        <span class="branch-badge" style="background:${isPending ? '#dcfce7' : '#f1f5f9'}; color:${isPending ? '#15803d' : '#64748b'}; font-weight:800; font-size:10px;">
+                            ${isPending ? '⏳ PENDING' : '✅ APPROVED'}
+                        </span>
+                    </div>
+                    <div style="font-size:11.5px; color:#475569; margin-bottom:4px;">
+                        <span>📧 ${req.userEmail || '—'}</span> &nbsp;|&nbsp; <span>📅 ${dateStr}</span>
+                    </div>
+                    <div style="font-size:12px; margin-bottom:6px;">
+                        Target: <b style="color:#0284c7;">${pkgName}</b>
+                    </div>
+                    ${isPending ? `
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="btn btn-sm" style="background:#10b981; color:#fff; font-size:11px; flex:1;" onclick="approveUpgradeRequest('${doc.id}', '${req.agencyId}', '${req.requestedPackageId}', '${req.agencyName}')">
+                            <i class="fas fa-check"></i> Unlock &amp; Approve
+                        </button>
+                        <button class="btn btn-sm" style="background:#ef4444; color:#fff; font-size:11px;" onclick="dismissUpgradeRequest('${doc.id}')">
+                            <i class="fas fa-times"></i> Dismiss
+                        </button>
+                    </div>` : ''}
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+            const countBadge = document.getElementById('upgradeReqCount');
+            if (countBadge) countBadge.innerText = pendingCount;
+            const tabBadge = document.getElementById('tabUpgradeCountBadge');
+            if (tabBadge) tabBadge.innerText = pendingCount;
+
+        } catch (e) {
+            console.error('Upgrade requests error:', e);
+            container.innerHTML = '<div class="error-inline">Failed to load requests: ' + e.message + '</div>';
+        }
+    }
+
+    async function approveUpgradeRequest(reqId, agencyId, targetPackageId, agencyName) {
+        const res = await Swal.fire({
+            title: `Approve Upgrade for ${agencyName}?`,
+            text: `Agency ko ${targetPackageId.toUpperCase()} package par unlock kar diya jayega.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Yes, Approve & Unlock'
+        });
+
+        if (res.isConfirmed) {
+            try {
+                const newExp = new Date();
+                newExp.setMonth(newExp.getMonth() + 1);
+                const newExpiryStr = newExp.toISOString().slice(0, 10);
+
+                await db.collection('agencies').doc(agencyId).update({
+                    packageId: targetPackageId,
+                    allModulesUnlocked: true,
+                    subscriptionExpiry: newExpiryStr,
+                    subscriptionStatus: 'active',
+                    status: 'active',
+                    isSuspended: false,
+                    lastUnlockedAt: new Date().toISOString()
+                });
+
+                await db.collection('upgradeRequests').doc(reqId).update({
+                    status: 'approved',
+                    approvedAt: new Date().toISOString()
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '🎉 Package Unlocked!',
+                    html: `<b>${agencyName}</b> ko <b>${targetPackageId.toUpperCase()}</b> par unlock kar diya gaya hai!<br>Valid till: <b>${newExpiryStr}</b>`
+                });
+
+                await loadUpgradeRequests();
+                await loadAgencies();
+            } catch (e) {
+                console.error('Approve upgrade error:', e);
+                Swal.fire('Error', 'Approval failed: ' + e.message, 'error');
+            }
+        }
+    }
+
+    async function dismissUpgradeRequest(reqId) {
+        const res = await Swal.fire({
+            title: 'Dismiss Request?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, Dismiss'
+        });
+        if (res.isConfirmed) {
+            try {
+                await db.collection('upgradeRequests').doc(reqId).update({ status: 'dismissed' });
+                await loadUpgradeRequests();
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+    }
+
     // Refresh button
     document.getElementById('refreshAdminBtn').addEventListener('click', async () => {
         const btn = document.getElementById('refreshAdminBtn');
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
         btn.disabled = true;
         await loadAgencies();
-        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Revenue';
+        await loadPackages();
+        await loadUpgradeRequests();
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Platform Data';
         btn.disabled = false;
-        Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, icon: 'success', title: 'Revenue updated!' });
+        Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, icon: 'success', title: 'Data updated!' });
     });
 
-    // Create Agency Form Submit
+    // ============================================
+    // ➕ CREATE NEW AGENCY FORM SUBMIT
+    // ============================================
     document.getElementById('createAgencyForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -1271,7 +2105,7 @@
         const bizType = document.getElementById('agType').value;
         const email = document.getElementById('agEmail').value.trim().toLowerCase();
         const password = document.getElementById('agPassword').value;
-        const pkgId = document.getElementById('agPackage').value;
+        const pkgId = document.getElementById('agPackage').value || 'free';
         const monthlyFee = parseFloat(document.getElementById('agMonthlyFee').value) || 0;
         const mobile = document.getElementById('agMobile').value.trim();
         const durationMonths = parseInt(document.getElementById('agDuration').value) || 1;
@@ -1302,6 +2136,14 @@
             const expDateStr = expDate.toISOString().slice(0, 10);
 
             // 1. Create Agency Doc
+            const chosenPkg = allLoadedPackages[pkgId] || DEFAULT_SAAS_PACKAGES[pkgId] || {};
+            const limits = chosenPkg.limits || {
+                monthlyBills: 150,
+                maxItems: 50,
+                maxBookers: 1,
+                maxBranches: 1
+            };
+
             const agencyRef = await db.collection('agencies').add({
                 name: name,
                 businessType: bizType,
@@ -1314,6 +2156,8 @@
                 ownerEmail: email,
                 ownerMobile: mobile,
                 mobile: mobile,
+                limits: limits,
+                customLimits: limits,
                 billPrefixes: { stock: 'STK-' },
                 createdAt: new Date().toISOString(),
                 createdBy: currentAdminUid
@@ -1334,14 +2178,17 @@
             createBtn.disabled = false;
             createBtn.innerHTML = '<i class="fas fa-check-circle"></i> CREATE AGENCY & ACTIVATE SUBSCRIPTION';
             document.getElementById('createAgencyForm').reset();
+            document.getElementById('agPackage').value = 'free';
+            document.getElementById('agMonthlyFee').value = '0';
 
             Swal.fire({
                 icon: 'success',
                 title: '🎉 Agency Created & Subscription Active!',
-                html: `<b>${name}</b><br>Owner: <b>${email}</b><br>Validity Till: <b>${expDateStr}</b><br>Fee: Rs ${monthlyFee.toLocaleString()} / mo`
+                html: `<b>${name}</b><br>Owner: <b>${email}</b><br>Plan: <b>${pkgId.toUpperCase()}</b><br>Validity Till: <b>${expDateStr}</b><br>Fee: Rs ${monthlyFee.toLocaleString()} / mo`
             });
 
             await loadAgencies();
+            switchAdminTab('tabAgencies');
 
         } catch (error) {
             createBtn.disabled = false;
@@ -1350,17 +2197,6 @@
             Swal.fire('❌ Error', 'Agency create nahi hui: ' + error.message, 'error');
         }
     });
-
-    const lBtn = document.getElementById('logoutBtn');
-    if (lBtn) {
-        lBtn.addEventListener('click', async () => {
-            const res = await Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, Logout' });
-            if (res.isConfirmed) {
-                await auth.signOut();
-                window.location.href = 'auth.html';
-            }
-        });
-    }
 </script>
 
 <!-- 🧭 SIDEBAR SYSTEM -->

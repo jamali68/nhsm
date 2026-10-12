@@ -27,25 +27,29 @@ const AUTH_TEXTS = {
         appSubtitle: "Smart Business Management",
         tabLogin: "Login",
         tabSignup: "Sign Up",
-        loginBtn: "Login",
-        signupBtn: "Create Account",
-        googleBtn: "Continue with Google",
+        loginBtn: "Login to POS",
+        signupBtn: "Create Account — FREE",
+        googleBtn: "Continue with Google (Owner Only)",
+        staffNoticeTitle: "Field Staff (Order Booker & Supplier) Login:",
+        staffNoticeDesc: "Enter your Admin-assigned <b>Email or Mobile</b> and <b>Password</b> (e.g. <code>123456</code>), then click <b>Login</b> below.",
+        ownerOnlyDivider: "For Business Owners Only",
+        staffHelperNote: "⚠️ Order Bookers & Suppliers please log in using Email/Mobile and Password above",
         bizSection: "🏢 Business Information",
         accSection: "🔐 Account Details",
-        selectType: "Business Type *",
-        msgBizName: "Business Name lazmi hai!",
-        msgBizType: "Business Type select karein!",
+        selectType: "Select Business Type *",
+        msgBizName: "Business Name is required!",
+        msgBizType: "Please select a Business Type!",
         msgAgencyDone: "🎉 Agency created! Welcome to Free Package!",
-        signupNote: "First account becomes Super Admin!",
-        msgCreated: "Account created! Super Admin setup complete ✅",
+        signupNote: "🚀 Use HN Software — Starting Free of Cost!",
+        msgCreated: "Account created! Setup complete ✅",
         msgNoMatch: "Passwords do not match!",
         msgShort: "Password must be at least 6 characters!",
-        msgWrongPass: "Incorrect email or password!",
-        msgExists: "This email is already registered! Try Login.",
-        msgTooMany: "Too many attempts. Try again later.",
-        msgNetwork: "Network error. Check your internet.",
-        msgGeneric: "Something went wrong. Try again.",
-        msgFirebaseLoad: "⚠️ Firebase load nahi hua — Internet check karein aur refresh karein!"
+        msgWrongPass: "Incorrect email, mobile or password!",
+        msgExists: "This email is already registered! Please Login.",
+        msgTooMany: "Too many attempts. Please try again later.",
+        msgNetwork: "Network error. Please check your internet connection.",
+        msgGeneric: "Something went wrong. Please try again.",
+        msgFirebaseLoad: "⚠️ Firebase service failed to load — Please check internet and refresh!"
     },
     ur: {
         appTitle: "ایزی بل جنریٹر",
@@ -53,16 +57,20 @@ const AUTH_TEXTS = {
         tabLogin: "لاگ اِن",
         tabSignup: "نیا اکاؤنٹ",
         loginBtn: "لاگ اِن کریں",
-        signupBtn: "اکاؤنٹ بنائیں",
-        googleBtn: "گوگل کے ساتھ جاری رکھیں",
+        signupBtn: "اکاؤنٹ بنائیں — مفت",
+        googleBtn: "گوگل کے ساتھ جاری رکھیں (صرف اونر)",
+        staffNoticeTitle: "فیلڈ اسٹاف (بکر اور سپلائر) لاگ اِن:",
+        staffNoticeDesc: "ایڈمن کا دیا ہوا <b>ای میل یا فون نمبر</b> اور <b>پاسورڈ</b> (مثلاً <code>123456</code>) لکھ کر نیچے سبز بٹن <b>Login</b> دبائیں۔",
+        ownerOnlyDivider: "صرف بزنس اونر کے لیے",
+        staffHelperNote: "⚠️ بکر اور سپلائر اوپر ای میل/موبائل اور پاسورڈ درج کر کے لاگ اِن کریں",
         bizSection: "🏢 کاروبار کی معلومات",
         accSection: "🔐 اکاؤنٹ کی تفصیلات",
-        selectType: "کاروبار کی قسم *",
+        selectType: "کاروبار کی قسم منتخب کریں *",
         msgBizName: "کاروبار کا نام لازمی ہے!",
         msgBizType: "کاروبار کی قسم منتخب کریں!",
         msgAgencyDone: "🎉 ایجنسی بن گئی! فری پیکج میں خوش آمدید!",
-        signupNote: "پہلا اکاؤنٹ سپر ایڈمن بنے گا!",
-        msgCreated: "اکاؤنٹ بن گیا! سپر ایڈمن سیٹ اپ مکمل ✅",
+        signupNote: "🚀 HN سافٹ ویئر استعمال کریں — بالکل مفت شروع کریں (Free of Cost)!",
+        msgCreated: "اکاؤنٹ بن گیا! سیٹ اپ مکمل ✅",
         msgNoMatch: "پاس ورڈ میچ نہیں ہو رہے!",
         msgShort: "پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے!",
         msgWrongPass: "ای میل یا پاس ورڈ غلط ہے!",
@@ -93,6 +101,9 @@ document.addEventListener('DOMContentLoaded', function() {
         firebase.initializeApp(firebaseConfig);
         auth = firebase.auth();
         db = firebase.firestore();
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+        } catch (_) {}
         firebaseReady = true;
     } catch (e) {
         // 🔴 Visible error — chupchaap marne ke bajaye batao!
@@ -146,15 +157,34 @@ document.addEventListener('DOMContentLoaded', function() {
         // data-i18n elements update
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
-            if (L[key]) el.innerText = L[key];
+            if (L[key]) {
+                if (L[key].includes('<')) {
+                    el.innerHTML = L[key];
+                } else {
+                    el.innerText = L[key];
+                }
+            }
         });
 
         // Placeholders
-        document.getElementById('loginEmail').placeholder = 'Email';
-        document.getElementById('loginPassword').placeholder = lang === 'ur' ? 'پاس ورڈ' : 'Password';
-        document.getElementById('signupEmail').placeholder = 'Email';
-        document.getElementById('signupPassword').placeholder = lang === 'ur' ? 'پاس ورڈ (کم از کم 6 حروف)' : 'Password (min 6 characters)';
-        document.getElementById('signupConfirm').placeholder = lang === 'ur' ? 'پاس ورڈ دوبارہ' : 'Confirm Password';
+        const elLoginEmail = document.getElementById('loginEmail');
+        if (elLoginEmail) elLoginEmail.placeholder = lang === 'ur' ? 'ای میل یا موبائل / یوزر نیم' : 'Email or Mobile / Username';
+        const elLoginPass = document.getElementById('loginPassword');
+        if (elLoginPass) elLoginPass.placeholder = lang === 'ur' ? 'پاس ورڈ' : 'Password';
+        const elBizName = document.getElementById('bizName');
+        if (elBizName) elBizName.placeholder = lang === 'ur' ? 'کاروبار کا نام *' : 'Business Name *';
+        const elBizMobile = document.getElementById('bizMobile');
+        if (elBizMobile) elBizMobile.placeholder = lang === 'ur' ? 'موبائل نمبر (اختیاری)' : 'Mobile Number (optional)';
+        const elBizCity = document.getElementById('bizCity');
+        if (elBizCity) elBizCity.placeholder = lang === 'ur' ? 'شہر (اختیاری)' : 'City (optional)';
+        const elOwnerName = document.getElementById('ownerName');
+        if (elOwnerName) elOwnerName.placeholder = lang === 'ur' ? 'آپ کا مکمل نام (اختیاری)' : 'Your Full Name (optional)';
+        const elSignupEmail = document.getElementById('signupEmail');
+        if (elSignupEmail) elSignupEmail.placeholder = 'Email';
+        const elSignupPass = document.getElementById('signupPassword');
+        if (elSignupPass) elSignupPass.placeholder = lang === 'ur' ? 'پاس ورڈ (کم از کم 6 حروف)' : 'Password (min 6 characters)';
+        const elSignupConfirm = document.getElementById('signupConfirm');
+        if (elSignupConfirm) elSignupConfirm.placeholder = lang === 'ur' ? 'پاس ورڈ دوبارہ لکھیں' : 'Confirm Password';
 
         // Direction (RTL/LTR)
         document.getElementById('authWrapper').setAttribute('dir', lang === 'ur' ? 'rtl' : 'ltr');
@@ -163,6 +193,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('langEn').classList.toggle('active', lang === 'en');
         document.getElementById('langUr').classList.toggle('active', lang === 'ur');
     }
+
+    // Apply language on startup
+    setAuthLang(authLang);
 
     document.getElementById('langEn').addEventListener('click', () => setAuthLang('en'));
     document.getElementById('langUr').addEventListener('click', () => setAuthLang('ur'));
@@ -247,22 +280,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // 3. 🆕 AGENCY CREATE (Self-Service Unlimited Capacity — No waiting for Super Admin!)
             let agencyId = null;
             if (role === 'owner') {
+                const today = new Date();
+                today.setDate(today.getDate() + 30);
+                const expiryStr = today.toISOString().slice(0, 10);
+
                 const agencyRef = await db.collection('agencies').add({
                     name: bizName,
                     businessType: bizType,
                     mobile: bizMobile || '',
                     city: bizCity || '',
-                    packageId: 'unlimited_pro',
+                    packageId: 'free',
+                    monthlyFee: 0,
+                    subscriptionExpiry: expiryStr,
+                    subscriptionStatus: 'active',
                     status: 'active',
                     ownerUid: uid,
                     ownerEmail: email,
                     limits: {
-                        monthlyBills: 999999,
-                        weeklyBills: 99999,
-                        maxBookers: 500,
-                        maxSuppliers: 500,
-                        maxAdmins: 10,
-                        dailyOrdersPerBooker: 500
+                        monthlyBills: 150,
+                        maxItems: 50,
+                        maxBookers: 1,
+                        maxBranches: 1
                     },
                     createdAt: new Date().toISOString()
                 });
@@ -276,6 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 role: role,
                 loginMethod: 'email',
                 agencyId: role === 'super-admin' ? 'super-admin-hq' : agencyId,
+                packageId: 'free',
                 permissions: { instant: true, stock: true },
                 createdAt: new Date().toISOString(),
                 createdBy: role === 'super-admin' ? 'system-first' : 'signup'
@@ -363,8 +402,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            let targetUrl = 'dashboard.html';
+            const curUser = auth.currentUser;
+            if (curUser) {
+                if (curUser.email === 'aliimtiaz1126@gmail.com') {
+                    targetUrl = 'admin.html';
+                } else {
+                    try {
+                        const uDoc = await db.collection('users').doc(curUser.uid).get();
+                        if (uDoc.exists && uDoc.data().role === 'super-admin') {
+                            targetUrl = 'admin.html';
+                        }
+                    } catch (eR) {
+                        console.warn('Role redirect check:', eR);
+                    }
+                }
+            }
+
             btnLoading('loginBtn', false);
-            window.location.href = 'dashboard.html';
+            window.location.href = targetUrl;
         } catch (error) {
             btnLoading('loginBtn', false);
             showAuthMsg(translateFirebaseError(error));
@@ -413,7 +469,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             // (Profile already hai — sirf login, kuch nahi karna)
 
-            window.location.href = 'dashboard.html';
+            let targetUrl = 'dashboard.html';
+            if (user.email === 'aliimtiaz1126@gmail.com') {
+                targetUrl = 'admin.html';
+            } else {
+                try {
+                    const uDoc = await db.collection('users').doc(uid).get();
+                    if (uDoc.exists && uDoc.data().role === 'super-admin') {
+                        targetUrl = 'admin.html';
+                    }
+                } catch (eG) {
+                    console.warn(eG);
+                }
+            }
+            window.location.href = targetUrl;
 
         } catch (error) {
             if (error.code === 'auth/popup-closed-by-user') {
@@ -441,12 +510,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // (Dono buttons same kaam — login/signup auto handle!)
 
     // -------------------------------------------
-    // 🔄 AUTO-LOGIN CHECK (already logged in? → dashboard)
+    // 🔄 AUTO-LOGIN & REDIRECT CHECK
     // -------------------------------------------
     if (firebaseReady) {
+        // Handle redirect result if signInWithRedirect was triggered (e.g. on mobile/restricted popups)
+        auth.getRedirectResult().then(async (result) => {
+            if (result && result.user) {
+                const user = result.user;
+                const uid = user.uid;
+                const userDoc = await db.collection('users').doc(uid).get();
+                if (!userDoc.exists) {
+                    let role = 'owner';
+                    try {
+                        const usersSnap = await db.collection('users').limit(1).get();
+                        if (usersSnap.empty) role = 'super-admin';
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                    const displayName = user.displayName || user.email.split('@')[0];
+                    await db.collection('users').doc(uid).set({
+                        email: user.email,
+                        name: displayName,
+                        role: role,
+                        loginMethod: 'google',
+                        agencyId: role === 'super-admin' ? 'super-admin-hq' : null,
+                        permissions: { instant: true, stock: true },
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                let targetUrl = 'dashboard.html';
+                if (user.email === 'aliimtiaz1126@gmail.com') {
+                    targetUrl = 'admin.html';
+                } else {
+                    try {
+                        const uDoc = await db.collection('users').doc(uid).get();
+                        if (uDoc.exists && uDoc.data().role === 'super-admin') {
+                            targetUrl = 'admin.html';
+                        }
+                    } catch (eG) {
+                        console.warn(eG);
+                    }
+                }
+                window.location.href = targetUrl;
+            }
+        }).catch((err) => {
+            console.warn('Redirect result check:', err);
+        });
+
         auth.onAuthStateChanged((user) => {
             if (user) {
-                window.location.href = 'dashboard.html';
+                window.location.href = user.email === 'aliimtiaz1126@gmail.com' ? 'admin.html' : 'dashboard.html';
             }
         });
     }

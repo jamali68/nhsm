@@ -14,19 +14,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Easy Bill Generator — Login</title>
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Preconnect for Lightning Fast CDN Handshakes -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+
+    <!-- SweetAlert2 (Deferred) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- ✅ Auth CSS -->
+    <!-- ✅ Auth CSS (Clean Light Theme) -->
     <link rel="stylesheet" href="auth.css">
-
-    <!-- Global Dark Theme & Theme Sync -->
-    <link rel="stylesheet" href="dark-theme.css">
     <script src="theme-sync.js"></script>
 </head>
-<body>
+<body data-theme="light">
 
 <!-- ===== AUTH CARD ===== -->
 <div class="auth-wrapper" id="authWrapper" dir="ltr">
@@ -59,9 +61,11 @@
 
         <!-- ===== LOGIN FORM ===== -->
         <form id="loginForm" class="auth-form">
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px; margin-bottom:14px; font-size:12px; color:#166534; line-height:1.5;">
-                <div style="font-weight:bold; margin-bottom:2px;"><i class="fas fa-id-badge"></i> فیلڈ اسٹاف (بکر اور سپلائر) لاگ اِن:</div>
-                ایڈمن کا دیا ہوا <b>ای میل یا فون نمبر</b> اور <b>پاسورڈ</b> (مثلاً <code>123456</code>) لکھ کر نیچے سبز بٹن <b>Login</b> دبائیں۔
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:11px 13px; margin-bottom:14px; font-size:12px; color:#166534; line-height:1.5;">
+                <div style="font-weight:700; margin-bottom:3px;">
+                    <i class="fas fa-id-badge"></i> <span data-i18n="staffNoticeTitle">Field Staff (Order Booker &amp; Supplier) Login:</span>
+                </div>
+                <div data-i18n="staffNoticeDesc">Enter your Admin-assigned <b>Email or Mobile</b> and <b>Password</b> (e.g. <code>123456</code>), then click <b>Login</b> below.</div>
             </div>
 
             <div class="input-group">
@@ -78,7 +82,7 @@
             </button>
 
             <!-- 🌐 GOOGLE LOGIN -->
-            <div class="divider"><span>صرف بزنس اونر کے لیے</span></div>
+            <div class="divider"><span data-i18n="ownerOnlyDivider">For Business Owners Only</span></div>
             <button type="button" class="google-btn" id="googleLoginBtn">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -86,10 +90,10 @@
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                <span>Continue with Google (Owner Only)</span>
+                <span data-i18n="googleBtn">Continue with Google (Owner Only)</span>
             </button>
-            <div style="text-align:center; font-size:11px; color:#94a3b8; margin-top:6px;">
-                ⚠️ بکر اور سپلائر اوپر ای میل/موبائل اور پاسورڈ درج کر کے لاگ اِن کریں
+            <div style="text-align:center; font-size:11px; color:#64748b; margin-top:6px;" data-i18n="staffHelperNote">
+                ⚠️ Order Bookers &amp; Suppliers please log in using Email/Mobile and Password above
             </div>
         </form>
 
@@ -106,22 +110,22 @@
             <div class="input-group">
                 <i class="fas fa-tags input-icon"></i>
                 <select id="bizType" class="select-input" required>
-                    <option value="" data-i18n="selectType">Business Type *</option>
-                    <option value="books">📚 Book Depot &amp; Stationery (بک ڈپو، اسٹیشنری و بک پوائنٹ)</option>
-                    <option value="mobile">📱 Mobile Shop &amp; Accessories (موبائل اور ایسیسریز)</option>
-                    <option value="medical">💊 Medical Store &amp; Pharmacy (میڈیکل اسٹور و فارمیسی)</option>
-                    <option value="shoes">👟 Shoe Store &amp; Footwear (جوتے و فٹ ویئر)</option>
-                    <option value="garments">👕 Garments &amp; Clothing (گارمنٹس و ملبوسات)</option>
-                    <option value="general">🛒 General Store &amp; Kiryana (جنرل اسٹور و کریانہ)</option>
-                    <option value="wholesaler">📦 Wholesaler &amp; Bulk Distribution (تھوک ڈیلر)</option>
-                    <option value="confectionery">🍪 Confectionery &amp; Biscuits (کنفیکشنری و بسکٹ)</option>
-                    <option value="hardware">🔧 Hardware, Sanitary &amp; Paint (ہارڈویئر و سینیٹری)</option>
-                    <option value="electronics">💻 Electronics &amp; Home Appliances (الیکٹرانکس)</option>
-                    <option value="cosmetics">💄 Cosmetics &amp; Beauty (کاسمیٹکس)</option>
-                    <option value="auto_parts">🚗 Auto Parts &amp; Spare Parts (آٹو پارٹس)</option>
-                    <option value="bakery">🍞 Bakery, Sweets &amp; Cafe (بیکری و مٹھائی)</option>
-                    <option value="furniture">🪑 Furniture &amp; Decor (فرنیچر)</option>
-                    <option value="other">💼 Other Business (دیگر کاروبار)</option>
+                    <option value="" data-i18n="selectType">Select Business Type *</option>
+                    <option value="books">📚 Book Depot &amp; Stationery</option>
+                    <option value="mobile">📱 Mobile Shop &amp; Accessories</option>
+                    <option value="medical">💊 Medical Store &amp; Pharmacy</option>
+                    <option value="shoes">👟 Shoe Store &amp; Footwear</option>
+                    <option value="garments">👕 Garments &amp; Clothing</option>
+                    <option value="general">🛒 General Store &amp; Kiryana</option>
+                    <option value="wholesaler">📦 Wholesaler &amp; Bulk Distribution</option>
+                    <option value="confectionery">🍪 Confectionery &amp; Biscuits</option>
+                    <option value="hardware">🔧 Hardware, Sanitary &amp; Paint</option>
+                    <option value="electronics">💻 Electronics &amp; Home Appliances</option>
+                    <option value="cosmetics">💄 Cosmetics &amp; Beauty</option>
+                    <option value="auto_parts">🚗 Auto Parts &amp; Spare Parts</option>
+                    <option value="bakery">🍞 Bakery, Sweets &amp; Cafe</option>
+                    <option value="furniture">🪑 Furniture &amp; Decor</option>
+                    <option value="other">💼 Other Business</option>
                 </select>
             </div>
             <div class="input-group">
@@ -171,7 +175,7 @@
             </button>
 
             <p class="signup-note" data-i18n="signupNote">
-                🆓 FREE Package: 150 bills/month + 2 bookers!
+                🚀 Use HN Software: Starting Free of Cost!
             </p>
         </form>
 

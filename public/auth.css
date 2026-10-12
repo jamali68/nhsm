@@ -3,24 +3,40 @@
    (Bill app theme se match: dark blue + green)
    ============================================ */
 :root {
-    --primary: #2c3e50;
+    --primary: #1e293b;
     --accent: #27ae60;
     --share: #3498db;
-    --bg: #f4f7f6;
+    --bg: #f8fafc;
     --danger: #e74c3c;
     --warning: #f39c12;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background: #f1f5f9;
     min-height: 100vh;
     display: flex;
     align-items: flex-start;
     justify-content: center;
     padding: 30px 15px 50px;
     box-sizing: border-box;
+    color: #1e293b;
+}
+
+/* ☀️ Strictly Enforce Light Mode on Auth (Login & Signup) */
+body, body.dark-theme, [data-theme="dark"] {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.auth-card, body.dark-theme .auth-card, [data-theme="dark"] .auth-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 16px;
+    padding: 30px 25px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+    color: #1e293b !important;
 }
 
 /* ============================================
@@ -72,26 +88,17 @@ body {
     line-height: 1;
 }
 
-/* Dark mode for language toggle */
-body.dark-theme .lang-toggle-pill,
-[data-theme="dark"] .lang-toggle-pill {
-    background: #0f172a;
-    border-color: #334155;
+/* Language toggle light style */
+.lang-toggle-pill {
+    background: #e2e8f0 !important;
+    border: 1.5px solid #cbd5e1 !important;
 }
-body.dark-theme .lang-btn,
-[data-theme="dark"] .lang-btn {
-    color: #94a3b8;
+.lang-btn {
+    color: #475569 !important;
 }
-body.dark-theme .lang-btn:hover,
-[data-theme="dark"] .lang-btn:hover {
-    color: #f8fafc;
-    background: rgba(255,255,255,0.08);
-}
-body.dark-theme .lang-btn.active,
-[data-theme="dark"] .lang-btn.active {
-    background: #38bdf8;
-    color: #0b1120 !important;
-    box-shadow: 0 2px 6px rgba(56, 189, 248, 0.35);
+.lang-btn.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
 }
 
 /* ============================================

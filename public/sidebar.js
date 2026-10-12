@@ -138,6 +138,28 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
         }
     ];
 
+    // 👑 DEDICATED SUPER ADMIN SAAS PLATFORM SUITE MENU
+    const SUPER_ADMIN_MENU = [
+        {
+            title: 'SAAS PLATFORM <span class="ur-sub">(سپر ایڈمن کنٹرول روم)</span>',
+            items: [
+                { icon: 'fa-gauge-high', text: 'Executive Dashboard <span class="ur-sub">(پلیٹ فارم جائزہ)</span>', url: 'admin.html', roles: ['super-admin'] },
+                { icon: 'fa-trophy', text: 'Store Intelligence & Rankings <span class="ur-sub">(رینکنگ و کارکردگی)</span>', url: 'admin.html#tabLeaderboard', roles: ['super-admin'] },
+                { icon: 'fa-building', text: 'Client Stores & Governance <span class="ur-sub">(تمام رجسٹرڈ دکانیں)</span>', url: 'admin.html#tabAgencies', roles: ['super-admin'] },
+                { icon: 'fa-cubes', text: 'Customizable Packages <span class="ur-sub">(پیکیجز و کسٹمائزیشن)</span>', url: 'admin.html#tabPackages', roles: ['super-admin'] },
+                { icon: 'fa-inbox', text: 'Upgrade Requests <span class="ur-sub">(پیکیج اپ گریڈ درخواستیں)</span>', url: 'admin.html#tabRequests', roles: ['super-admin'] },
+                { icon: 'fa-plus-circle', text: 'Register New Store <span class="ur-sub">(نئی دکان رجسٹریشن)</span>', url: 'admin.html#tabCreateAgency', roles: ['super-admin'] },
+            ]
+        },
+        {
+            title: 'SYSTEM & LOGS <span class="ur-sub">(سسٹم و ڈیٹا لاگز)</span>',
+            items: [
+                { icon: 'fa-money-bill-wave', text: 'Subscriptions & Revenue <span class="ur-sub">(ماہانہ فیس لاگ)</span>', url: 'admin.html#tabOverview', roles: ['super-admin'] },
+                { icon: 'fa-cloud-arrow-up', text: 'Cloud Data Backup <span class="ur-sub">(بیک اپ و ڈیٹا بحالی)</span>', url: 'backup.html', roles: ['super-admin'] },
+            ]
+        }
+    ];
+
     // 2️⃣ CSS INJECT
     const style = document.createElement('style');
     style.textContent = `
@@ -775,9 +797,32 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
         return state;
     }
     
+    // ⚡ INSTANT SIDEBAR RENDER (0ms latency from session cache)
+    try {
+        const cachedProfileStr = sessionStorage.getItem('eb_user_profile');
+        const cachedAgencyStr = sessionStorage.getItem('eb_agency_data');
+        if (cachedProfileStr) {
+            myProfile = JSON.parse(cachedProfileStr);
+            if (cachedAgencyStr) {
+                myAgencyData = JSON.parse(cachedAgencyStr);
+                agencyPackageState = evaluatePackageStatus(myAgencyData);
+            }
+            window.__myAgencyData = myAgencyData;
+            window.__myProfile = myProfile;
+            renderSidebar();
+            updateAvatar();
+            updatePackageBadgeInTopBar();
+        }
+    } catch (_) {}
+
     if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
         const auth = firebase.auth();
         const db = firebase.firestore();
+
+        // Enable Firestore IndexedDB Persistence for ultra-fast local reads
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+        } catch (_) {}
         
         auth.onAuthStateChanged(async (user) => {
             if (!user) return;
@@ -792,6 +837,11 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
                     myProfile.name = user.email.split('@')[0];
                 }
 
+                // Cache user profile for 0ms instant load on subsequent navigations
+                try {
+                    sessionStorage.setItem('eb_user_profile', JSON.stringify(myProfile));
+                } catch (_) {}
+
                 // Fetch Agency Package & Subscription Expiry
                 const activeAgId = myProfile.agencyId || localStorage.getItem('eb_active_agencyId');
                 if (activeAgId && activeAgId !== 'super-admin-hq') {
@@ -803,6 +853,10 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
                             if (myAgencyData.name) myProfile.agencyName = myAgencyData.name;
                             if (myAgencyData.city) myProfile.city = myAgencyData.city;
                             agencyPackageState = evaluatePackageStatus(myAgencyData);
+
+                            try {
+                                sessionStorage.setItem('eb_agency_data', JSON.stringify(myAgencyData));
+                            } catch (_) {}
 
                             // ⛔ Check if agency is suspended / frozen by Super Admin
                             if (myProfile.role !== 'super-admin' && (myAgencyData.status === 'suspended' || myAgencyData.isSuspended === true)) {
@@ -871,24 +925,33 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
             existingOverlay.remove();
         }
 
-        const role = myProfile.role || 'owner';
+        const currentUserEmail = (myProfile && myProfile.email) || (window.firebase && firebase.auth().currentUser && firebase.auth().currentUser.email) || '';
+        const isSuperAdmin = myProfile.role === 'super-admin' || currentUserEmail === 'aliimtiaz1126@gmail.com';
+        const role = isSuperAdmin ? 'super-admin' : (myProfile.role || 'owner');
         const currentPath = window.location.pathname.split('/').pop() || 'dashboard.html';
 
         const sidebar = document.createElement('div');
         sidebar.className = 'eb-sidebar';
         sidebar.id = 'ebSidebar';
 
+        const agencyTitleText = isSuperAdmin
+            ? '👑 SaaS Master Platform'
+            : `🏢 ${myProfile.agencyName || myProfile.name || 'My Business'}`;
+
         let menuHtml = `<div class="eb-sidebar-header">
             <div class="eb-sidebar-brand">
-                <div class="eb-sidebar-logo">⚡</div>
-                <div class="eb-sidebar-appname">Easy Bill Generator</div>
+                <div class="eb-sidebar-logo">${isSuperAdmin ? '👑' : '⚡'}</div>
+                <div class="eb-sidebar-appname">${isSuperAdmin ? 'Easy Bill Super Admin' : 'Easy Bill Generator'}</div>
             </div>
-            <div class="eb-sidebar-agency">🏢 ${myProfile.agencyName || myProfile.name || 'My Business'}</div>
+            <div class="eb-sidebar-agency">${agencyTitleText}</div>
             <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.0.0'}</div>
         </div>`;
 
-        MENU.forEach(section => {
+        const activeMenuList = isSuperAdmin ? SUPER_ADMIN_MENU : MENU;
+
+        activeMenuList.forEach(section => {
             const allowedItems = section.items.filter(it => {
+                if (isSuperAdmin) return it.roles.includes('super-admin');
                 // Roles check: admin only pages stay hidden from non-super-admins
                 if (!it.roles.includes(role)) return false;
 
@@ -1102,7 +1165,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
             'delivery-returns.html': { title: 'Van Dispatch & Returns Hub <span class="ur-sub">(وین ڈسپیچ و ترسیل)</span>', icon: '🚚', color: '#8b5cf6' },
             'multi-agency.html': { title: 'Multi-Agency Control Hub <span class="ur-sub">(ملٹی برانچ کنٹرول)</span>', icon: '🌐', color: '#10b981' },
             'owner.html': { title: 'Staff & Bookers <span class="ur-sub">(اسٹاف و سیلز ٹیم)</span>', icon: '👥', color: '#0284c7' },
-            'admin.html': { title: 'Agencies Master Admin <span class="ur-sub">(تمام برانچز ایڈمن)</span>', icon: '🏢', color: '#8b5cf6' },
+            'admin.html': { title: '👑 SaaS Platform Administration <span class="ur-sub">(سپر ایڈمن کنٹرول روم)</span>', icon: '👑', color: '#8b5cf6' },
             'reports.html': { title: 'Reports & Analytics <span class="ur-sub">(کاروباری رپورٹس)</span>', icon: '📈', color: '#059669' },
             'backup.html': { title: 'Backup & Restore <span class="ur-sub">(بیک اپ و ڈیٹا بحالی)</span>', icon: '💾', color: '#0284c7' },
             'settings.html': { title: role === 'booker' ? 'Cloud Sync & Shifts <span class="ur-sub">(کلاؤڈ سنک و شفٹس)</span>' : 'Agency Settings <span class="ur-sub">(ایجنسی سیٹنگز)</span>', icon: role === 'booker' ? '☁️' : '⚙️', color: '#0284c7' },
@@ -1112,8 +1175,8 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
         const activeFile = window.location.pathname.split('/').pop() || 'index.html';
         const pageConf = PAGE_CONFIG[activeFile] || { title: (document.title ? document.title.replace('Easy Bill Generator — ', '') : 'Easy Bill'), icon: '⚡', color: '#10b981' };
 
-        const agencyTitle = myProfile.agencyName || (myProfile.name ? myProfile.name : 'Easy Bill Enterprise');
-        const agencyCity = myProfile.city || myProfile.depot || '';
+        const agencyTitle = isSuperAdmin ? 'SaaS Master Platform' : (myProfile.agencyName || (myProfile.name ? myProfile.name : 'Easy Bill Enterprise'));
+        const agencyCity = isSuperAdmin ? 'Master Platform HQ' : (myProfile.city || myProfile.depot || '');
         const agencySubtitle = agencyCity ? `${agencyTitle} • ${agencyCity}` : agencyTitle;
         const userInitial = (myProfile.name || 'User').charAt(0).toUpperCase();
 
@@ -1143,9 +1206,11 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
                     </div>
 
                     <!-- 📦 Package Tier Indicator -->
-                    <span class="eb-pkg-pill ${agencyPackageState.isExpired ? 'eb-pkg-expired' : (agencyPackageState.isPaid ? 'eb-pkg-paid' : 'eb-pkg-free')}" id="ebTopPkgPill" title="${agencyPackageState.statusText}">
-                        ${agencyPackageState.isExpired ? 'EXPIRED' : (agencyPackageState.isPaid ? 'PRO' : 'FREE')}
-                    </span>
+                    ${isSuperAdmin 
+                        ? '<span class="eb-pkg-pill" style="background:linear-gradient(135deg, #8b5cf6, #6366f1); color:#fff; font-weight:800; border:1px solid #c084fc;">👑 SUPER ADMIN</span>'
+                        : `<span class="eb-pkg-pill ${agencyPackageState.isExpired ? 'eb-pkg-expired' : (agencyPackageState.isPaid ? 'eb-pkg-paid' : 'eb-pkg-free')}" id="ebTopPkgPill" title="${agencyPackageState.statusText}">
+                            ${agencyPackageState.isExpired ? 'EXPIRED' : (agencyPackageState.isPaid ? 'PRO' : 'FREE')}
+                           </span>`}
 
                     <button type="button" class="eb-topbar-btn eb-topbar-sync" id="ebTopSyncBtn" title="⚡ Cloud Sync & Quota Protection">
                         <i class="fas fa-cloud"></i>
