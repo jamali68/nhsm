@@ -7,7 +7,7 @@
 // ✅ Role-aware menu (Booker ko limited)
 // ============================================
 
-window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
+window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.0';
 
 (function initSidebar() {
     // Inject dark-theme.css link dynamically if not present
@@ -944,7 +944,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
                 <div class="eb-sidebar-appname">${isSuperAdmin ? 'Easy Bill Super Admin' : 'Easy Bill Generator'}</div>
             </div>
             <div class="eb-sidebar-agency">${agencyTitleText}</div>
-            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.0.0'}</div>
+            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.2.0'}</div>
         </div>`;
 
         const activeMenuList = isSuperAdmin ? SUPER_ADMIN_MENU : MENU;
@@ -1139,6 +1139,19 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.0.0';
 
         sidebar.innerHTML = menuHtml;
         document.body.appendChild(sidebar);
+
+        // 🔄 Sync sidebar version with manifest.json live
+        if (typeof window !== 'undefined' && window.fetch) {
+            fetch('manifest.json?t=' + Math.floor(Date.now() / 60000), { cache: 'default' })
+                .then(r => r.json())
+                .then(m => {
+                    if (m && m.version) {
+                        window.EASYBILL_VERSION = m.version;
+                        const vEl = sidebar.querySelector('.eb-sidebar-version');
+                        if (vEl) vEl.textContent = `Version ${m.version}`;
+                    }
+                }).catch(() => {});
+        }
 
         // Overlay
         const overlay = document.createElement('div');

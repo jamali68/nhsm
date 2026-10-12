@@ -1,6 +1,23 @@
-// Global Theme & Module Communication Handler for Easy Bill Generator
 // 🏷️ Central Application Version (Single source of truth)
-window.EASYBILL_VERSION = '4.0.0';
+window.EASYBILL_VERSION = '4.2.0';
+
+// 🔄 Live Version Synchronization with manifest.json
+(function syncManifestVersion() {
+    if (typeof window !== 'undefined' && window.fetch) {
+        fetch('manifest.json?t=' + Math.floor(Date.now() / 60000), { cache: 'default' })
+            .then(function(r) { return r.json(); })
+            .then(function(m) {
+                if (m && m.version) {
+                    window.EASYBILL_VERSION = m.version;
+                    var els = document.querySelectorAll('.eb-sidebar-version, [data-app-version]');
+                    els.forEach(function(el) {
+                        el.textContent = 'Version ' + m.version;
+                    });
+                }
+            })
+            .catch(function() {});
+    }
+})();
 
 (function initGlobalTheme() {
     // 🛡️ Ensure App Guard & Domain Lock is loaded across all pages
