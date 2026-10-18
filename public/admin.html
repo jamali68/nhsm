@@ -1852,6 +1852,9 @@
                             <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#db2777; font-weight:bold;">
                                 <input type="checkbox" id="permMultiBranch" ${curPerms.multi_agency ? 'checked' : ''}> 🏢 Multi-Branch Hub
                             </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; color:#0284c7; font-weight:bold;">
+                                <input type="checkbox" id="permImageUrlInput" ${curPerms.image_url_input === true ? 'checked' : ''}> 🔗 Image Web Link Box (URL)
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -1899,7 +1902,8 @@
                         owner: document.getElementById('permOwner').checked,
                         backup: document.getElementById('permBackup').checked,
                         alerts: document.getElementById('permAlerts').checked,
-                        multi_agency: document.getElementById('permMultiBranch').checked
+                        multi_agency: document.getElementById('permMultiBranch').checked,
+                        image_url_input: document.getElementById('permImageUrlInput') ? document.getElementById('permImageUrlInput').checked : false
                     }
                 };
             }

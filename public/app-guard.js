@@ -17,6 +17,9 @@
         '127.0.0.1',
         '0.0.0.0',
         /\.run\.app$/,          // Google AI Studio Cloud Run preview environments
+        /\.googleusercontent\.com$/, // Google cloud preview environments
+        /\.cloudworkstations\.dev$/,
+        /\.google\.com$/,
         /\.netlify\.app$/,      // Official Netlify hosting
         /\.web\.app$/,          // Official Firebase hosting
         /\.firebaseapp\.com$/,  // Official Firebase domain
@@ -300,7 +303,7 @@
 
     // 6️⃣ EXPOSE GLOBAL GUARD INTERFACE (WITH LAYER 6 SERVERLESS SHIELD)
     window.EB_GUARD = {
-        version: '4.2.0-enterprise-shield-layer6',
+        version: '4.2.8-enterprise-shield-layer6',
         layer6: 'Netlify-Serverless-Active',
         isAuthorized: isAuthorized,
         host: currentHost,
@@ -326,7 +329,7 @@
                         agencyId: invoiceData.agencyId
                     })
                 });
-                if (res.ok) {
+                if (res.ok && (res.headers.get('content-type') || '').includes('json')) {
                     const data = await res.json();
                     return data.signature || null;
                 }
@@ -337,7 +340,7 @@
         pingServerlessShield: async function() {
             try {
                 const res = await fetch('/api/secure-api?action=health');
-                if (res.ok) {
+                if (res.ok && (res.headers.get('content-type') || '').includes('json')) {
                     const data = await res.json();
                     return data;
                 }

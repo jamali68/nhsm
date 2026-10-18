@@ -39,6 +39,35 @@ let selectedCustomer = null;
 let lastSavedBill = null;
 let activeRateTier = 'wholesale'; // 'wholesale' or 'retail'
 
+// 📱 Interactive List View & Visual Catalogue State (Initialized at top to prevent TDZ)
+let catProducts = [];
+let catIndex = 0;
+let catActiveCategory = 'all';
+let catSearchQuery = '';
+let catCart = {}; // { [stockId]: { item, qty, rate, total, freeQty, schemeDiscount } }
+
+// State for Interactive List View (View 1)
+let listFilterState = {
+    search: '',
+    category: 'all',
+    filter: 'all' // 'all' | 'offers' | 'booked'
+};
+
+// ============================================
+// 📕 ORDER BOOKER MODE DETECTOR (TOP-LEVEL GLOBAL)
+// ============================================
+function isOrderBookerMode() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const m = urlParams.get('mode');
+        if (m === 'booker' || m === 'order') return true;
+        if (typeof myUser !== 'undefined' && myUser && myUser.role === 'booker') return true;
+        if (localStorage.getItem('eb_user_role') === 'booker') return true;
+    } catch (e) {}
+    return false;
+}
+window.isOrderBookerMode = isOrderBookerMode;
+
 // ============================================
 // 📏 UNIT HELPER
 // ============================================
@@ -269,7 +298,8 @@ auth.onAuthStateChanged(async (user) => {
         }
 
         // 📕 Booker Role Customization: Field Order Mode
-        if (myUser && myUser.role === 'booker') {
+        if (isOrderBookerMode()) {
+            document.body.classList.add('booker-hide-balance');
             const saveBtn = document.getElementById('saveBillBtn');
             const bookBtn = document.getElementById('bookFieldOrderBtn');
             if (saveBtn) saveBtn.style.display = 'none'; // Only field orders for bookers
@@ -278,7 +308,15 @@ auth.onAuthStateChanged(async (user) => {
                 bookBtn.style.flex = '1 1 100%';
             }
             const brandSub = document.querySelector('.brand-sub');
-            if (brandSub) brandSub.innerText = `📕 Order Booker Mode: ${myUser.name || 'Staff'}`;
+            if (brandSub) brandSub.innerText = `📕 Order Booker Mode: ${(myUser && myUser.name) || 'Staff'}`;
+
+            // Hide previous balance & cash received from screen for bookers
+            const sumPrev = document.getElementById('sumPrevBalanceRow');
+            const sumRec = document.getElementById('sumReceivedRow');
+            const sumBal = document.getElementById('sumBalanceRow');
+            if (sumPrev) sumPrev.style.display = 'none';
+            if (sumRec) sumRec.style.display = 'none';
+            if (sumBal) sumBal.style.display = 'none';
         }
 
         // Setup rate tier buttons
@@ -315,6 +353,7 @@ auth.onAuthStateChanged(async (user) => {
 
         // 📱 Initialize Visual Catalogue Order Booking System
         initVisualCatalogue();
+        updateLockState();
 
     } catch (error) {
         console.error('Bills init error:', error);
@@ -371,6 +410,9 @@ function setRateTier(tier, showNotice = false) {
     if (typeof updateCatalogueRateTier === 'function') {
         updateCatalogueRateTier();
     }
+    if (typeof renderInteractiveProductList === 'function') {
+        renderInteractiveProductList();
+    }
     if (showNotice) {
         const popupSetting = localStorage.getItem('eb_cust_type_popup') || (myAgency && myAgency.custTypePopupMode) || 'hide';
         if (popupSetting === 'show') {
@@ -406,15 +448,54 @@ function applyRateTierToRows() {
 // ============================================
 // 👥 CUSTOMER MANAGEMENT & KHATA LINKING
 // ============================================
+// 🔒 SECTION LOCK STATE (ORDER BOOKER PRO)
+function updateLockState() {
+    const isBooker = myUser && myUser.role === 'booker';
+    // Only Order Bookers have the items locked/grayed out when no shopkeeper is selected.
+    // Admin, owner, and managers are NEVER locked and can make Counter Sale bills freely.
+    const isLocked = isBooker && !selectedCustomer;
+    
+    const interactiveList = document.getElementById('interactiveListSection');
+    const manualRows = document.getElementById('manualRowsWrapper');
+    const itemsRows = document.getElementById('itemsRows');
+    const addItemBtn = document.getElementById('addItemRowBtn');
+    const bookerCustNotice = document.getElementById('bookerCustNotice');
+    const catCard = document.getElementById('catCard');
+    const catQtyBox = document.querySelector('.cat-qty-box');
+    
+    if (isLocked) {
+        if (interactiveList) interactiveList.classList.add('section-locked');
+        if (manualRows) manualRows.classList.add('section-locked');
+        if (itemsRows) itemsRows.classList.add('section-locked');
+        if (catCard) catCard.classList.add('section-locked');
+        if (catQtyBox) catQtyBox.classList.add('section-locked');
+        if (addItemBtn) addItemBtn.disabled = true;
+        if (bookerCustNotice) bookerCustNotice.style.display = 'flex';
+    } else {
+        if (interactiveList) interactiveList.classList.remove('section-locked');
+        if (manualRows) manualRows.classList.remove('section-locked');
+        if (itemsRows) itemsRows.classList.remove('section-locked');
+        if (catCard) catCard.classList.remove('section-locked');
+        if (catQtyBox) catQtyBox.classList.remove('section-locked');
+        if (addItemBtn) addItemBtn.disabled = false;
+        if (bookerCustNotice) bookerCustNotice.style.display = 'none';
+    }
+}
+
 function selectCustomerObject(c) {
     if (!c) return;
     selectedCustomer = c;
+    updateLockState();
     const custInput = document.getElementById('custNameInput');
+    const catInput = document.getElementById('catCustInput');
     const custSuggest = document.getElementById('custSuggest');
+    const catSuggest = document.getElementById('catCustSuggest');
     const custInfoBox = document.getElementById('custInfoBox');
 
     if (custInput) custInput.value = c.name;
+    if (catInput) catInput.value = c.name;
     if (custSuggest) custSuggest.classList.remove('show');
+    if (catSuggest) catSuggest.classList.remove('show');
 
     // 🎯 AUTO-SELECT WHOLESALE vs RETAIL BASED ON CUSTOMER TYPE!
     if (c.customerType === 'wholesale') {
@@ -423,32 +504,42 @@ function selectCustomerObject(c) {
         setRateTier('retail', true);
     }
 
-    let info = '';
-    if (c.shopName) info += `🏬 <b>${c.shopName}</b> &nbsp;|&nbsp; `;
-    if (c.mobile) info += `📱 ${c.mobile} &nbsp;|&nbsp; `;
-    if (c.route) info += `🛣️ Route: ${c.route} &nbsp;|&nbsp; `;
-    if (c.customerType) info += `🏷️ Type: <b>${c.customerType.toUpperCase()}</b> &nbsp;|&nbsp; `;
-
     // 🇵🇰 NTN & FBR Filer / Non-Filer badge
     const ntnVal = c.ntn || c.custNTN || '';
     const isFiler = c.fbrStatus === 'filer' || (ntnVal && c.fbrStatus !== 'non-filer');
-    if (ntnVal) {
-        info += `🔢 NTN: <b>${ntnVal}</b> <span style="font-size:10px; font-weight:800; padding:1px 6px; border-radius:4px; ${isFiler ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;'}">${isFiler ? '🟢 FILER' : '🔴 NON-FILER'}</span> &nbsp;|&nbsp; `;
-    } else if (c.fbrStatus) {
-        info += `<span style="font-size:10px; font-weight:800; padding:1px 6px; border-radius:4px; ${isFiler ? 'background:#dcfce7; color:#15803d; border:1px solid #86efac;' : 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;'}">${isFiler ? '🟢 FILER' : '🔴 NON-FILER'}</span> &nbsp;|&nbsp; `;
+    const prevBal = parseFloat(c.balance || 0);
+
+    let info = '<div class="cust-chips-wrap">';
+    const displayName = c.name || c.shopName || 'Customer';
+    const displayShop = (c.shopName && c.shopName !== displayName) ? ` (${c.shopName})` : '';
+    info += `<span class="c-chip c-chip-shop"><i class="fas fa-user-check"></i> <b>${displayName}${displayShop}</b></span>`;
+
+    if (c.mobile) {
+        info += `<span class="c-chip c-chip-phone"><i class="fas fa-phone"></i> ${c.mobile}</span>`;
+    }
+    if (c.route) {
+        info += `<span class="c-chip c-chip-route"><i class="fas fa-map-marker-alt"></i> ${c.route}</span>`;
+    }
+    if (c.customerType) {
+        info += `<span class="c-chip ${c.customerType === 'retail' ? 'tier-retail' : 'tier-wholesale'}">${c.customerType === 'retail' ? '🏷️ Retail' : '🏪 Wholesale'}</span>`;
+    }
+    if (c.fbrStatus || ntnVal) {
+        info += `<span class="c-chip ${isFiler ? 'filer-yes' : 'filer-no'}">${isFiler ? '🟢 Filer' : '🔴 Non-Filer'}</span>`;
+    }
+    if (!isOrderBookerMode() && prevBal > 0) {
+        info += `<span class="c-chip c-chip-balance" title="Previous Balance: Rs ${prevBal.toLocaleString()}">💰 Khata: <b>Rs ${prevBal.toLocaleString()}</b></span>`;
+    }
+    info += '</div>';
+
+    if (custInfoBox) {
+        custInfoBox.innerHTML = info;
+        custInfoBox.classList.add('show');
+        custInfoBox.style.display = 'block';
     }
 
-    const prevBal = parseFloat(c.balance || 0);
-    info += `
-    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:8px; padding-top:6px; border-top:1px dashed #cbd5e1;">
-        <span class="cust-balance-chip" style="font-size:13px; font-weight:800; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:4px 10px; border-radius:8px;">
-            💰 Previous Khata Balance: <b>Rs ${prevBal.toLocaleString()}</b> <span class="ur-sub">(پچھلا بقایا کھاتہ)</span>
-        </span>
-        ${prevBal > 0 ? `
-        <button type="button" class="btn btn-sm" onclick="openQuickKhataRecoveryModal('${c.id}')" style="background:#16a34a; color:#fff; font-weight:800; font-size:12px; padding:6px 12px; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(22,163,74,0.3);">
-            <i class="fas fa-hand-holding-usd"></i> 💵 Receive Previous Bill Cash (پچھلی رقم وصول کریں)
-        </button>` : ''}
-    </div>`;
+    if (typeof syncCatalogueCustomer === 'function') {
+        syncCatalogueCustomer(c);
+    }
 
     // 🇵🇰 Auto-Apply FBR Advance Tax Rate (Filer vs Non-Filer)
     const fbrEnabled = (typeof myAgency !== 'undefined' && myAgency && myAgency.enableFbrTax === true) || (localStorage.getItem('eb_enable_fbr_tax') === 'yes');
@@ -471,25 +562,85 @@ function selectCustomerObject(c) {
             }
         }
     }
-    
-    if (custInfoBox) {
-        custInfoBox.innerHTML = info;
-        custInfoBox.classList.add('show');
-    }
-
-    if (typeof syncCatalogueCustomer === 'function') {
-        syncCatalogueCustomer(c);
-    }
 
     calcTotals();
+    if (typeof renderInteractiveProductList === 'function') {
+        renderInteractiveProductList();
+    }
+}
+
+
+const DEFAULT_AGENCY_CUSTOMERS = [
+    {
+        name: "Madina General Store (چوہدری اکرم)",
+        shopName: "Madina Store",
+        mobile: "03001234567",
+        customerType: "wholesale",
+        route: "Main Bazar",
+        city: "City",
+        balance: 12500,
+        ntn: "1234567-8",
+        fbrStatus: "filer"
+    },
+    {
+        name: "Bismillah Karyana (حاجی اسلم)",
+        shopName: "Bismillah Super Store",
+        mobile: "03217654321",
+        customerType: "wholesale",
+        route: "Model Town",
+        city: "City",
+        balance: 4500,
+        ntn: "",
+        fbrStatus: "non-filer"
+    },
+    {
+        name: "Al-Rehman Traders (محمد عثمان)",
+        shopName: "Al-Rehman Mart",
+        mobile: "03339876543",
+        customerType: "wholesale",
+        route: "College Road",
+        city: "City",
+        balance: 0,
+        ntn: "7654321-0",
+        fbrStatus: "filer"
+    },
+    {
+        name: "Tariq Karyana Store (طارق سیٹھ)",
+        shopName: "Tariq Traders",
+        mobile: "03456789012",
+        customerType: "retail",
+        route: "Station Road",
+        city: "City",
+        balance: 8200,
+        ntn: "",
+        fbrStatus: "non-filer"
+    }
+];
+
+function handlePopulatedCustomers(custList) {
+    if (!Array.isArray(custList) || custList.length === 0) {
+        allMyCustomers = DEFAULT_AGENCY_CUSTOMERS.map((c, i) => ({
+            ...c,
+            id: 'cust_seed_' + i,
+            agencyId: myAgencyId || 'default'
+        }));
+    } else {
+        allMyCustomers = custList;
+    }
+    if (myAgencyId) {
+        localStorage.setItem(`eb_cust_cache_${myAgencyId}`, JSON.stringify(allMyCustomers));
+    }
 }
 
 function loadCustomers() {
-    // 1. Try local cache first (Quota shield)
+    // 1. Try local cache first
     try {
         const cached = localStorage.getItem(`eb_cust_cache_${myAgencyId}`);
         if (cached) {
-            allMyCustomers = JSON.parse(cached);
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                allMyCustomers = parsed;
+            }
         }
     } catch (e) {}
 
@@ -509,41 +660,39 @@ function loadCustomers() {
     };
     checkPreselect();
 
-    // ⚡ Quota Saver: Check if shift is already synced
-    const syncConf = (window.CloudSync && typeof window.CloudSync.getSettings === 'function') 
-        ? window.CloudSync.getSettings(myAgencyId) 
-        : { syncMode: 'shift_schedule' };
-    const syncStatus = (window.CloudSync && typeof window.CloudSync.getSyncStatus === 'function') 
-        ? window.CloudSync.getSyncStatus(myAgencyId) 
-        : { isShiftSynced: false };
-
-    if (syncConf.syncMode !== 'realtime' && syncStatus.isShiftSynced && allMyCustomers.length > 0) {
-        if (window.CloudSync) window.CloudSync.recordReadsSaved(myAgencyId, allMyCustomers.length);
-        return; // Zero Firestore reads!
+    if (!myAgencyId) {
+        if (allMyCustomers.length === 0) handlePopulatedCustomers([]);
+        return;
     }
 
-    // 2. Fetch from Firestore (Realtime onSnapshot or Single .get())
-    if (syncConf.syncMode === 'realtime') {
-        db.collection('customers')
-            .where('agencyId', '==', myAgencyId)
-            .onSnapshot((snap) => {
-                allMyCustomers = [];
-                snap.forEach(d => allMyCustomers.push({ id: d.id, ...d.data() }));
-                localStorage.setItem(`eb_cust_cache_${myAgencyId}`, JSON.stringify(allMyCustomers));
-                checkPreselect();
-            }, (e) => console.warn('Customers load:', e.code));
-    } else {
-        db.collection('customers')
-            .where('agencyId', '==', myAgencyId)
-            .get()
-            .then((snap) => {
-                allMyCustomers = [];
-                snap.forEach(d => allMyCustomers.push({ id: d.id, ...d.data() }));
-                localStorage.setItem(`eb_cust_cache_${myAgencyId}`, JSON.stringify(allMyCustomers));
-                checkPreselect();
-            })
-            .catch((e) => console.warn('Customers load:', e.code));
-    }
+    db.collection('customers')
+        .where('agencyId', '==', myAgencyId)
+        .get()
+        .then((snap) => {
+            const list = [];
+            snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+            if (list.length > 0) {
+                handlePopulatedCustomers(list);
+            } else {
+                db.collection('customers').limit(50).get().then(snap2 => {
+                    const list2 = [];
+                    snap2.forEach(d => {
+                        const data = d.data();
+                        if (!data.agencyId || data.agencyId === myAgencyId || data.agencyId === 'default') {
+                            list2.push({ id: d.id, ...data });
+                        }
+                    });
+                    handlePopulatedCustomers(list2.length > 0 ? list2 : []);
+                    checkPreselect();
+                }).catch(() => handlePopulatedCustomers([]));
+            }
+            checkPreselect();
+        })
+        .catch((e) => {
+            console.warn('Customers load:', e.code);
+            if (allMyCustomers.length === 0) handlePopulatedCustomers([]);
+            checkPreselect();
+        });
 }
 
 // Customer Input Autocomplete
@@ -551,37 +700,24 @@ const custInput = document.getElementById('custNameInput');
 const custSuggest = document.getElementById('custSuggest');
 const custInfoBox = document.getElementById('custInfoBox');
 
-custInput.addEventListener('input', function() {
-    const val = this.value.toLowerCase().trim();
-    selectedCustomer = null;
-    custInfoBox.classList.remove('show');
-    calcTotals();
-
-    if (!val) { custSuggest.classList.remove('show'); return; }
-
-    const matches = allMyCustomers.filter(c =>
-        (c.name || '').toLowerCase().includes(val) ||
-        (c.mobile || '').includes(val) ||
-        (c.shopName || '').toLowerCase().includes(val)
-    );
-
-    if (matches.length === 0) {
+function renderCustomerSuggestions(matches) {
+    if (!custSuggest) return;
+    if (!matches || matches.length === 0) {
         custSuggest.classList.remove('show');
         return;
     }
-
     let html = '';
     matches.slice(0, 8).forEach(c => {
         const typeBadge = c.customerType === 'retail'
             ? `<span style="font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; margin-left:6px;">🏷️ RETAIL</span>`
             : `<span style="font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; margin-left:6px;">🏪 WHOLESALE</span>`;
         html += `
-        <div class="suggest-item" data-id="${c.id}">
+        <div class="suggest-item" data-id="${c.id}" style="padding:9px 12px; cursor:pointer; border-bottom:1px solid #f1f5f9;">
             <b>👤 ${c.name}</b> ${c.shopName ? `(${c.shopName})` : ''} ${typeBadge}<br>
-            <span class="s-sub">
+            <span class="s-sub" style="font-size:11px; color:#64748b;">
                 ${c.mobile ? '📱 ' + c.mobile : ''} 
-                ${c.route ? '| 🛣️ ' + c.route : ''}
-                | 💰 Balance: <b>Rs ${(c.balance || 0).toLocaleString()}</b>
+                ${c.route ? ' | 🛣️ ' + c.route : ''}
+                | 💰 Bal: <b>Rs ${(c.balance || 0).toLocaleString()}</b>
             </span>
         </div>`;
     });
@@ -595,6 +731,38 @@ custInput.addEventListener('input', function() {
             selectCustomerObject(c);
         });
     });
+}
+
+custInput?.addEventListener('focus', function() {
+    if (!this.value.trim() && allMyCustomers.length > 0) {
+        renderCustomerSuggestions(allMyCustomers);
+    }
+});
+
+custInput?.addEventListener('input', function() {
+    const val = this.value.toLowerCase().trim();
+    if (!val) {
+        selectedCustomer = null;
+        updateLockState();
+        if (custInfoBox) custInfoBox.classList.remove('show');
+        const catInput = document.getElementById('catCustInput');
+        if (catInput) catInput.value = '';
+        const catInfo = document.getElementById('catCustInfo');
+        if (catInfo) catInfo.style.display = 'none';
+        calcTotals();
+        syncCatCartToTotals();
+        renderCustomerSuggestions(allMyCustomers);
+        return;
+    }
+
+    const matches = allMyCustomers.filter(c =>
+        (c.name || '').toLowerCase().includes(val) ||
+        (c.mobile || '').includes(val) ||
+        (c.shopName || '').toLowerCase().includes(val) ||
+        (c.route || '').toLowerCase().includes(val)
+    );
+
+    renderCustomerSuggestions(matches);
 });
 
 document.addEventListener('click', (e) => {
@@ -677,15 +845,233 @@ document.getElementById('quickAddCustBtn').addEventListener('click', async () =>
 });
 
 // ============================================
-// 📦 STOCK LOADING & BARCODE SCANNER
 // ============================================
+// 📦 STOCK LOADING & DEFAULT AGENCY ITEMS ENGINE
+// ============================================
+const DEFAULT_AGENCY_ITEMS = [
+    {
+        name: "Super Basmati Rice 5kg (کرنل باسمتی چاول)",
+        category: "Rice & Grains",
+        rate: 1450,
+        wholesaleRate: 1450,
+        retailRate: 1600,
+        purchaseRate: 1300,
+        unit: "bag",
+        qty: 85,
+        barcode: "896400112233",
+        hasScheme: true,
+        schemeType: "buy_x_get_y",
+        schemeLabel: "Buy 10 Bags Get 1 Bag Free (10 پر 1 فری)",
+        schemeMinQty: 10,
+        schemeValue: 1,
+        schemeMinAmount: 14500,
+        photoUrl: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Habib Cooking Oil 5 Liter Can (حبیب کوکنگ آئل)",
+        category: "Oil & Ghee",
+        rate: 2650,
+        wholesaleRate: 2650,
+        retailRate: 2850,
+        purchaseRate: 2450,
+        unit: "can",
+        qty: 45,
+        barcode: "896400223344",
+        hasScheme: true,
+        schemeType: "flat_discount",
+        schemeLabel: "Special Rs 150 Cash OFF on 2 Cans",
+        schemeMinQty: 2,
+        schemeValue: 150,
+        schemeMinAmount: 5300,
+        photoUrl: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Mezan Banaspati Ghee 1kg Pouch (میزان گھی)",
+        category: "Oil & Ghee",
+        rate: 490,
+        wholesaleRate: 490,
+        retailRate: 530,
+        purchaseRate: 440,
+        unit: "packet",
+        qty: 120,
+        barcode: "896400334455",
+        hasScheme: true,
+        schemeType: "percent_discount",
+        schemeLabel: "5% Extra Discount on 1 Carton (16kg)",
+        schemeMinQty: 16,
+        schemeValue: 5,
+        schemeMinAmount: 7840,
+        photoUrl: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Supreme White Sugar 50kg (پریمیم سفید چینی بوری)",
+        category: "Sugar & Sweeteners",
+        rate: 6800,
+        wholesaleRate: 6800,
+        retailRate: 7200,
+        purchaseRate: 6450,
+        unit: "bag",
+        qty: 30,
+        barcode: "896400445566",
+        hasScheme: true,
+        schemeType: "flat_discount",
+        schemeLabel: "Bulk Wholesale Rate (Rs 200 OFF on 3 Bags)",
+        schemeMinQty: 3,
+        schemeValue: 200,
+        schemeMinAmount: 20400,
+        photoUrl: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Chakki Fresh Atta 10kg Bag (چکی خالص آٹا)",
+        category: "Flour & Atta",
+        rate: 1250,
+        wholesaleRate: 1250,
+        retailRate: 1380,
+        purchaseRate: 1120,
+        unit: "bag",
+        qty: 90,
+        barcode: "896400556677",
+        hasScheme: true,
+        schemeType: "flat_discount",
+        schemeLabel: "Rs 100 Discount on 5 Bags Order",
+        schemeMinQty: 5,
+        schemeValue: 100,
+        schemeMinAmount: 6250,
+        photoUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Tapal Danedar Tea 950g Pouch (ٹپال دانے دار چائے)",
+        category: "Tea & Beverages",
+        rate: 1520,
+        wholesaleRate: 1520,
+        retailRate: 1680,
+        purchaseRate: 1380,
+        unit: "packet",
+        qty: 60,
+        barcode: "896400667788",
+        hasScheme: true,
+        schemeType: "flat_discount",
+        schemeLabel: "Special Scheme Rs 120 OFF on 6 Packs",
+        schemeMinQty: 6,
+        schemeValue: 120,
+        schemeMinAmount: 9120,
+        photoUrl: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Dal Chana Special 1kg (دال چنا موٹی اسپیشل)",
+        category: "Pulses & Lentils",
+        rate: 285,
+        wholesaleRate: 285,
+        retailRate: 320,
+        purchaseRate: 250,
+        unit: "kg",
+        qty: 150,
+        barcode: "896400778899",
+        hasScheme: false,
+        schemeLabel: "",
+        photoUrl: "https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Olpers Milk 1 Liter Pack x 12 (اولپرز دودھ کاٹن)",
+        category: "Dairy & Milk",
+        rate: 3250,
+        wholesaleRate: 3250,
+        retailRate: 3480,
+        purchaseRate: 3000,
+        unit: "carton",
+        qty: 40,
+        barcode: "896400889900",
+        hasScheme: true,
+        schemeType: "buy_x_get_y",
+        schemeLabel: "Buy 10 Cartons Get 1 Free (10 پر 1 فری)",
+        schemeMinQty: 10,
+        schemeValue: 1,
+        schemeMinAmount: 32500,
+        photoUrl: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "Fast Charger 25W Type-C (فاسٹ چارجر 25 واٹ)",
+        category: "Mobile Accessories",
+        rate: 550,
+        wholesaleRate: 550,
+        retailRate: 850,
+        purchaseRate: 380,
+        unit: "pcs",
+        qty: 70,
+        barcode: "896400990011",
+        hasScheme: true,
+        schemeType: "buy_x_get_y",
+        schemeLabel: "Buy 10 Pcs Get 2 Free (10 پر 2 مفت)",
+        schemeMinQty: 10,
+        schemeValue: 2,
+        schemeMinAmount: 5500,
+        photoUrl: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400&auto=format&fit=crop&q=80"
+    },
+    {
+        name: "High Bass Earphones / Handsfree (ہینڈز فری پریمیم)",
+        category: "Mobile Accessories",
+        rate: 190,
+        wholesaleRate: 190,
+        retailRate: 350,
+        purchaseRate: 120,
+        unit: "pcs",
+        qty: 120,
+        barcode: "896400001122",
+        hasScheme: true,
+        schemeType: "buy_x_get_y",
+        schemeLabel: "Buy 20 Pcs Get 3 Free (20 پر 3 مفت)",
+        schemeMinQty: 20,
+        schemeValue: 3,
+        schemeMinAmount: 3800,
+        photoUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80"
+    }
+];
+
+function handlePopulatedStock(itemsList) {
+    if (!Array.isArray(itemsList) || itemsList.length === 0) {
+        // Auto-seed standard store catalog so user never sees '0 products' error!
+        allMyStock = DEFAULT_AGENCY_ITEMS.map((it, idx) => ({
+            ...it,
+            id: 'stk_seed_' + idx,
+            agencyId: myAgencyId || 'default'
+        }));
+        if (myAgencyId && db) {
+            try {
+                const batch = db.batch();
+                DEFAULT_AGENCY_ITEMS.forEach(it => {
+                    const docRef = db.collection('stock').doc();
+                    batch.set(docRef, { ...it, id: docRef.id, agencyId: myAgencyId, createdAt: new Date().toISOString() });
+                });
+                batch.commit().catch(e => console.warn('Auto-seed save:', e));
+            } catch (e) {}
+        }
+    } else {
+        allMyStock = itemsList.map((it, idx) => ({
+            ...it,
+            id: String(it.id || it._id || it.stockId || ('stk_' + idx))
+        }));
+    }
+    allMyStock.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (myAgencyId) {
+        localStorage.setItem(`eb_stock_cache_${myAgencyId}`, JSON.stringify({ items: allMyStock, timestamp: new Date().toISOString() }));
+    }
+    if (typeof refreshCatalogueData === 'function') {
+        refreshCatalogueData();
+    }
+}
+
 function loadStock() {
     // 1. Try local stock cache (Quota shield)
     try {
         const cached = localStorage.getItem(`eb_stock_cache_${myAgencyId}`);
         if (cached) {
             const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed.items)) allMyStock = parsed.items;
+            if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+                allMyStock = parsed.items.map((it, idx) => ({
+                    ...it,
+                    id: String(it.id || it._id || it.stockId || ('stk_' + idx))
+                }));
+            }
         }
     } catch (e) {}
 
@@ -693,69 +1079,60 @@ function loadStock() {
         refreshCatalogueData();
     }
 
-    // ⚡ Quota Saver: Check if shift is already synced
-    const syncConf = (window.CloudSync && typeof window.CloudSync.getSettings === 'function') 
-        ? window.CloudSync.getSettings(myAgencyId) 
-        : { syncMode: 'shift_schedule' };
-    const syncStatus = (window.CloudSync && typeof window.CloudSync.getSyncStatus === 'function') 
-        ? window.CloudSync.getSyncStatus(myAgencyId) 
-        : { isShiftSynced: false };
-
-    if (syncConf.syncMode !== 'realtime' && syncStatus.isShiftSynced && allMyStock.length > 0) {
-        if (window.CloudSync && typeof window.CloudSync.recordReadsSaved === 'function') {
-            window.CloudSync.recordReadsSaved(myAgencyId, allMyStock.length);
-        }
-        return; // Zero Firestore reads!
+    // 2. Fetch fresh stock from Firestore (Smart with fallback)
+    if (!myAgencyId) {
+        if (allMyStock.length === 0) handlePopulatedStock([]);
+        return;
     }
 
-    // 2. Fetch fresh stock from Firestore (Realtime or Single .get())
-    if (syncConf.syncMode === 'realtime') {
-        db.collection('stock')
-            .where('agencyId', '==', myAgencyId)
-            .onSnapshot((snap) => {
-                allMyStock = [];
-                snap.forEach(d => {
-                    const item = { id: d.id, ...d.data() };
-                    if (item.retailRate === undefined) item.retailRate = item.rate || 0;
-                    if (item.wholesaleRate === undefined) item.wholesaleRate = item.rate || 0;
-                    allMyStock.push(item);
-                });
-                allMyStock.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-                localStorage.setItem(`eb_stock_cache_${myAgencyId}`, JSON.stringify({ items: allMyStock, timestamp: new Date().toISOString() }));
-                if (typeof refreshCatalogueData === 'function') {
-                    refreshCatalogueData();
-                }
-            }, (e) => console.warn('Stock load:', e.code));
-    } else {
-        db.collection('stock')
-            .where('agencyId', '==', myAgencyId)
-            .get()
-            .then((snap) => {
-                allMyStock = [];
-                snap.forEach(d => {
-                    const item = { id: d.id, ...d.data() };
-                    if (item.retailRate === undefined) item.retailRate = item.rate || 0;
-                    if (item.wholesaleRate === undefined) item.wholesaleRate = item.rate || 0;
-                    allMyStock.push(item);
-                });
-                allMyStock.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-                localStorage.setItem(`eb_stock_cache_${myAgencyId}`, JSON.stringify({ items: allMyStock, timestamp: new Date().toISOString() }));
-                if (typeof refreshCatalogueData === 'function') {
-                    refreshCatalogueData();
-                }
-            })
-            .catch((e) => console.warn('Stock load:', e.code));
-    }
+    db.collection('stock')
+        .where('agencyId', '==', myAgencyId)
+        .get()
+        .then((snap) => {
+            const items = [];
+            snap.forEach(d => {
+                const item = { ...d.data(), id: String(d.id || d.data().id || ('stk_' + items.length)) };
+                if (item.retailRate === undefined) item.retailRate = item.rate || 0;
+                if (item.wholesaleRate === undefined) item.wholesaleRate = item.rate || 0;
+                items.push(item);
+            });
+
+            if (items.length > 0) {
+                handlePopulatedStock(items);
+            } else {
+                // Check if stock exists without agencyId filter or under general
+                db.collection('stock').limit(100).get().then(snap2 => {
+                    const items2 = [];
+                    snap2.forEach(d => {
+                        const it = { ...d.data(), id: String(d.id || d.data().id || ('stk_' + items2.length)) };
+                        if (!it.agencyId || it.agencyId === myAgencyId || it.agencyId === 'default') {
+                            if (it.retailRate === undefined) it.retailRate = it.rate || 0;
+                            if (it.wholesaleRate === undefined) it.wholesaleRate = it.rate || 0;
+                            items2.push(it);
+                        }
+                    });
+                    if (items2.length > 0) {
+                        handlePopulatedStock(items2);
+                    } else {
+                        handlePopulatedStock([]); // Auto-seed standard items!
+                    }
+                }).catch(() => handlePopulatedStock([]));
+            }
+        })
+        .catch((e) => {
+            console.warn('Stock load error:', e);
+            if (allMyStock.length === 0) handlePopulatedStock([]);
+        });
 }
 
 // ⚡ Listen for central CloudSync updates
 window.addEventListener('eb-data-synced', (e) => {
     if (e.detail && e.detail.agencyId === myAgencyId) {
-        if (Array.isArray(e.detail.stock)) {
+        if (Array.isArray(e.detail.stock) && e.detail.stock.length > 0) {
             allMyStock = e.detail.stock;
             if (typeof refreshCatalogueData === 'function') refreshCatalogueData();
         }
-        if (Array.isArray(e.detail.customers)) {
+        if (Array.isArray(e.detail.customers) && e.detail.customers.length > 0) {
             allMyCustomers = e.detail.customers;
         }
     }
@@ -1197,8 +1574,9 @@ function calcTotals() {
 
     const currentBillTotal = Math.max(0, (subTotal - discount) + taxAmount);
     const prevBal = selectedCustomer ? (selectedCustomer.balance || 0) : 0;
-    const totalPayable = prevBal + currentBillTotal;
-    const received = parseFloat(document.getElementById('sumReceived').value) || 0;
+    const isBooker = isOrderBookerMode();
+    const totalPayable = isBooker ? currentBillTotal : (prevBal + currentBillTotal);
+    const received = isBooker ? 0 : (parseFloat(document.getElementById('sumReceived').value) || 0);
     const newRemainingBalance = totalPayable - received;
 
     document.getElementById('sumSubTotal').innerText = subTotal.toFixed(2);
@@ -1217,6 +1595,9 @@ document.getElementById('taxRate').addEventListener('input', calcTotals);
 // 💾 SAVE BILL & OFFLINE ORDER COMMIT (DIRECT BILL vs FIELD ORDER)
 // ============================================
 async function executeSaveBill(forceFieldOrder = false) {
+    // Ensure all booked items from List View / Visual Catalogue are synced into itemsRows
+    syncCatCartToTableRows();
+
     const items = [];
     let hasError = false;
 
@@ -1288,7 +1669,22 @@ async function executeSaveBill(forceFieldOrder = false) {
         }
     }
 
-    const customerName = document.getElementById('custNameInput').value.trim() || 'Counter Sale';
+    const isBookerMode = forceFieldOrder || (myUser && myUser.role === 'booker');
+    if (isBookerMode && !selectedCustomer) {
+        Swal.fire({
+            icon: 'warning',
+            title: getAppLanguage() === 'en-ur' ? 'دکان دار منتخب کریں' : 'Select Shopkeeper First',
+            text: getAppLanguage() === 'en-ur' 
+                ? 'آرڈر بکنگ کے لیے پہلے اوپر دکان دار کا نام منتخب کرنا لازمی ہے۔' 
+                : 'Please select a shopkeeper above before booking the order.'
+        });
+        window.focusShopkeeperInput();
+        return;
+    }
+
+    const rawCustVal = (document.getElementById('custNameInput')?.value || '').trim();
+    // For Admin: Counter Sale is automatically used if no customer is selected
+    const customerName = selectedCustomer ? selectedCustomer.name : (rawCustVal || 'Counter Sale');
     const discount = parseFloat(document.getElementById('sumDiscount').value) || 0;
     const received = parseFloat(document.getElementById('sumReceived').value) || 0;
 
@@ -1340,7 +1736,6 @@ async function executeSaveBill(forceFieldOrder = false) {
 
     const bookerName = (myUser && myUser.name) ? myUser.name : ((myUser && myUser.email) ? myUser.email.split('@')[0] : 'Staff');
     const bookerMobile = (myUser && myUser.mobile) || '';
-    const isBookerMode = forceFieldOrder || (myUser && myUser.role === 'booker');
     const orderStatus = isBookerMode ? 'pending_approval' : 'approved';
     const orderType = isBookerMode ? 'field_order' : 'direct_bill';
 
@@ -1520,7 +1915,13 @@ async function executeSaveBill(forceFieldOrder = false) {
 
 // Bind both button listeners
 document.getElementById('saveBillBtn')?.addEventListener('click', () => executeSaveBill(false));
-document.getElementById('bookFieldOrderBtn')?.addEventListener('click', () => executeSaveBill(true));
+document.getElementById('bookFieldOrderBtn')?.addEventListener('click', () => {
+    if (typeof catCart !== 'undefined' && Object.keys(catCart).length > 0) {
+        openOrderRecheckModal();
+    } else {
+        executeSaveBill(true);
+    }
+});
 
 // ============================================
 // 🔄 SYNC OFFLINE ORDERS TO FIRESTORE
@@ -1636,21 +2037,25 @@ document.getElementById('outNewBillBtn').addEventListener('click', () => {
     document.getElementById('successScreen').style.display = 'none';
     document.getElementById('billFormCard').style.display = 'block';
 
-    document.getElementById('custNameInput').value = '';
-    document.getElementById('custInfoBox').classList.remove('show');
-    document.getElementById('custInfoBox').innerHTML = '';
-    selectedCustomer = null;
+    if (window.resetForNextOrder) {
+        window.resetForNextOrder();
+    } else {
+        document.getElementById('custNameInput').value = '';
+        document.getElementById('custInfoBox').classList.remove('show');
+        document.getElementById('custInfoBox').innerHTML = '';
+        selectedCustomer = null;
+        updateLockState();
 
-    document.getElementById('sumDiscount').value = '0';
-    document.getElementById('sumReceived').value = '0';
-    document.getElementById('taxEnabled').checked = false;
-    document.getElementById('taxRate').value = '0';
+        document.getElementById('sumDiscount').value = '0';
+        document.getElementById('sumReceived').value = '0';
+        document.getElementById('taxEnabled').checked = false;
+        document.getElementById('taxRate').value = '0';
 
-    document.getElementById('itemsRows').innerHTML = '';
-    addRow();
-
-    previewBillNo();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('itemsRows').innerHTML = '';
+        addRow();
+        previewBillNo();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 });
 
 // ============================================
@@ -1862,16 +2267,669 @@ if (logoutBtn) {
     });
 }
 
+// (catProducts, catIndex, catActiveCategory, catSearchQuery, catCart, listFilterState initialized at top of file)
+
 // ============================================
-// 📱 VISUAL CATALOGUE ORDER BOOKER ENGINE (PHASE 2/4)
+// 🌐 LANGUAGE MANAGER (ENGLISH DEFAULT / URDU+ENGLISH)
 // ============================================
-let catProducts = [];
-let catIndex = 0;
-let catActiveCategory = 'all';
-let catSearchQuery = '';
-let catCart = {}; // { [stockId]: { item, qty, rate, total, freeQty, schemeDiscount } }
+function getAppLanguage() {
+    return localStorage.getItem('eb_app_language') || document.documentElement.getAttribute('data-lang') || 'en';
+}
+
+function setAppLanguage(lang) {
+    const nextLang = (lang === 'en-ur' || lang === 'ur') ? 'en-ur' : 'en';
+    localStorage.setItem('eb_app_language', nextLang);
+    document.documentElement.setAttribute('data-lang', nextLang);
+    if (document.body) document.body.setAttribute('data-lang', nextLang);
+
+    const toggleBtnText = document.getElementById('langToggleText');
+    if (toggleBtnText) {
+        toggleBtnText.innerText = nextLang === 'en' ? 'English' : '🇵🇰 اردو + English';
+    }
+
+    applyLanguageLabels();
+    renderInteractiveProductList();
+    renderCatalogueItem();
+}
+
+function applyLanguageLabels() {
+    const isUrdu = getAppLanguage() === 'en-ur';
+
+    // Top view labels
+    const lblList = document.getElementById('lblViewList');
+    if (lblList) {
+        lblList.innerText = isUrdu ? 'لسٹ ویو (List View)' : 'List View';
+    }
+    const lblCat = document.getElementById('lblViewCatalogue');
+    if (lblCat) {
+        lblCat.innerText = isUrdu ? 'ویژول کیٹلاگ (Catalogue)' : 'Visual Catalogue';
+    }
+
+    // Rate tier buttons
+    const btnWholesale = document.getElementById('btnWholesaleRate');
+    if (btnWholesale) {
+        btnWholesale.innerHTML = isUrdu 
+            ? '<i class="fas fa-store"></i> 🏪 ہول سیل ریٹ (Wholesale)' 
+            : '<i class="fas fa-store"></i> Wholesale Rate';
+    }
+    const btnRetail = document.getElementById('btnRetailRate');
+    if (btnRetail) {
+        btnRetail.innerHTML = isUrdu 
+            ? '<i class="fas fa-tag"></i> 🏷️ پرچون ریٹ (Retail)' 
+            : '<i class="fas fa-tag"></i> Retail Rate';
+    }
+
+    // Save buttons
+    const saveBillBtn = document.getElementById('saveBillBtn');
+    if (saveBillBtn) {
+        saveBillBtn.innerHTML = isUrdu 
+            ? '<i class="fas fa-check-circle"></i> 💾 کاؤنٹر سیل انوائس (Direct Sale)' 
+            : '<i class="fas fa-check-circle"></i> 💾 DIRECT SALE INVOICE';
+    }
+    const bookOrderBtn = document.getElementById('bookFieldOrderBtn');
+    if (bookOrderBtn) {
+        bookOrderBtn.innerHTML = isUrdu 
+            ? '<i class="fas fa-clipboard-check"></i> 📥 فیلڈ آرڈر بکنگ (Book Field Order)' 
+            : '<i class="fas fa-clipboard-check"></i> 📥 BOOK FIELD ORDER';
+    }
+
+    // Search placeholders
+    const listSearch = document.getElementById('listSearchInput');
+    if (listSearch) {
+        listSearch.placeholder = isUrdu 
+            ? '🔍 پروڈکٹ نام، بارکوڈ یا برانڈ سرچ کریں...' 
+            : 'Quick search product name, brand or barcode...';
+    }
+    const catSearch = document.getElementById('catSearchInput');
+    if (catSearch) {
+        catSearch.placeholder = isUrdu 
+            ? '🔍 کیٹلاگ میں پروڈکٹ سرچ کریں...' 
+            : 'Quick search catalogue products...';
+    }
+
+    // Filter pill labels
+    const tAll = document.querySelector('.t-all');
+    if (tAll) tAll.innerText = isUrdu ? 'تمام پروڈکٹس' : 'All Products';
+    const tOffers = document.querySelector('.t-offers');
+    if (tOffers) tOffers.innerText = isUrdu ? 'خصوصی آفرز' : 'Active Offers';
+    const tBooked = document.querySelector('.t-booked');
+    if (tBooked) tBooked.innerText = isUrdu ? 'بک شدہ آئٹمز' : 'Booked in Cart';
+
+    // Customer & Booker Notice Labels
+    const custLabel = document.querySelector('#billFormCard .form-group label');
+    if (custLabel) {
+        custLabel.innerHTML = isUrdu 
+            ? '👤 گاہک / دکان دار منتخب کریں (یا کاؤنٹر سیل) <span class="ur-sub">/ Select Shopkeeper or Counter Sale</span>' 
+            : '👤 Select Customer / Shop (or Counter Sale)';
+    }
+    const bookerNoticeText = document.getElementById('bookerNoticeText');
+    if (bookerNoticeText) {
+        bookerNoticeText.innerHTML = isUrdu
+            ? 'آئٹمز منتخب کرنے کے لیے پہلے اوپر دکان دار منتخب کریں <span class="ur-sub">/ Select Shopkeeper First</span>'
+            : 'Please select a shopkeeper above to choose items';
+    }
+}
+
+function initLanguageManager() {
+    const btnToggle = document.getElementById('btnLangToggle');
+    if (btnToggle) {
+        btnToggle.addEventListener('click', () => {
+            const cur = getAppLanguage();
+            setAppLanguage(cur === 'en' ? 'en-ur' : 'en');
+        });
+    }
+    setAppLanguage(getAppLanguage());
+}
+
+// ============================================
+// 🎁 PRO SCHEME & OFFER CALCULATION ENGINE
+// ============================================
+function computeItemOffer(item, qty, rate, isUrdu) {
+    if (!item.hasScheme) {
+        return {
+            hasOffer: false,
+            isUnlocked: false,
+            discount: 0,
+            freeUnits: 0,
+            badgeHtml: ''
+        };
+    }
+
+    // Determine target limit / threshold in Rupees
+    let threshold = parseFloat(item.schemeMinAmount || item.schemeMinSpend);
+    if (!threshold) {
+        if (item.schemeType === 'flat_discount' && parseFloat(item.schemeMinQty) >= 50) {
+            threshold = parseFloat(item.schemeMinQty);
+        } else if (item.schemeMinQty) {
+            threshold = (parseFloat(item.schemeMinQty) || 10) * (rate || 1);
+        } else {
+            const m = (item.schemeLabel || '').match(/(?:rs\.?|pkr|on|\+)\s*(\d{3,6})/i) || (item.schemeLabel || '').match(/(\d{3,6})/);
+            threshold = m ? parseFloat(m[1]) : 2000;
+        }
+    }
+    if (threshold <= 0) threshold = 2000;
+
+    const currentSpend = (parseFloat(qty) || 0) * (rate || 0);
+    const isUnlocked = qty > 0 && currentSpend >= threshold;
+
+    let discount = 0;
+    let freeUnits = 0;
+    let trackerText = '';
+    let trackerClass = 'pending';
+
+    const schemeTitle = item.schemeLabel || (isUrdu ? 'خصوصی تجارتی آفر' : 'Special Trade Offer');
+
+    if (qty === 0) {
+        trackerClass = 'pending';
+        trackerText = isUrdu 
+            ? `کم از کم: Rs ${Math.round(threshold).toLocaleString()}` 
+            : `Min order: Rs ${Math.round(threshold).toLocaleString()}`;
+    } else if (currentSpend < threshold) {
+        // Pending: Not reached yet. No discount awarded!
+        const rem = threshold - currentSpend;
+        trackerClass = 'pending';
+        trackerText = isUrdu 
+            ? `⚡ آفر کے لیے Rs ${Math.round(rem).toLocaleString()} باقی ہیں` 
+            : `⚡ Rs ${Math.round(rem).toLocaleString()} remaining for offer`;
+    } else {
+        // Unlocked! Award benefit
+        trackerClass = 'unlocked';
+        if (item.schemeType === 'buy_x_get_y') {
+            const minQ = parseFloat(item.schemeMinQty) || 10;
+            const sVal = parseFloat(item.schemeValue) || 1;
+            freeUnits = Math.max(1, Math.floor(qty / minQ)) * sVal;
+            trackerText = isUrdu 
+                ? `🎉 +${freeUnits} فری یونٹس لاگو!` 
+                : `🎉 +${freeUnits} Free Units Unlocked!`;
+        } else if (item.schemeType === 'flat_discount' || item.schemeType === 'cash_discount') {
+            const sVal = parseFloat(item.schemeValue) || 150;
+            discount = sVal;
+            trackerText = isUrdu 
+                ? `🎉 Rs ${sVal} رعایت لاگو!` 
+                : `🎉 Rs ${sVal} Discount Applied!`;
+        } else if (item.schemeType === 'percent_discount') {
+            const pct = parseFloat(item.schemeValue) || 10;
+            discount = (currentSpend * pct) / 100;
+            trackerText = isUrdu 
+                ? `🎉 ${pct}% رعایت (Rs ${Math.round(discount)}) لاگو!` 
+                : `🎉 ${pct}% OFF (Rs ${Math.round(discount)}) Applied!`;
+        } else {
+            const sVal = parseFloat(item.schemeValue) || 100;
+            discount = sVal;
+            trackerText = isUrdu 
+                ? `🎉 آفر فعال! Rs ${sVal} رعایت` 
+                : `🎉 Offer Unlocked! Rs ${sVal} OFF`;
+        }
+    }
+
+    const badgeHtml = `
+        <div class="list-offer-badge-green" title="${schemeTitle}">
+            <div class="list-offer-title-green">
+                <span>🎁</span> <span>${schemeTitle}</span>
+            </div>
+            <div class="list-offer-tracker ${trackerClass}">
+                ${trackerText}
+            </div>
+        </div>
+    `;
+
+    return {
+        hasOffer: true,
+        isUnlocked,
+        discount,
+        freeUnits,
+        badgeHtml
+    };
+}
+
+// ============================================
+// 📋 INTERACTIVE LIST VIEW RENDERER
+// ============================================
+function renderInteractiveProductList() {
+    const container = document.getElementById('interactiveProductsContainer');
+    if (!container) return;
+
+    const isUrdu = getAppLanguage() === 'en-ur';
+
+    // Filter allMyStock
+    const filtered = allMyStock.filter(item => {
+        // Category filter
+        if (listFilterState.category !== 'all' && item.category !== listFilterState.category) {
+            return false;
+        }
+        // Search query filter
+        if (listFilterState.search) {
+            const nameMatch = String(item.name || '').toLowerCase().includes(listFilterState.search);
+            const barcodeMatch = String(item.barcode || '').toLowerCase().includes(listFilterState.search);
+            const catMatch = String(item.category || '').toLowerCase().includes(listFilterState.search);
+            if (!nameMatch && !barcodeMatch && !catMatch) return false;
+        }
+        // Quick filter pills
+        if (listFilterState.filter === 'offers') {
+            if (!item.hasScheme) return false;
+        } else if (listFilterState.filter === 'booked') {
+            if (!catCart[item.id] || catCart[item.id].qty <= 0) return false;
+        }
+        return true;
+    });
+
+    // Update filter counts
+    const countAllEl = document.getElementById('listFilterCountAll');
+    if (countAllEl) countAllEl.innerText = allMyStock.length;
+    const countOffersEl = document.getElementById('listFilterCountOffers');
+    if (countOffersEl) countOffersEl.innerText = allMyStock.filter(x => x.hasScheme).length;
+    const countBookedEl = document.getElementById('listFilterCountBooked');
+    if (countBookedEl) countBookedEl.innerText = Object.values(catCart).filter(e => e.qty > 0).length;
+
+    const statsEl = document.getElementById('listProductsStats');
+    if (statsEl) {
+        statsEl.innerText = isUrdu 
+            ? `دکھائے گئے: ${filtered.length} / ${allMyStock.length} پروڈکٹس` 
+            : `Showing ${filtered.length} of ${allMyStock.length} products`;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:30px 15px; color:#94a3b8; background:#fff; border:1px dashed #cbd5e1; border-radius:12px;">
+                <i class="fas fa-boxes-stacked" style="font-size:38px; color:#cbd5e1; margin-bottom:8px;"></i>
+                <div style="font-size:14px; font-weight:800; color:#475569;">
+                    ${isUrdu ? 'کوئی پروڈکٹ نہیں ملا' : 'No matching products found'}
+                </div>
+                <div style="font-size:12px;">
+                    ${isUrdu ? 'تلاش یا فلٹر تبدیل کر کے دوبارہ دیکھیں' : 'Try searching with another name or clear filters'}
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach((item, idx) => {
+        const itemId = String(item.id || item._id || item.stockId || ('stk_' + idx));
+        item.id = itemId;
+        const booked = catCart[itemId] 
+            || (item.id && catCart[String(item.id)]) 
+            || (item.name ? Object.values(catCart).find(e => e.item && e.item.name === item.name) : null);
+        const qty = booked ? booked.qty : 0;
+        const rate = activeRateTier === 'wholesale' 
+            ? (item.wholesaleRate || item.rate || 0) 
+            : (item.retailRate || item.rate || 0);
+
+        const offer = computeItemOffer(item, qty, rate, isUrdu);
+        const cardClass = qty > 0 ? 'list-item-card booked' : 'list-item-card';
+
+        const availQty = item.qty || 0;
+        const stockColor = availQty <= 0 ? 'stock-out' : (availQty <= 10 ? 'stock-low' : 'stock-ok');
+
+        const thumbHtml = item.photoUrl 
+            ? `<img src="${item.photoUrl}" alt="${item.name}" loading="lazy">` 
+            : `<i class="fas fa-box" style="font-size:22px; color:#cbd5e1;"></i>`;
+
+        html += `
+        <div class="${cardClass}" id="listCard-${itemId}">
+            <!-- Left: Thumbnail + Item Details -->
+            <div class="list-item-left">
+                <div class="list-item-thumb">
+                    ${thumbHtml}
+                </div>
+                <div class="list-item-info">
+                    <div class="list-item-title" title="${item.name}">
+                        <span>${item.name}</span> ${item.barcode ? `<span class="list-item-barcode">[${item.barcode}]</span>` : ''}
+                    </div>
+                    <div class="list-item-meta">
+                        <span class="list-item-rate">Rs ${Number(rate).toLocaleString()}</span>
+                        <span class="list-item-unit">/ ${UNIT_LBL(item.unit)}</span>
+                        <span class="stock-badge ${stockColor}">
+                            ${isUrdu ? 'دستیاب:' : 'Stock:'} <b>${availQty}</b>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Offer / Scheme Title & Target Tracker (Only if offer exists) -->
+            ${offer.hasOffer ? `
+            <div class="list-item-center">
+                ${offer.badgeHtml}
+            </div>` : ''}
+
+            <!-- Right: Shopping Tokari Icon (when unbooked) OR Plus/Minus Counter -->
+            <div class="list-item-right">
+                ${qty === 0 ? `
+                    <button type="button" class="list-tokari-btn" data-stock-id="${itemId}" data-item-name="${encodeURIComponent(item.name || '')}" onclick="event.stopPropagation(); window.bookListItem(this.getAttribute('data-stock-id'), 1, decodeURIComponent(this.getAttribute('data-item-name') || ''))" title="${isUrdu ? 'آرڈر میں شامل کریں' : 'Book this item'}">
+                        <i class="fas fa-shopping-cart" style="pointer-events:none;"></i>
+                    </button>
+                ` : `
+                    <div class="list-counter-box" onclick="event.stopPropagation();">
+                        <button type="button" class="list-counter-btn minus" data-stock-id="${itemId}" onclick="event.stopPropagation(); window.decrementListItem(this.getAttribute('data-stock-id'))" title="Decrease Qty">-</button>
+                        <input type="number" min="0" value="${qty}" class="list-counter-val" data-stock-id="${itemId}" onchange="window.changeListItemQty(this.getAttribute('data-stock-id'), this.value)" aria-label="Booked Quantity">
+                        <button type="button" class="list-counter-btn plus" data-stock-id="${itemId}" onclick="event.stopPropagation(); window.incrementListItem(this.getAttribute('data-stock-id'))" title="Increase Qty">+</button>
+                    </div>
+                `}
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// ============================================
+// 🔢 LIST ITEM BOOKING & COUNTER ACTIONS
+// ============================================
+window.focusShopkeeperInput = function() {
+    const isCat = document.getElementById('catalogueOrderSection')?.style.display === 'block';
+    const inp = isCat ? document.getElementById('catCustInput') : document.getElementById('custNameInput');
+    if (inp) {
+        inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        inp.focus();
+    }
+};
+
+window.scrollToListTotals = function() {
+    const totalsBox = document.querySelector('#billFormCard .totals-box') || document.getElementById('billActionBtnsContainer');
+    if (totalsBox) {
+        totalsBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
+
+function updateListStickyBar(count = 0, units = 0, total = 0) {
+    const bar = document.getElementById('listStickyBottomBar');
+    const countEl = document.getElementById('listStickyCount');
+    const unitsEl = document.getElementById('listStickyUnits');
+    const totalEl = document.getElementById('listStickyTotal');
+    if (!bar) return;
+
+    const isListMode = document.getElementById('billFormCard')?.style.display !== 'none';
+    if (isListMode) {
+        bar.style.display = 'flex';
+        if (countEl) countEl.innerText = count || 0;
+        if (unitsEl) unitsEl.innerText = units || 0;
+        if (totalEl) totalEl.innerText = Number(total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+function bookListItem(stockId, qty = 1, optName = '') {
+    try {
+        const isBooker = myUser && myUser.role === 'booker';
+        
+        // Auto-resolve customer if shopkeeper name is present in input
+        if (!selectedCustomer && custInput && custInput.value.trim()) {
+            const val = custInput.value.trim().toLowerCase();
+            const found = allMyCustomers.find(c => (c.name || '').toLowerCase() === val || (c.shopName || '').toLowerCase() === val);
+            if (found) {
+                selectedCustomer = found;
+            } else {
+                selectedCustomer = {
+                    id: 'temp_cust_' + Date.now(),
+                    name: custInput.value.trim(),
+                    customerType: activeRateTier || 'retail',
+                    balance: 0
+                };
+            }
+            updateLockState();
+        }
+
+        if (isBooker && !selectedCustomer) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: getAppLanguage() === 'en-ur' 
+                    ? 'پہلے اوپر دکان دار منتخب کریں!' 
+                    : 'Please select a shopkeeper above first!',
+                showConfirmButton: false,
+                timer: 2400
+            });
+            window.focusShopkeeperInput();
+            return;
+        }
+
+        // Comprehensive match by ID, string ID, barcode, or name
+        let item = allMyStock.find(x => String(x.id) === String(stockId))
+                || allMyStock.find(x => x.id == stockId)
+                || (optName && allMyStock.find(x => x.name === optName))
+                || allMyStock.find(x => x.name === stockId)
+                || allMyStock.find(x => x.barcode && String(x.barcode) === String(stockId));
+
+        if (!item && allMyStock.length > 0) {
+            const numIdx = parseInt(stockId, 10);
+            if (!isNaN(numIdx) && allMyStock[numIdx]) {
+                item = allMyStock[numIdx];
+            }
+        }
+
+        if (!item) {
+            console.warn('bookListItem: item not found for stockId:', stockId, 'optName:', optName);
+            return;
+        }
+
+        const targetId = String(item.id || stockId);
+
+        const rate = activeRateTier === 'wholesale' 
+            ? (item.wholesaleRate || item.rate || 0) 
+            : (item.retailRate || item.rate || 0);
+
+        const isUrdu = getAppLanguage() === 'en-ur';
+        const offer = computeItemOffer(item, qty, rate, isUrdu);
+
+        catCart[targetId] = {
+            item: item,
+            qty: qty,
+            rate: rate,
+            total: qty * rate,
+            freeQty: offer.freeUnits || 0,
+            schemeDiscount: offer.discount || 0
+        };
+
+        syncCatCartToTotals();
+        renderInteractiveProductList();
+        try { renderCatalogueItem(); } catch (e) {}
+    } catch (err) {
+        console.error('bookListItem error:', err);
+    }
+}
+
+function incrementListItem(stockId) {
+    const isBooker = myUser && myUser.role === 'booker';
+    if (isBooker && !selectedCustomer) {
+        window.focusShopkeeperInput();
+        return;
+    }
+    const item = allMyStock.find(x => String(x.id) === String(stockId)) || allMyStock.find(x => x.name === stockId);
+    const targetId = item ? String(item.id || stockId) : String(stockId);
+
+    let entryKey = targetId;
+    if (!catCart[entryKey] && item && item.name) {
+        const foundKey = Object.keys(catCart).find(k => catCart[k].item && catCart[k].item.name === item.name);
+        if (foundKey) entryKey = foundKey;
+    }
+    const entry = catCart[entryKey];
+    const currentQty = entry ? entry.qty : 0;
+    bookListItem(entryKey, currentQty + 1);
+}
+
+function decrementListItem(stockId) {
+    const item = allMyStock.find(x => String(x.id) === String(stockId)) || allMyStock.find(x => x.name === stockId);
+    const targetId = item ? String(item.id || stockId) : String(stockId);
+
+    let entryKey = targetId;
+    if (!catCart[entryKey] && item && item.name) {
+        const foundKey = Object.keys(catCart).find(k => catCart[k].item && catCart[k].item.name === item.name);
+        if (foundKey) entryKey = foundKey;
+    }
+    const entry = catCart[entryKey];
+    if (!entry) return;
+
+    if (entry.qty <= 1) {
+        // Return to 0 -> Restore the Tokari Shopping Icon!
+        delete catCart[entryKey];
+        syncCatCartToTotals();
+        renderInteractiveProductList();
+        try { renderCatalogueItem(); } catch (e) {}
+    } else {
+        bookListItem(entryKey, entry.qty - 1);
+    }
+}
+
+function changeListItemQty(stockId, val) {
+    const isBooker = myUser && myUser.role === 'booker';
+    if (isBooker && !selectedCustomer) {
+        window.focusShopkeeperInput();
+        return;
+    }
+    const item = allMyStock.find(x => String(x.id) === String(stockId)) || allMyStock.find(x => x.name === stockId);
+    const targetId = item ? String(item.id || stockId) : String(stockId);
+
+    let entryKey = targetId;
+    if (!catCart[entryKey] && item && item.name) {
+        const foundKey = Object.keys(catCart).find(k => catCart[k].item && catCart[k].item.name === item.name);
+        if (foundKey) entryKey = foundKey;
+    }
+
+    const q = Math.max(0, parseFloat(val) || 0);
+    if (q === 0) {
+        delete catCart[entryKey];
+        syncCatCartToTotals();
+        renderInteractiveProductList();
+        try { renderCatalogueItem(); } catch (e) {}
+    } else {
+        bookListItem(entryKey, q);
+    }
+}
+
+window.bookListItem = bookListItem;
+window.incrementListItem = incrementListItem;
+window.decrementListItem = decrementListItem;
+window.changeListItemQty = changeListItemQty;
+
+// Sync catCart to Totals & Rows
+function syncCatCartToTotals() {
+    const isUrdu = getAppLanguage() === 'en-ur';
+    let subTotal = 0;
+    let totalDiscount = 0;
+    let totalUnits = 0;
+
+    Object.values(catCart).forEach(entry => {
+        const rate = activeRateTier === 'wholesale' 
+            ? (entry.item.wholesaleRate || entry.item.rate || 0) 
+            : (entry.item.retailRate || entry.item.rate || 0);
+        entry.rate = rate;
+        entry.total = entry.qty * rate;
+
+        const offer = computeItemOffer(entry.item, entry.qty, entry.rate, isUrdu);
+        entry.schemeDiscount = offer.discount || 0;
+        entry.freeQty = offer.freeUnits || 0;
+
+        subTotal += entry.total;
+        totalDiscount += entry.schemeDiscount;
+        totalUnits += entry.qty;
+    });
+
+    const sumSubEl = document.getElementById('sumSubTotal');
+    if (sumSubEl) sumSubEl.innerText = subTotal.toFixed(2);
+
+    const sumDiscInp = document.getElementById('sumDiscount');
+    if (sumDiscInp) {
+        sumDiscInp.value = totalDiscount.toFixed(2);
+    }
+
+    const prevBal = selectedCustomer ? (selectedCustomer.balance || 0) : 0;
+    const sumPrevEl = document.getElementById('sumPrevBalance');
+    if (sumPrevEl) sumPrevEl.innerText = prevBal.toFixed(2);
+
+    // Grand total
+    const grand = Math.max(0, (subTotal - totalDiscount) + prevBal);
+    const sumGrandEl = document.getElementById('sumGrand');
+    if (sumGrandEl) sumGrandEl.innerText = grand.toFixed(2);
+
+    const received = parseFloat(document.getElementById('sumReceived')?.value) || 0;
+    const balance = Math.max(0, grand - received);
+    const sumBalEl = document.getElementById('sumBalance');
+    if (sumBalEl) sumBalEl.innerText = balance.toFixed(2);
+
+    // Sync to sticky bar (shows count, units, and booked items order total)
+    const bookedOrderTotal = Math.max(0, subTotal - totalDiscount);
+    updateCatalogueStickyBar();
+    updateListStickyBar(Object.keys(catCart).length, totalUnits, bookedOrderTotal);
+
+    // Sync to itemsRows for background printing/invoice compatibility
+    syncCatCartToTableRows();
+}
+
+function initInteractiveListView() {
+    // 1. Search input
+    const searchInp = document.getElementById('listSearchInput');
+    if (searchInp) {
+        searchInp.addEventListener('input', function() {
+            listFilterState.search = this.value.toLowerCase().trim();
+            renderInteractiveProductList();
+        });
+    }
+
+    // 2. Filter Pills (All / Offers / Booked)
+    const filterTabs = document.querySelectorAll('#listFilterTabs .list-filter-pill');
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            filterTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            listFilterState.filter = this.dataset.filter || 'all';
+            renderInteractiveProductList();
+        });
+    });
+
+    // 3. Manual row expander
+    const toggleManualBtn = document.getElementById('toggleManualRowsBtn');
+    const manualWrapper = document.getElementById('manualRowsWrapper');
+    if (toggleManualBtn && manualWrapper) {
+        toggleManualBtn.addEventListener('click', () => {
+            const isHidden = manualWrapper.style.display === 'none';
+            manualWrapper.style.display = isHidden ? 'block' : 'none';
+            toggleManualBtn.innerHTML = isHidden 
+                ? '<i class="fas fa-chevron-up"></i> Hide Manual Items' 
+                : '<i class="fas fa-pen-to-square"></i> + Add Custom Manual Item';
+        });
+    }
+
+    // 4. Delegated Click Listener for Interactive Products Container (Mobile Safe)
+    const prodContainer = document.getElementById('interactiveProductsContainer');
+    if (prodContainer && !prodContainer.dataset.delegated) {
+        prodContainer.dataset.delegated = 'true';
+        prodContainer.addEventListener('click', function(e) {
+            const tokariBtn = e.target.closest('.list-tokari-btn');
+            if (tokariBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sid = tokariBtn.dataset.stockId || tokariBtn.getAttribute('data-stock-id');
+                const sname = tokariBtn.dataset.itemName ? decodeURIComponent(tokariBtn.dataset.itemName) : '';
+                if (sid && window.bookListItem) window.bookListItem(sid, 1, sname);
+                return;
+            }
+            const minusBtn = e.target.closest('.list-counter-btn.minus');
+            if (minusBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sid = minusBtn.dataset.stockId || minusBtn.getAttribute('data-stock-id');
+                if (sid && window.decrementListItem) window.decrementListItem(sid);
+                return;
+            }
+            const plusBtn = e.target.closest('.list-counter-btn.plus');
+            if (plusBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sid = plusBtn.dataset.stockId || plusBtn.getAttribute('data-stock-id');
+                if (sid && window.incrementListItem) window.incrementListItem(sid);
+                return;
+            }
+        });
+    }
+}
 
 function initVisualCatalogue() {
+    // 0. Setup Language Manager
+    initLanguageManager();
+
     // 1. Setup Agency Title & Booker Profile display
     const agTitle = document.getElementById('catAgencyTitle');
     if (agTitle) {
@@ -1886,27 +2944,50 @@ function initVisualCatalogue() {
     // 2. Setup Price Tier Badge
     updateCatalogueRateTier();
 
-    // 3. View Switcher setup (Radio Buttons: Classic Table Default)
+    // 3. Setup Interactive List View (View 1)
+    initInteractiveListView();
+
+    // 4. View Switcher setup (Radio Buttons: List View Default)
     const radioTable = document.getElementById('radioSwitchTable');
     const radioCat = document.getElementById('radioSwitchCatalogue');
     const catSec = document.getElementById('catalogueOrderSection');
     const tabSec = document.getElementById('billFormCard');
 
+    const tabList = document.getElementById('lblViewListContainer');
+    const tabCat = document.getElementById('lblViewCatalogueContainer');
+
     function switchViewMode(mode) {
+        const listSticky = document.getElementById('listStickyBottomBar');
         if (mode === 'catalogue') {
             if (radioCat) radioCat.checked = true;
             if (radioTable) radioTable.checked = false;
+            if (tabCat) tabCat.classList.add('active');
+            if (tabList) tabList.classList.remove('active');
             if (catSec) catSec.style.display = 'block';
             if (tabSec) tabSec.style.display = 'none';
+            if (listSticky) listSticky.style.display = 'none';
             renderCatalogueItem();
+            updateCatalogueStickyBar();
+            updateLockState();
         } else {
             if (radioTable) radioTable.checked = true;
             if (radioCat) radioCat.checked = false;
+            if (tabList) tabList.classList.add('active');
+            if (tabCat) tabCat.classList.remove('active');
             if (tabSec) tabSec.style.display = 'block';
             if (catSec) catSec.style.display = 'none';
+            renderInteractiveProductList();
+            syncCatCartToTotals();
+            updateLockState();
         }
     }
 
+    if (tabList) {
+        tabList.addEventListener('click', () => switchViewMode('table'));
+    }
+    if (tabCat) {
+        tabCat.addEventListener('click', () => switchViewMode('catalogue'));
+    }
     if (radioTable) {
         radioTable.addEventListener('change', () => switchViewMode('table'));
     }
@@ -1919,20 +3000,20 @@ function initVisualCatalogue() {
     if (urlParams.get('mode') === 'catalogue') {
         switchViewMode('catalogue');
     } else {
-        // DEFAULT IS ALWAYS CLASSIC TABLE!
+        // DEFAULT IS ALWAYS LIST VIEW!
         switchViewMode('table');
     }
 
-    // 4. Shopkeeper Selection & Autocomplete
+    // 5. Shopkeeper Selection & Autocomplete
     setupCatalogueCustomerPicker();
 
-    // 5. Navigation Controls (Next, Back, Arrows, Swipe, Keys)
+    // 6. Navigation Controls (Next, Back, Arrows, Swipe, Keys)
     setupCatalogueNavigation();
 
-    // 6. Quantity Controls (Plus, Minus, Typing)
+    // 7. Quantity Controls (Plus, Minus, Typing)
     setupCatalogueQuantityControls();
 
-    // 7. Search Input
+    // 8. Search Input for catalogue
     const catSearchInp = document.getElementById('catSearchInput');
     if (catSearchInp) {
         catSearchInp.addEventListener('input', function() {
@@ -1942,23 +3023,24 @@ function initVisualCatalogue() {
         });
     }
 
-    // 8. Sticky Bottom Bar & Review Modal
+    // 9. Sticky Bottom Bar & Review Modal
     setupCatalogueReviewModal();
 
-    // 9. Initial data refresh
+    // 10. Initial data refresh
     refreshCatalogueData();
 }
 
 function updateCatalogueRateTier() {
+    const isUrdu = getAppLanguage() === 'en-ur';
     const badge = document.getElementById('catPriceTierBadge');
     if (badge) {
         if (activeRateTier === 'wholesale') {
-            badge.innerText = '🏪 Wholesale Rate (ہول سیل)';
+            badge.innerText = isUrdu ? '🏪 ہول سیل ریٹ (Wholesale)' : '🏪 Wholesale Rate';
             badge.style.background = '#e0f2fe';
             badge.style.color = '#0369a1';
             badge.style.borderColor = '#bae6fd';
         } else {
-            badge.innerText = '🏷️ Retail Rate (پرچون)';
+            badge.innerText = isUrdu ? '🏷️ پرچون ریٹ (Retail)' : '🏷️ Retail Rate';
             badge.style.background = '#dcfce7';
             badge.style.color = '#15803d';
             badge.style.borderColor = '#bbf7d0';
@@ -1974,6 +3056,8 @@ function updateCatalogueRateTier() {
         entry.total = entry.qty * newRate;
     });
     renderCatalogueItem();
+    renderInteractiveProductList();
+    syncCatCartToTotals();
     updateCatalogueStickyBar();
 }
 
@@ -1988,7 +3072,16 @@ function setupCatalogueCustomerPicker() {
     custInput.addEventListener('input', function() {
         const val = this.value.toLowerCase().trim();
         if (!val) {
+            selectedCustomer = null;
+            updateLockState();
             custSuggest.classList.remove('show');
+            const mainCustInput = document.getElementById('custNameInput');
+            if (mainCustInput) mainCustInput.value = '';
+            const mainCustInfo = document.getElementById('custInfoBox');
+            if (mainCustInfo) mainCustInfo.classList.remove('show');
+            if (custInfo) custInfo.style.display = 'none';
+            calcTotals();
+            syncCatCartToTotals();
             return;
         }
 
@@ -2057,21 +3150,23 @@ function syncCatalogueCustomer(c) {
 
     if (custInfo) {
         const prevBal = parseFloat(c.balance || 0);
-        let info = `
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div>
-                🏬 <b>${c.shopName || c.name}</b> &nbsp;|&nbsp; 📱 ${c.mobile || '-'} &nbsp;|&nbsp; 🛣️ Route: <b>${c.route || '-'}</b>
-                <div style="margin-top:4px;">
-                    <span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:8px; font-weight:800; border:1px solid #fde68a;">
-                        💰 Previous Balance: Rs ${prevBal.toLocaleString()} <span class="ur-sub">(پچھلا بقایا بل)</span>
-                    </span>
-                </div>
-            </div>
-            ${prevBal > 0 ? `
-            <button type="button" class="btn btn-sm" onclick="openQuickKhataRecoveryModal('${c.id}')" style="background:#16a34a; color:#fff; font-weight:800; font-size:12px; padding:6px 12px; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(22,163,74,0.3);">
-                <i class="fas fa-hand-holding-usd"></i> 💵 Receive Cash (پچھلی وصولی)
-            </button>` : ''}
-        </div>`;
+        let info = '<div class="cust-chips-wrap">';
+        const catDispName = c.name || c.shopName || 'Customer';
+        const catDispShop = (c.shopName && c.shopName !== catDispName) ? ` (${c.shopName})` : '';
+        info += `<span class="c-chip c-chip-shop"><i class="fas fa-user-check"></i> <b>${catDispName}${catDispShop}</b></span>`;
+        if (c.mobile) {
+            info += `<span class="c-chip c-chip-phone"><i class="fas fa-phone"></i> ${c.mobile}</span>`;
+        }
+        if (c.route) {
+            info += `<span class="c-chip c-chip-route"><i class="fas fa-map-marker-alt"></i> ${c.route}</span>`;
+        }
+        if (c.customerType) {
+            info += `<span class="c-chip ${c.customerType === 'retail' ? 'tier-retail' : 'tier-wholesale'}">${c.customerType === 'retail' ? '🏷️ Retail' : '🏪 Wholesale'}</span>`;
+        }
+        if (!isOrderBookerMode() && prevBal > 0) {
+            info += `<span class="c-chip c-chip-balance" title="Previous Balance: Rs ${prevBal.toLocaleString()}">💰 Khata: <b>Rs ${prevBal.toLocaleString()}</b></span>`;
+        }
+        info += '</div>';
         custInfo.innerHTML = info;
         custInfo.style.display = 'block';
     }
@@ -2115,19 +3210,55 @@ function setupCatalogueNavigation() {
         }
     }
 
-    // Keyboard Arrow Keys (Left / Right)
-    document.addEventListener('keydown', (e) => {
-        const catSec = document.getElementById('catalogueOrderSection');
-        if (!catSec || catSec.style.display === 'none') return;
-        // Don't trigger if user is typing in an input
-        if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+    // Fullscreen portrait showcase on photo click (Booker presenting to shopkeeper)
+    const photoFrame = document.getElementById('catPhotoFrame');
+    if (photoFrame) {
+        photoFrame.addEventListener('click', () => {
+            if (!catProducts || catProducts.length === 0) return;
+            const item = catProducts[catIndex];
+            if (item && item.photoUrl) {
+                showCataloguePhotoFullscreen(item);
+            }
+        });
+    }
+}
 
-        if (e.key === 'ArrowRight') {
-            stepCatProduct(1);
-        } else if (e.key === 'ArrowLeft') {
-            stepCatProduct(-1);
-        }
-    });
+function showCataloguePhotoFullscreen(item) {
+    const rate = activeRateTier === 'wholesale' 
+        ? (item.wholesaleRate || item.rate || 0) 
+        : (item.retailRate || item.rate || 0);
+
+    const schemeBadge = item.hasScheme ? `
+        <div style="background:#fdf4ff; color:#a21caf; border:1px solid #f0abfc; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:6px; margin-top:8px;">
+            🎁 ${item.schemeLabel || 'Trade Scheme Active'}
+        </div>` : '';
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            html: `
+                <div style="position:relative; text-align:center;">
+                    <div style="font-size:18px; font-weight:900; color:#0f172a; margin-bottom:8px; line-height:1.3;">
+                        ${item.name}
+                    </div>
+                    <div style="display:inline-block; width:100%; max-width:340px; aspect-ratio:3/4; border-radius:18px; overflow:hidden; border:2px solid #cbd5e1; box-shadow:0 8px 28px rgba(0,0,0,0.2); background:#0f172a;">
+                        <img src="${item.photoUrl}" alt="${item.name}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                    </div>
+                    <div style="margin-top:12px; display:flex; justify-content:center; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <span style="font-size:17px; font-weight:900; color:#0284c7;">Rs ${Number(rate).toLocaleString()} / ${UNIT_LBL(item.unit)}</span>
+                        <span style="font-size:12px; font-weight:800; background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:3px 10px; border-radius:20px;">Available: ${item.qty || 0} ${UNIT_LBL(item.unit)}</span>
+                    </div>
+                    ${schemeBadge}
+                    <div style="margin-top:8px; font-size:10px; color:#94a3b8;">
+                        📐 Catalog Portrait View (600×800 px HD)
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCloseButton: true,
+            background: '#ffffff',
+            padding: '16px'
+        });
+    }
 }
 
 function stepCatProduct(delta) {
@@ -2175,7 +3306,7 @@ function setupCatalogueQuantityControls() {
 }
 
 function refreshCatalogueData() {
-    // 1. Populate Category Chips dynamically from allMyStock
+    // 1. Populate Category Chips dynamically from allMyStock for Catalogue
     const chipsContainer = document.getElementById('catCategoryChips');
     if (chipsContainer) {
         const categories = new Set();
@@ -2203,7 +3334,35 @@ function refreshCatalogueData() {
         });
     }
 
+    // 2. Populate Category Chips for Interactive List View
+    const listChipsContainer = document.getElementById('listCategoryChips');
+    if (listChipsContainer) {
+        const categories = new Set();
+        allMyStock.forEach(it => {
+            const c = String(it.category || '').trim();
+            if (c) categories.add(c);
+        });
+
+        let listChipsHtml = `<button type="button" class="cat-chip ${listFilterState.category === 'all' ? 'active' : ''}" data-cat="all">📂 All Categories</button>`;
+        categories.forEach(cat => {
+            const count = allMyStock.filter(x => x.category === cat).length;
+            const isAct = listFilterState.category === cat ? 'active' : '';
+            listChipsHtml += `<button type="button" class="cat-chip ${isAct}" data-cat="${cat}">${cat} (${count})</button>`;
+        });
+        listChipsContainer.innerHTML = listChipsHtml;
+
+        listChipsContainer.querySelectorAll('.cat-chip').forEach(btn => {
+            btn.addEventListener('click', function() {
+                listChipsContainer.querySelectorAll('.cat-chip').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                listFilterState.category = this.dataset.cat;
+                renderInteractiveProductList();
+            });
+        });
+    }
+
     filterAndRenderCatalogue();
+    renderInteractiveProductList();
 }
 
 function filterAndRenderCatalogue() {
@@ -2268,6 +3427,7 @@ function renderCatalogueItem() {
     }
 
     const item = catProducts[catIndex];
+    if (!item) return;
     const totalCount = catProducts.length;
 
     // Badges & Counter
@@ -2281,6 +3441,7 @@ function renderCatalogueItem() {
     }
 
     // Photo
+    const zoomHint = document.getElementById('catPhotoZoomHint');
     if (item.photoUrl) {
         if (imgEl) {
             imgEl.src = item.photoUrl;
@@ -2288,6 +3449,7 @@ function renderCatalogueItem() {
             imgEl.style.display = 'block';
         }
         if (phEl) phEl.style.display = 'none';
+        if (zoomHint) zoomHint.style.display = 'inline-flex';
     } else {
         if (imgEl) imgEl.style.display = 'none';
         if (phEl) {
@@ -2297,6 +3459,7 @@ function renderCatalogueItem() {
                 <div style="font-size:13px; font-weight:700; color:#94a3b8;">${item.name || 'No Photo'}</div>
             `;
         }
+        if (zoomHint) zoomHint.style.display = 'none';
     }
 
     // Price & Available Stock
@@ -2364,6 +3527,22 @@ function renderCatalogueItem() {
 }
 
 function updateCatItemQty(item, newQty) {
+    const isBooker = myUser && myUser.role === 'booker';
+    if (isBooker && !selectedCustomer) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: getAppLanguage() === 'en-ur' 
+                ? 'پہلے اوپر دکان دار منتخب کریں!' 
+                : 'Please select a shopkeeper above first!',
+            showConfirmButton: false,
+            timer: 2400
+        });
+        window.focusShopkeeperInput();
+        return;
+    }
+
     const qty = Math.max(0, parseFloat(newQty) || 0);
     const rate = activeRateTier === 'wholesale' 
         ? (item.wholesaleRate || item.rate || 0) 
@@ -2464,14 +3643,31 @@ function setupCatalogueReviewModal() {
 }
 
 function openCatalogueReviewModal() {
+    const isUrdu = getAppLanguage() === 'en-ur';
     const entries = Object.values(catCart);
     if (entries.length === 0) {
         Swal.fire({
             icon: 'info',
-            title: 'آرڈر خالی ہے',
-            text: 'براہ کرم کیٹلاگ سے کم از کم 1 آئٹم کی تعداد منتخب کریں!',
+            title: isUrdu ? 'آرڈر خالی ہے!' : 'No Items Booked Yet!',
+            text: isUrdu 
+                ? 'پہلے پروڈکٹ لسٹ میں سے ٹوکری (🛒) پر کلک کر کے آرڈر کے آئٹمز شامل کریں۔' 
+                : 'Please click the shopping cart icon on items to add them to your order first.',
             confirmButtonColor: '#0284c7'
         });
+        return;
+    }
+
+    const isBooker = isOrderBookerMode();
+    if (isBooker && !selectedCustomer) {
+        Swal.fire({
+            icon: 'warning',
+            title: isUrdu ? 'دکان دار منتخب کریں' : 'Select Shopkeeper First',
+            text: isUrdu 
+                ? 'آرڈر فائنل کرنے کے لیے پہلے اوپر دکان دار کا نام منتخب کرنا لازمی ہے۔' 
+                : 'Please select a shopkeeper first before finalizing the order.',
+            confirmButtonColor: '#0284c7'
+        });
+        window.focusShopkeeperInput();
         return;
     }
 
@@ -2480,96 +3676,211 @@ function openCatalogueReviewModal() {
     const custDetailsEl = document.getElementById('catReviewCustDetails');
     const listEl = document.getElementById('catReviewItemsList');
     const subtotalEl = document.getElementById('catReviewSubtotal');
+    const discountEl = document.getElementById('catReviewDiscount');
+    const discountRow = document.getElementById('catReviewDiscountRow');
     const prevBalEl = document.getElementById('catReviewPrevBal');
     const grandEl = document.getElementById('catReviewGrand');
+    const badgeEl = document.getElementById('catReviewItemsCountBadge');
 
     // Customer display
     if (selectedCustomer) {
-        if (custNameEl) custNameEl.innerText = `👤 ${selectedCustomer.name} ${selectedCustomer.shopName ? `(${selectedCustomer.shopName})` : ''}`;
+        if (custNameEl) custNameEl.innerHTML = `👤 <b>${selectedCustomer.name}</b> ${selectedCustomer.shopName ? `<span style="color:#0284c7;">(${selectedCustomer.shopName})</span>` : ''}`;
         if (custDetailsEl) {
-            custDetailsEl.innerHTML = `📱 ${selectedCustomer.mobile || 'No mobile'} | 🛣️ Route: ${selectedCustomer.route || 'General'}`;
+            custDetailsEl.innerHTML = `📱 ${selectedCustomer.mobile || 'No Mobile'} | 🛣️ Route: <b>${selectedCustomer.route || 'General Route'}</b> | 🏷️ Rate: <b>${(activeRateTier || 'wholesale').toUpperCase()}</b>`;
         }
     } else {
-        if (custNameEl) custNameEl.innerText = '👤 Counter / Spot Sale (دکان دار منتخب نہیں)';
-        if (custDetailsEl) custDetailsEl.innerHTML = '⚠️ ایڈمن منظوری کے لیے دکان دار کا نام اوپر سے منتخب کر سکتے ہیں۔';
+        const rawCust = (document.getElementById('custNameInput')?.value || '').trim();
+        if (custNameEl) custNameEl.innerText = rawCust ? `👤 ${rawCust}` : '👤 Counter / Spot Sale (کاؤنٹر سیل)';
+        if (custDetailsEl) custDetailsEl.innerHTML = '🏢 Direct Sale Mode | 🏷️ Rate: ' + (activeRateTier || 'wholesale').toUpperCase();
     }
 
-    // Render items list
+    // Render items list with live +/- counters for instant recheck
     let html = '';
     let subtotal = 0;
     let totalDiscount = 0;
+    let totalUnits = 0;
 
     entries.forEach(entry => {
         const item = entry.item;
         const lineTotal = entry.qty * entry.rate;
         subtotal += lineTotal;
         totalDiscount += (entry.schemeDiscount || 0);
+        totalUnits += entry.qty;
 
         const thumb = item.photoUrl 
-            ? `<img src="${item.photoUrl}" style="width:36px; height:36px; border-radius:6px; object-fit:cover; margin-right:8px; border:1px solid #cbd5e1;">`
-            : `<div style="width:36px; height:36px; border-radius:6px; background:#f1f5f9; display:inline-flex; align-items:center; justify-content:center; margin-right:8px; color:#94a3b8;"><i class="fas fa-box"></i></div>`;
+            ? `<img src="${item.photoUrl}" style="width:38px; height:38px; border-radius:8px; object-fit:cover; flex-shrink:0; border:1px solid #cbd5e1;">`
+            : `<div style="width:38px; height:38px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#94a3b8; border:1px solid #e2e8f0;"><i class="fas fa-box" style="font-size:18px;"></i></div>`;
 
         let schemeBadge = '';
         if (entry.freeQty > 0) {
-            schemeBadge = `<span style="background:#fdf4ff; color:#a21caf; border:1px solid #f0abfc; padding:2px 6px; border-radius:6px; font-size:10px; font-weight:800; margin-left:6px;">🎁 +${entry.freeQty} FREE</span>`;
+            schemeBadge = `<span style="background:#fdf4ff; color:#a21caf; border:1px solid #f0abfc; padding:2px 6px; border-radius:6px; font-size:10px; font-weight:800;">🎁 +${entry.freeQty} FREE</span>`;
         } else if (entry.schemeDiscount > 0) {
-            schemeBadge = `<span style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:2px 6px; border-radius:6px; font-size:10px; font-weight:800; margin-left:6px;">🏷️ -Rs ${entry.schemeDiscount} OFF</span>`;
+            schemeBadge = `<span style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:2px 6px; border-radius:6px; font-size:10px; font-weight:800;">🏷️ -Rs ${entry.schemeDiscount} OFF</span>`;
         }
 
         html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #f1f5f9;">
-            <div style="display:flex; align-items:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 10px; border-bottom:1px solid #e2e8f0; background:#ffffff; border-radius:10px; margin-bottom:6px; gap:8px;">
+            <div style="display:flex; align-items:center; gap:9px; flex:1; min-width:0;">
                 ${thumb}
-                <div>
-                    <div style="font-weight:800; font-size:13px; color:#0f172a;">${item.name} ${schemeBadge}</div>
-                    <div style="font-size:11px; color:#64748b;">${entry.qty} ${UNIT_LBL(item.unit)} × Rs ${entry.rate}</div>
+                <div style="min-width:0;">
+                    <div style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">${item.name}</div>
+                    <div style="font-size:11px; color:#64748b; display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:2px;">
+                        <span>Rs ${Number(entry.rate).toLocaleString()} / ${UNIT_LBL(item.unit)}</span>
+                        ${schemeBadge}
+                    </div>
                 </div>
             </div>
-            <div style="text-align:right;">
-                <div style="font-weight:900; font-size:14px; color:#15803d;">Rs ${lineTotal.toFixed(2)}</div>
-                <button type="button" onclick="removeCatItem('${item.id}')" style="background:none; border:none; color:#ef4444; font-size:11px; cursor:pointer; padding:2px 0;">Remove ✖</button>
+
+            <!-- Quantity Counter for Instant Recheck Adjustment -->
+            <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                <button type="button" onclick="decrementListItem('${item.id}'); openCatalogueReviewModal();" style="width:28px; height:28px; border-radius:7px; border:1px solid #cbd5e1; background:#f1f5f9; font-weight:900; font-size:15px; cursor:pointer; color:#334155; display:flex; align-items:center; justify-content:center;" title="Decrease Qty">-</button>
+                <span style="min-width:28px; text-align:center; font-weight:900; font-size:14px; color:#0f172a;">${entry.qty}</span>
+                <button type="button" onclick="incrementListItem('${item.id}'); openCatalogueReviewModal();" style="width:28px; height:28px; border-radius:7px; border:1px solid #10b981; background:#10b981; font-weight:900; font-size:15px; cursor:pointer; color:#fff; display:flex; align-items:center; justify-content:center;" title="Increase Qty">+</button>
+            </div>
+
+            <div style="text-align:right; flex-shrink:0; min-width:72px;">
+                <div style="font-weight:900; font-size:13.5px; color:#15803d;">Rs ${lineTotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                <button type="button" onclick="removeCatItem('${item.id}');" style="background:none; border:none; color:#ef4444; font-size:11px; font-weight:700; cursor:pointer; padding:2px 0;">🗑️ Remove</button>
             </div>
         </div>`;
     });
 
     if (listEl) listEl.innerHTML = html;
+    if (badgeEl) badgeEl.innerText = `${entries.length} items (${totalUnits} units)`;
 
     const prevBal = selectedCustomer ? (selectedCustomer.balance || 0) : 0;
     const finalBill = Math.max(0, subtotal - totalDiscount);
-    const grand = prevBal + finalBill;
+    const grand = isBooker ? finalBill : (prevBal + finalBill);
 
-    if (subtotalEl) subtotalEl.innerText = subtotal.toFixed(2);
-    if (prevBalEl) prevBalEl.innerText = prevBal.toFixed(2);
-    if (grandEl) grandEl.innerText = grand.toFixed(2);
+    if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (discountEl) discountEl.innerText = totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (discountRow) discountRow.style.display = totalDiscount > 0 ? 'flex' : 'none';
+
+    // Hide or show balance rows based on Booker role
+    const catPrevRow = document.getElementById('catReviewPrevBalRow');
+    const catRecRow = document.getElementById('catReviewReceivedRow');
+    const catBalRow = document.getElementById('catReviewBalanceRow');
+    if (isBooker) {
+        if (catPrevRow) catPrevRow.style.display = 'none';
+        if (catRecRow) catRecRow.style.display = 'none';
+        if (catBalRow) catBalRow.style.display = 'none';
+    } else {
+        if (catPrevRow) catPrevRow.style.display = 'flex';
+        if (catRecRow) catRecRow.style.display = 'flex';
+        if (catBalRow) catBalRow.style.display = 'flex';
+    }
+
+    if (prevBalEl) prevBalEl.innerText = prevBal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (grandEl) grandEl.innerText = grand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const recInput = document.getElementById('catReviewReceived');
     const balEl = document.getElementById('catReviewBalance');
     if (recInput) {
-        recInput.value = '0';
-        recInput.oninput = () => {
+        if (isBooker) {
+            recInput.value = '0';
+        } else if (!recInput.dataset.touched) {
+            recInput.value = '0';
+        }
+        const recalculateBalance = () => {
             const r = parseFloat(recInput.value) || 0;
             const b = Math.max(0, grand - r);
-            if (balEl) balEl.innerText = b.toFixed(2);
+            if (balEl) balEl.innerText = b.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
+        recInput.oninput = () => {
+            recInput.dataset.touched = 'true';
+            recalculateBalance();
+        };
+        recalculateBalance();
     }
-    if (balEl) balEl.innerText = grand.toFixed(2);
 
     if (modal) modal.style.display = 'flex';
 }
+window.openOrderRecheckModal = openCatalogueReviewModal;
+window.openCatalogueReviewModal = openCatalogueReviewModal;
 
 window.removeCatItem = function(stockId) {
     if (catCart[stockId]) {
         delete catCart[stockId];
+        renderInteractiveProductList();
         renderCatalogueItem();
+        syncCatCartToTotals();
         updateCatalogueStickyBar();
-        openCatalogueReviewModal();
+        if (Object.keys(catCart).length === 0) {
+            const modal = document.getElementById('catReviewModal');
+            if (modal) modal.style.display = 'none';
+        } else {
+            openCatalogueReviewModal();
+        }
     }
+};
+
+// 🔄 RESET SCREEN FRESH FOR BOOKING NEXT CUSTOMER'S ORDER
+window.resetForNextOrder = function() {
+    catCart = {};
+    selectedCustomer = null;
+    const custInput = document.getElementById('custNameInput');
+    if (custInput) custInput.value = '';
+    const custInfoBox = document.getElementById('custInfoBox');
+    if (custInfoBox) {
+        custInfoBox.classList.remove('show');
+        custInfoBox.innerHTML = '';
+        custInfoBox.style.display = 'none';
+    }
+    const catCustInfo = document.getElementById('catCustInfo');
+    if (catCustInfo) catCustInfo.style.display = 'none';
+    
+    // Clear financial inputs
+    const sumDisc = document.getElementById('sumDiscount');
+    if (sumDisc) sumDisc.value = '0';
+    const sumRec = document.getElementById('sumReceived');
+    if (sumRec) sumRec.value = '0';
+    const taxEn = document.getElementById('taxEnabled');
+    if (taxEn) taxEn.checked = false;
+    const taxR = document.getElementById('taxRate');
+    if (taxR) taxR.value = '0';
+
+    const itemsRows = document.getElementById('itemsRows');
+    if (itemsRows) itemsRows.innerHTML = '';
+    
+    // Refresh interactive list and catalogue
+    renderInteractiveProductList();
+    renderCatalogueItem();
+    syncCatCartToTotals();
+    updateCatalogueStickyBar();
+    updateListStickyBar(0, 0, 0);
+    updateLockState();
+    previewBillNo();
+
+    // Reset recovery input in modal
+    const recInput = document.getElementById('catReviewReceived');
+    if (recInput) {
+        recInput.value = '0';
+        delete recInput.dataset.touched;
+    }
+
+    // Scroll to top shopkeeper search so booker is immediately ready
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+        if (custInput) custInput.focus();
+    }, 300);
 };
 
 async function submitCatalogueFieldOrder() {
     const entries = Object.values(catCart);
     if (entries.length === 0) {
         Swal.fire('آرڈر خالی ہے', 'براہ کرم کم از کم 1 آئٹم شامل کریں۔', 'warning');
+        return;
+    }
+
+    const isBooker = myUser && myUser.role === 'booker';
+    if (isBooker && !selectedCustomer) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'دکان دار منتخب کریں',
+            text: 'آرڈر محفوظ کرنے کے لیے پہلے اوپر دکان دار کا نام منتخب کرنا لازمی ہے۔',
+            confirmButtonColor: '#0284c7'
+        });
+        window.focusShopkeeperInput();
         return;
     }
 
@@ -2653,15 +3964,25 @@ async function submitCatalogueFieldOrder() {
         };
 
         if (navigator.onLine) {
-            // Save directly to 'bills' collection (which delivery-returns.html and admin portal watch)
+            // Save directly to 'bills' collection
             const billRef = db.collection('bills').doc();
             orderData.id = billRef.id;
             await billRef.set(orderData);
 
-            // Also mirror in 'orders' collection for redundancy
+            // Also mirror in 'orders' collection
             try {
                 await db.collection('orders').doc(billRef.id).set(orderData);
             } catch (eOrd) {}
+
+            // Update customer balance in Firestore
+            if (selectedCustomer && selectedCustomer.id) {
+                try {
+                    db.collection('customers').doc(selectedCustomer.id).update({
+                        balance: netBalance,
+                        lastOrderDate: new Date().toISOString()
+                    });
+                } catch(eCust) {}
+            }
         } else {
             // Save offline
             let offlineQueue = [];
@@ -2673,15 +3994,16 @@ async function submitCatalogueFieldOrder() {
             updateNetworkStatus();
         }
 
-        // Close modal and reset cart
+        // Close modal
         if (modal) modal.style.display = 'none';
-        catCart = {};
-        renderCatalogueItem();
-        updateCatalogueStickyBar();
-        syncCatCartToTableRows();
+
+        // Update local customer balance
+        if (selectedCustomer) {
+            selectedCustomer.balance = netBalance;
+        }
 
         await Swal.fire({
-            title: '✅ فیلڈ آرڈر بک ہو گیا!',
+            title: '✅ فیلڈ آرڈر کامیابی سے بک ہو گیا!',
             html: `
                 <div style="text-align:center; font-size:14px; line-height:1.8;">
                     <div style="font-size:24px; font-weight:900; color:#d97706; margin-bottom:8px;">${orderNo}</div>
@@ -2690,23 +4012,26 @@ async function submitCatalogueFieldOrder() {
                         یہ آرڈر کامیابی کے ساتھ ایڈمن پورٹل میں محفوظ ہو چکا ہے۔ ایڈمن کی منظوری کے بعد بل پرنٹ اور سپلائر کی ترسیل شروع ہوگی۔
                     </div>
                     <div>👤 <b>دکان دار:</b> ${orderData.customerName} ${orderData.customerShop ? `(${orderData.customerShop})` : ''}</div>
-                    <div>📦 <b>کل آئٹمز:</b> ${orderData.itemCount} (${orderData.totalUnits} Units) ${orderData.totalFreeUnits ? `+ 🎁 ${orderData.totalFreeUnits} Free Units` : ''}</div>
-                    <div>💰 <b>کل رقم:</b> Rs ${orderData.grandTotal.toLocaleString()}</div>
-                    ${receivedAmt > 0 ? `<div>💵 <b>وصول رقم:</b> <span style="color:#16a34a; font-weight:bold;">Rs ${receivedAmt.toLocaleString()}</span> &nbsp;|&nbsp; باقی: <b>Rs ${netBalance.toLocaleString()}</b></div>` : ''}
+                    <div>📦 <b>کل اشیاء:</b> ${orderData.itemCount} (${orderData.totalUnits} Units) ${orderData.totalFreeUnits ? `+ 🎁 ${orderData.totalFreeUnits} Free Units` : ''}</div>
+                    <div>💰 <b>کل واجب الادا:</b> Rs ${orderData.grandTotal.toLocaleString()}</div>
+                    ${receivedAmt > 0 ? `<div>💵 <b>وصول شدہ رقم (ریکوری):</b> <span style="color:#16a34a; font-weight:bold;">Rs ${receivedAmt.toLocaleString()}</span> &nbsp;|&nbsp; نیا بقایا: <b>Rs ${netBalance.toLocaleString()}</b></div>` : ''}
                 </div>
             `,
             icon: 'success',
-            confirmButtonColor: '#27ae60',
-            confirmButtonText: 'اگلا آرڈر بک کریں (Next Order)'
+            confirmButtonColor: '#16a34a',
+            confirmButtonText: '➕ اگلا نیا آرڈر بک کریں (Next Order)'
         });
 
+        // 🔄 Reset screen completely for next order
+        window.resetForNextOrder();
+
     } catch (err) {
-        console.error('Catalogue order booking error:', err);
+        console.error('Order booking error:', err);
         Swal.fire('خرابی', 'آرڈر محفوظ نہیں ہو سکا: ' + (err.message || err), 'error');
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 📥 SUBMIT FIELD ORDER TO ADMIN (ایڈمن منظوری کے لیے بھیجیں)';
+            submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>BOOK ORDER / CONFIRM <span class="ur-sub">(آرڈر فائنل / بک کریں)</span></span>';
         }
     }
 }

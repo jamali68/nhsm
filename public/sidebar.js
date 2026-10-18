@@ -7,7 +7,7 @@
 // ✅ Role-aware menu (Booker ko limited)
 // ============================================
 
-window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.0';
+window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.8';
 
 (function initSidebar() {
     // Inject dark-theme.css link dynamically if not present
@@ -106,9 +106,10 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.0';
             title: 'MANAGEMENT <span class="ur-sub">(انتظامیہ)</span>',
             items: [
                 { icon: 'fa-clipboard-check', text: 'Booker Orders & Dispatch <span class="ur-sub">(بکر آرڈرز و ترسیل)</span>', url: 'booker-orders.html', roles: ['super-admin', 'owner', 'booker'] },
-                { icon: 'fa-truck-loading', text: 'Delivery & Returns <span class="ur-sub">(وین ڈسپیچ و واپسی)</span>', url: 'delivery-returns.html', roles: ['super-admin', 'owner', 'supplier', 'booker'] },
+                { icon: 'fa-truck-loading', text: 'Delivery & Returns <span class="ur-sub">(وین ڈسپیچ و واپسی)</span>', url: 'delivery-returns.html', roles: ['super-admin', 'owner', 'supplier'] },
                 { icon: 'fa-triangle-exclamation', text: 'Damage, Expire & Claims <span class="ur-sub">(کلیم و زائد المیعاد)</span>', url: 'delivery-returns.html?tab=claims', roles: ['super-admin', 'owner', 'supplier', 'booker'] },
                 { icon: 'fa-user-friends', text: 'Customers <span class="ur-sub">(گاہک و کھاتہ)</span>', url: 'customers.html', roles: ['super-admin', 'owner', 'booker'] },
+                { icon: 'fa-user-plus', text: '+ Add New Customer <span class="ur-sub">(نیا گاہک بنائیں)</span>', url: 'customers.html?action=new', roles: ['super-admin', 'owner', 'booker'] },
                 { icon: 'fa-boxes-stacked', text: 'Stock Manager <span class="ur-sub">(اسٹاک و گودام)</span>', url: 'stock.html', roles: ['super-admin', 'owner'] },
                 { icon: 'fa-wallet', text: 'Daily Expenses <span class="ur-sub">(روزانہ اخراجات)</span>', url: 'expenses.html', roles: ['super-admin', 'owner'] },
                 { icon: 'fa-bell', text: 'Low Stock Alerts <span class="ur-sub">(کم اسٹاک الرٹس)</span>', url: 'alerts.html', roles: ['super-admin', 'owner'] },
@@ -944,7 +945,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.0';
                 <div class="eb-sidebar-appname">${isSuperAdmin ? 'Easy Bill Super Admin' : 'Easy Bill Generator'}</div>
             </div>
             <div class="eb-sidebar-agency">${agencyTitleText}</div>
-            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.2.0'}</div>
+            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.2.8'}</div>
         </div>`;
 
         const activeMenuList = isSuperAdmin ? SUPER_ADMIN_MENU : MENU;
@@ -1001,6 +1002,14 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.0';
                 if (role === 'booker' && item.url === 'bills.html') {
                     itemText = 'Book Order <span class="ur-sub">(آرڈر بک کریں)</span>';
                     itemIcon = 'fa-clipboard-check';
+                }
+                if (role === 'booker' && item.url === 'booker-orders.html') {
+                    itemText = 'My Field Orders <span class="ur-sub">(میرے فیلڈ آرڈرز)</span>';
+                    itemIcon = 'fa-clipboard-list';
+                }
+                if (role === 'booker' && item.url.includes('claims')) {
+                    itemText = 'Market Claims & Damages <span class="ur-sub">(مارکیٹ کلیمز)</span>';
+                    itemIcon = 'fa-triangle-exclamation';
                 }
                 
                 const parsed = splitEnUrText(itemText);
@@ -1143,7 +1152,12 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.0';
         // 🔄 Sync sidebar version with manifest.json live
         if (typeof window !== 'undefined' && window.fetch) {
             fetch('manifest.json?t=' + Math.floor(Date.now() / 60000), { cache: 'default' })
-                .then(r => r.json())
+                .then(r => {
+                    if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
+                        return r.json();
+                    }
+                    return null;
+                })
                 .then(m => {
                     if (m && m.version) {
                         window.EASYBILL_VERSION = m.version;

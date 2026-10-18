@@ -2042,3 +2042,19 @@ function createNewBillForThisCustomer() {
     }));
     window.location.href = 'bills.html';
 }
+
+// 🎯 AUTO-EXPAND ADD CUSTOMER FORM IF ACCESSED FROM SIDEBAR ?action=new
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'new') {
+        setTimeout(() => {
+            const form = document.getElementById('addCustomerForm');
+            if (form) {
+                form.style.display = 'block';
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const nameInp = document.getElementById('custName');
+                if (nameInp) nameInp.focus();
+            }
+        }, 300);
+    }
+});

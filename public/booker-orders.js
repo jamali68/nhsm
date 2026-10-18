@@ -105,6 +105,68 @@ function sanitizeOrder(ord) {
 }
 
 // ============================================
+// 🛡️ ROLE & PERMISSION HELPERS (ADMIN vs BOOKER)
+// ============================================
+function isUserAdmin() {
+    if (!myUser) return false;
+    const r = (myUser.role || '').toLowerCase();
+    return r === 'super-admin' || r === 'owner' || r === 'admin';
+}
+
+function isUserBooker() {
+    if (!myUser) return false;
+    return (myUser.role || '').toLowerCase() === 'booker';
+}
+
+function canUserApproveOrders() {
+    // 1. Super-Admin, Owner, Admin can ALWAYS approve orders
+    if (isUserAdmin()) return true;
+
+    // 2. If Booker: only allowed if Admin explicitly granted permission
+    if (isUserBooker()) {
+        const userPerms = myUser?.permissions || {};
+        if (userPerms.approve_orders === true) return true;
+        if (myAgency && (myAgency.allowBookerApprove === true || myAgency.bookerApprovalPolicy === 'allow_bookers')) return true;
+        return false;
+    }
+
+    return false;
+}
+
+function setupRoleBasedUI() {
+    const isBooker = isUserBooker();
+    const canApprove = canUserApproveOrders();
+
+    const bannerNotAllowed = document.getElementById('bookerPermBanner');
+    const bannerAllowed = document.getElementById('bookerPermBannerAllowed');
+    const advanceSettingsBtn = document.getElementById('btnOpenAdvanceSettings');
+    const headerTitle = document.getElementById('agencyNameHeader');
+
+    if (isBooker) {
+        if (canApprove) {
+            if (bannerAllowed) bannerAllowed.style.display = 'flex';
+            if (bannerNotAllowed) bannerNotAllowed.style.display = 'none';
+        } else {
+            if (bannerNotAllowed) bannerNotAllowed.style.display = 'flex';
+            if (bannerAllowed) bannerAllowed.style.display = 'none';
+        }
+
+        if (advanceSettingsBtn) advanceSettingsBtn.style.display = 'none';
+
+        if (headerTitle) {
+            headerTitle.innerHTML = `📋 My Field Orders &amp; Tracking <span style="font-size:11.5px; font-weight:normal; color:#64748b;">(${myUser.name || 'Order Booker'})</span>`;
+        }
+
+        // Booker automatically defaults to their own orders
+        if (myUid) activeBookerFilter = myUid;
+    } else {
+        if (bannerNotAllowed) bannerNotAllowed.style.display = 'none';
+        if (bannerAllowed) bannerAllowed.style.display = 'none';
+        if (advanceSettingsBtn) advanceSettingsBtn.style.display = 'inline-flex';
+    }
+}
+
+// ============================================
 // 🛡️ AUTH GUARD & SMART INITIALIZATION
 // ============================================
 auth.onAuthStateChanged(async (user) => {
@@ -152,6 +214,9 @@ auth.onAuthStateChanged(async (user) => {
         } catch (e) {
             console.warn('Agency load:', e);
         }
+
+        // Setup Role-based View & Permissions
+        setupRoleBasedUI();
 
         // Setup UI handlers
         setupFilters();
@@ -1006,13 +1071,18 @@ function renderOrdersTable() {
         const dStat = ord.deliveryStatus || 'pending';
         const isPendingApproval = isOrderPendingApproval(ord);
 
+        const isBooker = isUserBooker();
+        const canApprove = canUserApproveOrders();
+
         let badgeClass = 'badge-pending';
         let badgeText = '⏳ Pending Dispatch';
         let badgeStyle = '';
 
         if (isPendingApproval) {
             badgeClass = 'badge-pending';
-            badgeText = '⏳ Pending Approval (منظوری درکار)';
+            badgeText = isBooker 
+                ? (canApprove ? '⏳ Pending Approval (Admin Allowed)' : '⏳ Pending Admin Approval (ایڈمن کی منظوری کا انتظار)')
+                : '⏳ Pending Approval (منظوری درکار)';
             badgeStyle = 'background:#fef3c7; color:#b45309; border:1.5px solid #fde68a; font-weight:800;';
         } else if (dStat === 'dispatched') {
             badgeClass = 'badge-dispatched';
@@ -1026,7 +1096,9 @@ function renderOrdersTable() {
             badgeStyle = 'background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;';
         } else if (ord.orderStatus === 'approved') {
             badgeClass = 'badge-delivered';
-            badgeText = '✅ Approved (منظور شدہ)';
+            badgeText = isBooker 
+                ? '✅ Approved by Admin (ایڈمن نے منظور کر لیا)' 
+                : '✅ Approved (منظور شدہ)';
             badgeStyle = 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-weight:bold;';
         }
 
@@ -1086,12 +1158,18 @@ function renderOrdersTable() {
 
                         <!-- Approval Actions -->
                         ${isPendingApproval ? `
-                            <button type="button" class="btn btn-sm" onclick="approveOrder('${ord.id}')" style="background:#10b981; color:#fff; border-radius:6px; font-size:11px; padding:4px 9px; font-weight:bold;" title="Accept, Deduct Stock &amp; Assign">
-                                <i class="fas fa-check"></i> Accept
-                            </button>
-                            <button type="button" class="btn btn-sm" onclick="rejectOrder('${ord.id}')" style="background:#ef4444; color:#fff; border-radius:6px; font-size:11px; padding:4px 7px;" title="Reject Order">
-                                <i class="fas fa-times"></i>
-                            </button>
+                            ${canApprove ? `
+                                <button type="button" class="btn btn-sm" onclick="approveOrder('${ord.id}')" style="background:#10b981; color:#fff; border-radius:6px; font-size:11px; padding:4px 9px; font-weight:bold;" title="Accept, Deduct Stock &amp; Assign">
+                                    <i class="fas fa-check"></i> Accept ${isBooker ? '<span style="font-size:9px; opacity:0.9;">(Allowed)</span>' : ''}
+                                </button>
+                                <button type="button" class="btn btn-sm" onclick="rejectOrder('${ord.id}')" style="background:#ef4444; color:#fff; border-radius:6px; font-size:11px; padding:4px 7px;" title="Reject Order">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : `
+                                <span style="background:#fffbeb; border:1px solid #fde68a; color:#b45309; font-size:10.5px; font-weight:800; padding:3px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;" title="Only Admin can approve field orders (Admin Not Allowed)">
+                                    <i class="fas fa-lock" style="color:#d97706;"></i> Admin Not Allowed
+                                </span>
+                            `}
                         ` : ''}
 
                         <!-- Print Customer Bill -->
@@ -1163,6 +1241,18 @@ async function getNextLiveBillNo() {
 // ✅ APPROVE SINGLE BOOKER ORDER
 // ============================================
 async function approveOrder(orderId) {
+    if (!canUserApproveOrders()) {
+        Swal.fire({
+            icon: 'warning',
+            title: '🔒 Admin Not Allowed (ایڈمن کی منظوری درکار)',
+            html: `آپ کو فیلڈ آرڈر منظور کرنے کا اختیار نہیں ہے۔<br>
+                   یہ کام صرف ایڈمن کر سکتا ہے جب تک کہ وہ آپ کو اجازت نہ دے۔<br><br>
+                   <b style="color:#b45309;">(Status: Admin Not Allowed)</b>`,
+            confirmButtonColor: '#0284c7'
+        });
+        return;
+    }
+
     const ord = allOrders.find(o => o.id === orderId);
     if (!ord) return;
 
@@ -1465,6 +1555,16 @@ window.openAssignSupplierModal = async function(orderId) {
 // ❌ REJECT BOOKER ORDER
 // ============================================
 async function rejectOrder(orderId) {
+    if (!canUserApproveOrders()) {
+        Swal.fire({
+            icon: 'warning',
+            title: '🔒 Admin Not Allowed (ایڈمن کی منظوری درکار)',
+            text: 'آپ کو آرڈر منسوخ یا ریجیکٹ کرنے کا اختیار نہیں ہے۔ صرف ایڈمن منسوخ کر سکتا ہے۔',
+            confirmButtonColor: '#0284c7'
+        });
+        return;
+    }
+
     const confirm = await Swal.fire({
         title: '❌ آرڈر منسوخ کریں؟',
         text: 'کیا آپ واقعی اس فیلڈ آرڈر کو ریجیکٹ کرنا چاہتے ہیں؟',
@@ -1598,14 +1698,21 @@ function viewOrderDetails(orderId) {
     `;
 
     // Dynamic Actions in Modal
+    const canApprove = canUserApproveOrders();
     actionsEl.innerHTML = `
         ${isPending ? `
-            <button type="button" onclick="closeOrderDetailsModal(); approveOrder('${ord.id}')" class="btn" style="background:#10b981; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
-                <i class="fas fa-check"></i> Accept &amp; Generate Bill
-            </button>
-            <button type="button" onclick="closeOrderDetailsModal(); rejectOrder('${ord.id}')" class="btn" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
-                <i class="fas fa-times"></i> Reject
-            </button>
+            ${canApprove ? `
+                <button type="button" onclick="closeOrderDetailsModal(); approveOrder('${ord.id}')" class="btn" style="background:#10b981; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+                    <i class="fas fa-check"></i> Accept &amp; Generate Bill
+                </button>
+                <button type="button" onclick="closeOrderDetailsModal(); rejectOrder('${ord.id}')" class="btn" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            ` : `
+                <div style="font-size:12px; color:#b45309; background:#fffbeb; border:1px solid #fde68a; padding:8px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:8px;">
+                    <i class="fas fa-lock" style="color:#d97706;"></i> <b>Admin Not Allowed:</b> یہ آرڈر ایڈمن کی منظوری کا منتظر ہے (Pending Admin Approval)۔
+                </div>
+            `}
         ` : ''}
         ${ord.orderStatus === 'approved' ? `
             <button type="button" onclick="printOrderBill('${ord.id}')" class="btn" style="background:#0284c7; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;">
@@ -1721,16 +1828,37 @@ function updateBulkOrdersBar() {
     const checked = document.querySelectorAll('.order-check:checked');
     const bar = document.getElementById('bulkOrdersBar');
     const countEl = document.getElementById('selectedOrdersCount');
+    const btnBulkApprove = document.getElementById('btnBulkApprove');
+    const bulkSupplierSelect = document.getElementById('bulkSupplierSelect');
+
+    const canApprove = canUserApproveOrders();
 
     if (checked.length > 0) {
         if (bar) bar.style.display = 'flex';
         if (countEl) countEl.innerText = checked.length;
+        if (!canApprove) {
+            if (btnBulkApprove) btnBulkApprove.style.display = 'none';
+            if (bulkSupplierSelect) bulkSupplierSelect.style.display = 'none';
+        } else {
+            if (btnBulkApprove) btnBulkApprove.style.display = 'inline-flex';
+            if (bulkSupplierSelect) bulkSupplierSelect.style.display = 'inline-block';
+        }
     } else {
         if (bar) bar.style.display = 'none';
     }
 }
 
 async function handleBulkApproveAndAssign() {
+    if (!canUserApproveOrders()) {
+        Swal.fire({
+            icon: 'warning',
+            title: '🔒 Admin Not Allowed (ایڈمن کی منظوری درکار)',
+            text: 'آپ کو آرڈرز منظور کرنے کا اختیار نہیں ہے۔ صرف ایڈمن ایک کلک پر منظور کر سکتا ہے۔',
+            confirmButtonColor: '#0284c7'
+        });
+        return;
+    }
+
     const checked = Array.from(document.querySelectorAll('.order-check:checked')).map(c => c.dataset.id);
     if (checked.length === 0) {
         Swal.fire('توجہ', 'کم از کم ایک آرڈر منتخب کریں!', 'warning');
@@ -2592,6 +2720,9 @@ window.openAdvanceSettingsModal = function() {
     const autoSel = document.getElementById('settingAutoApprove');
     if (autoSel) autoSel.value = settings.autoApprove || 'manual';
 
+    const policySel = document.getElementById('settingBookerApprovalPolicy');
+    if (policySel) policySel.value = myAgency?.bookerApprovalPolicy || settings.bookerApprovalPolicy || 'admin_only';
+
     const soundSel = document.getElementById('settingOrderSound');
     if (soundSel) soundSel.value = settings.orderSound || 'on';
 
@@ -2608,15 +2739,34 @@ window.closeAdvanceSettingsModal = function() {
     if (modal) modal.style.display = 'none';
 };
 
-window.saveAdvanceSettings = function() {
+window.saveAdvanceSettings = async function() {
+    const policyVal = document.getElementById('settingBookerApprovalPolicy')?.value || 'admin_only';
     const settings = {
         autoApprove: document.getElementById('settingAutoApprove')?.value || 'manual',
+        bookerApprovalPolicy: policyVal,
         orderSound: document.getElementById('settingOrderSound')?.value || 'on',
         printPaper: document.getElementById('settingPrintPaper')?.value || 'thermal80',
         billPrefix: document.getElementById('settingBillPrefix')?.value || 'ORD-'
     };
 
     localStorage.setItem('eb_booker_orders_settings', JSON.stringify(settings));
+
+    if (myAgencyId && myAgencyId !== 'super-admin-hq') {
+        try {
+            await db.collection('agencies').doc(myAgencyId).update({
+                bookerApprovalPolicy: policyVal,
+                allowBookerApprove: policyVal === 'allow_bookers',
+                billPrefix: settings.billPrefix
+            });
+            if (myAgency) {
+                myAgency.bookerApprovalPolicy = policyVal;
+                myAgency.allowBookerApprove = (policyVal === 'allow_bookers');
+            }
+        } catch(e) {
+            console.warn('Sync agency settings:', e);
+        }
+    }
+
     closeAdvanceSettingsModal();
 
     Swal.fire({

@@ -139,24 +139,69 @@
             <i class="fas fa-chevron-down toggle-arrow" id="toggleArrow"></i>
         </div>
         <form id="addItemForm" class="panel-form" style="display:none;">
-            <!-- 📸 PRODUCT PHOTO (Image Upload & Preview) -->
-            <div class="form-row" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px; margin-bottom:12px; align-items:center;">
-                <div style="width:70px; height:70px; border-radius:10px; border:2px dashed #86efac; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff; flex-shrink:0;">
+            <!-- 📸 PRODUCT PHOTO (Portrait 3:4 Studio & Preview) -->
+            <div class="form-row" style="background:#f0fdf4; border:1px solid #bbf7d0; padding:14px; border-radius:12px; margin-bottom:14px; align-items:center;">
+                <!-- 3:4 Portrait Preview Box -->
+                <div style="width:90px; height:120px; border-radius:12px; border:2px dashed #86efac; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; background:#fff; flex-shrink:0; position:relative; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
                     <img id="itemPhotoPreview" src="" alt="Photo" style="display:none; width:100%; height:100%; object-fit:cover;">
-                    <span id="itemPhotoPlaceholder" style="font-size:26px; color:#86efac;">📸</span>
+                    <div id="itemPhotoPlaceholder" style="text-align:center; padding:6px; color:#86efac;">
+                        <span style="font-size:26px; display:block;">📸</span>
+                        <span style="font-size:9px; font-weight:800; color:#166534; display:block; margin-top:2px;">3:4 Portrait</span>
+                    </div>
+                    <span id="itemPhotoRatioBadge" style="display:none; position:absolute; bottom:3px; right:3px; background:rgba(15,23,42,0.75); color:#fff; font-size:8px; font-weight:800; padding:1px 4px; border-radius:4px;">3:4 HD</span>
                 </div>
-                <div style="flex:1; margin-left:12px;">
-                    <label style="font-size:12px; font-weight:bold; color:#166534; display:block; margin-bottom:4px;">Product Photo / Image (تصویر)</label>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <label class="btn" style="background:#16a34a; color:#fff; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer;">
-                            <i class="fas fa-camera"></i> Upload Photo
+
+                <div style="flex:1; margin-left:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px; margin-bottom:4px;">
+                        <label style="font-size:12px; font-weight:bold; color:#166534; margin:0;">
+                            Product Photo / تصویر (Catalog Portrait 3:4 • 600×800 px)
+                        </label>
+                        <span style="font-size:10px; color:#0369a1; background:#e0f2fe; padding:2px 7px; border-radius:10px; font-weight:700;">
+                            📐 Fixed Booker Angle
+                        </span>
+                    </div>
+
+                    <!-- Actions Bar -->
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px;">
+                        <label class="btn" style="background:#16a34a; color:#fff; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                            <i class="fas fa-camera"></i> <span>Upload Photo</span>
                             <input type="file" id="itemPhotoFile" accept="image/*" style="display:none;">
                         </label>
-                        <input type="url" id="itemPhotoUrl" placeholder="Or paste image URL..." style="flex:1; min-width:180px; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px;">
-                        <button type="button" class="btn" id="itemRemovePhotoBtn" style="display:none; background:#fee2e2; color:#b91c1c; font-size:11px; padding:6px 10px; border-radius:6px;">Remove</button>
+                        
+                        <!-- 🔄 ROTATE 90° BUTTON -->
+                        <button type="button" class="btn" id="itemRotatePhotoBtn" style="display:none; background:#0284c7; color:#fff; font-size:11px; padding:6px 10px; border-radius:6px;" title="Rotate 90 degrees clockwise">
+                            <i class="fas fa-redo"></i> <span>Rotate 90° (گھمائیں)</span>
+                        </button>
+
+                        <!-- ✂️ ADJUST / CROP IN STUDIO BUTTON -->
+                        <button type="button" class="btn" id="itemAdjustPhotoBtn" style="display:none; background:#7c3aed; color:#fff; font-size:11px; padding:6px 10px; border-radius:6px;" title="Adjust portrait framing and angle">
+                            <i class="fas fa-crop-alt"></i> <span>Adjust / Frame (ایڈجسٹ کریں)</span>
+                        </button>
+
+                        <button type="button" class="btn" id="itemRemovePhotoBtn" style="display:none; background:#fee2e2; color:#b91c1c; font-size:11px; padding:6px 10px; border-radius:6px;">
+                            <i class="fas fa-trash-alt"></i> Remove
+                        </button>
                     </div>
+
+                    <!-- 🔗 IMAGE URL / WEB LINK BOX (Locked by Default, Admin Permission Controlled) -->
+                    <div id="itemPhotoUrlContainer" style="margin-top:8px;">
+                        <div id="itemPhotoUrlLockedMsg" style="display:none; max-width:400px; padding:7px 10px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; font-size:11px; color:#64748b; align-items:center; gap:8px;">
+                            <i class="fas fa-lock" style="color:#d97706; font-size:13px;"></i>
+                            <span><b>Image URL Link feature Locked:</b> Admin ki permission zaroori hai.</span>
+                        </div>
+                        <div id="itemPhotoUrlActiveBox" style="display:flex; gap:6px; max-width:440px; align-items:center;">
+                            <div style="position:relative; flex:1;">
+                                <i class="fas fa-link" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; color:#94a3b8;"></i>
+                                <input type="url" id="itemPhotoUrl" placeholder="Paste image web link (https://...)" style="width:100%; box-sizing:border-box; padding:6px 8px 6px 26px; border:1px solid #cbd5e1; border-radius:6px; font-size:11px;">
+                            </div>
+                            <button type="button" class="btn" id="itemPhotoUrlLoadBtn" style="background:#0284c7; color:#fff; font-size:11px; padding:6px 10px; border-radius:6px; white-space:nowrap;" title="Load image and open in Studio to adjust">
+                                <i class="fas fa-magic"></i> <span>Load & Frame</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- ⚡ LIVE IMAGE OPTIMIZATION QUOTA SHIELD STATS -->
-                    <div id="itemPhotoCompressStats" style="display:none;"></div>
+                    <div id="itemPhotoCompressStats" style="display:none; margin-top:6px;"></div>
                 </div>
             </div>
 

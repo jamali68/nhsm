@@ -27,7 +27,7 @@ const AUTH_TEXTS = {
         appSubtitle: "Smart Business Management",
         tabLogin: "Login",
         tabSignup: "Sign Up",
-        loginBtn: "Login to POS",
+        loginBtn: "Login to NH POS",
         signupBtn: "Create Account — FREE",
         googleBtn: "Continue with Google (Owner Only)",
         staffNoticeTitle: "Field Staff (Order Booker & Supplier) Login:",

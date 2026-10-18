@@ -179,12 +179,33 @@ export default function App() {
 
   // PWA, Message listeners, & Network status
   useEffect(() => {
+    const isDev = window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '0.0.0.0' ||
+      window.location.hostname.includes('run.app');
+
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then((reg) => {
-        console.log('Easy Bill Service Worker active:', reg.scope);
-      }).catch((err) => {
-        console.warn('SW registration info:', err);
-      });
+      if (isDev) {
+        // Dev / AI Studio preview: Unregister existing service workers to ensure fresh modules
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const reg of registrations) {
+            reg.unregister();
+          }
+        });
+        if ('caches' in window) {
+          caches.keys().then((names) => {
+            for (const name of names) {
+              if (name !== 'easybill-pwa-v4.2.8-turbo') caches.delete(name);
+            }
+          });
+        }
+      } else {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          console.log('Easy Bill Service Worker active:', reg.scope);
+        }).catch((err) => {
+          console.warn('SW registration info:', err);
+        });
+      }
     }
 
     if (window.matchMedia('(display-mode: standalone)').matches) {

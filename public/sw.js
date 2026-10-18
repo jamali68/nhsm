@@ -1,11 +1,11 @@
 // ==========================================================================
-// 🚀 EASY BILL GENERATOR — TURBO SERVICE WORKER (v4.2.0)
+// 🚀 EASY BILL GENERATOR — TURBO SERVICE WORKER (v4.2.8)
 // ✅ Ultra-lean App Shell pre-caching (No network choke on install)
 // ✅ Instant Stale-While-Revalidate caching for lightning-fast loads
-// ✅ Zero lag navigation with fast fallback
+// ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'easybill-pwa-v4.2.0-turbo';
+const CACHE_NAME = 'easybill-pwa-v4.2.8-turbo';
 
 // Core essential App Shell only (pre-cache in < 0.5s without bandwidth flood)
 const CORE_SHELL_ASSETS = [
@@ -58,8 +58,15 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Exclude Firebase Firestore, Auth, Netlify Serverless API & Google Identity
+  // Bypass dev tooling, Vite internal routes, APIs, and dev server hosts
   if (
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === '0.0.0.0' ||
+    url.hostname.includes('run.app') ||
     url.origin.includes('firestore.googleapis.com') ||
     url.origin.includes('identitytoolkit.googleapis.com') ||
     url.origin.includes('securetoken.googleapis.com') ||
@@ -98,22 +105,50 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // B. Static Assets (JS, CSS, Images, Fonts): Stale-While-Revalidate (Instant response)
+  // B. Static Assets (JS, CSS, Images, Fonts): Anti-Corruption Guard
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => {});
+    (async () => {
+      const cachedResponse = await caches.match(event.request);
+      if (cachedResponse) {
+        const ct = cachedResponse.headers.get('content-type') || '';
+        // If an HTML fallback was incorrectly stored for a script/stylesheet, delete it immediately
+        if (ct.includes('text/html')) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.delete(event.request);
+        } else {
+          // Valid asset: background update (Stale-While-Revalidate)
+          fetch(event.request)
+            .then(async (networkResponse) => {
+              if (
+                networkResponse &&
+                networkResponse.status === 200 &&
+                !(networkResponse.headers.get('content-type') || '').includes('text/html')
+              ) {
+                const cache = await caches.open(CACHE_NAME);
+                await cache.put(event.request, networkResponse.clone());
+              }
+            })
+            .catch(() => {});
+          return cachedResponse;
+        }
+      }
 
-      // If cached, return immediately for instant render, while updating cache in background
-      return cachedResponse || fetchPromise;
-    })
+      // Fetch fresh from network
+      try {
+        const networkResponse = await fetch(event.request);
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          !(networkResponse.headers.get('content-type') || '').includes('text/html')
+        ) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, networkResponse.clone());
+        }
+        return networkResponse;
+      } catch (err) {
+        return cachedResponse || new Response('', { status: 408 });
+      }
+    })()
   );
 });
 

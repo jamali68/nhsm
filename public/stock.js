@@ -241,11 +241,47 @@ async function loadAgencyLimits() {
             myLimits = { ...myLimits, ...myAgency.customLimits };
         }
         setupIndustryCategoryMode();
+
+        // 🔒 CHECK IMAGE URL / WEB LINK PERMISSION (Default Locked unless allowed by Admin)
+        applyImageUrlPermission();
     } catch (e) {
         console.warn('Limits error:', e);
     }
     const maxLimitEl = document.getElementById('itemLimitMax');
     if (maxLimitEl) maxLimitEl.innerText = (myLimits.maxItems >= 90000) ? 'Unlimited' : (myLimits.maxItems || 50);
+}
+
+function applyImageUrlPermission() {
+    const isSuperAdmin = (myUser && myUser.role === 'super-admin');
+    const agencyPerms = (myAgency && myAgency.permissions) ? myAgency.permissions : {};
+    const userPerms = (myUser && myUser.permissions) ? myUser.permissions : {};
+
+    // By default: locked for everyone unless admin grants `image_url_input: true`
+    const isAllowed = isSuperAdmin || agencyPerms.image_url_input === true || userPerms.image_url_input === true;
+
+    const lockedMsg = document.getElementById('itemPhotoUrlLockedMsg');
+    const activeBox = document.getElementById('itemPhotoUrlActiveBox');
+    const urlInput = document.getElementById('itemPhotoUrl');
+    const loadBtn = document.getElementById('itemPhotoUrlLoadBtn');
+
+    if (isAllowed) {
+        if (lockedMsg) lockedMsg.style.display = 'none';
+        if (activeBox) activeBox.style.display = 'flex';
+        if (urlInput) {
+            urlInput.disabled = false;
+            urlInput.placeholder = "Paste image web link (https://...)";
+        }
+        if (loadBtn) loadBtn.disabled = false;
+    } else {
+        // Show locked indicator
+        if (lockedMsg) lockedMsg.style.display = 'flex';
+        if (activeBox) activeBox.style.display = 'none';
+        if (urlInput) {
+            urlInput.disabled = true;
+            urlInput.placeholder = "🔒 Locked by Admin";
+        }
+        if (loadBtn) loadBtn.disabled = true;
+    }
 }
 
 // ============================================
@@ -552,8 +588,14 @@ function renderItems() {
         const safeName = String(item.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
         const photoHtml = item.photoUrl
-            ? `<img src="${item.photoUrl}" alt="${safeName}" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1; flex-shrink:0;">`
-            : `<div style="width:48px; height:48px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">📦</div>`;
+            ? `<div class="item-photo-portrait-wrapper" onclick="showItemPhotoModal('${item.id}', '${safeName}', '${item.photoUrl}')" title="Click to view photo (تصویر دیکھیں)" style="width:52px; height:70px; border-radius:10px; overflow:hidden; border:1.5px solid #cbd5e1; box-shadow:0 2px 6px rgba(0,0,0,0.06); flex-shrink:0; cursor:pointer; position:relative; background:#f8fafc;">
+                <img src="${item.photoUrl}" alt="${safeName}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                <span style="position:absolute; bottom:2px; right:2px; background:rgba(15,23,42,0.7); color:#fff; font-size:7px; font-weight:800; padding:1px 3px; border-radius:3px;">3:4</span>
+               </div>`
+            : `<div onclick="adjustProductPhotoDirectly('${item.id}')" title="Click to add photo" style="width:52px; height:70px; border-radius:10px; background:#f1f5f9; border:1.5px dashed #cbd5e1; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; cursor:pointer; color:#94a3b8;">
+                <span>📦</span>
+                <span style="font-size:8px; font-weight:700; color:#64748b; margin-top:2px;">+ Photo</span>
+               </div>`;
 
         const schemeHtml = item.hasScheme ? `
             <div style="margin-top:4px;">
@@ -589,6 +631,7 @@ function renderItems() {
                 <button class="btn-icon btn-out" onclick="openStockModal('${item.id}', 'out')" title="Sale / Stock Out">📤</button>
                 <button class="btn-icon btn-history" onclick="viewHistory('${item.id}')" title="Movement Log">📜</button>
                 ${!isBooker ? `
+                    <button class="btn-icon" onclick="adjustProductPhotoDirectly('${item.id}')" title="✂️ Adjust / Rotate Portrait Photo" style="background:#f5f3ff; color:#7c3aed;">📐</button>
                     <button class="btn-icon btn-edit" onclick="editItem('${item.id}')" title="Edit Product">✏️</button>
                     <button class="btn-icon btn-del" onclick="deleteItem('${item.id}', '${safeName}')" title="Delete Product">🗑️</button>
                 ` : ''}
@@ -609,6 +652,9 @@ const photoUrlInput = document.getElementById('itemPhotoUrl');
 const photoPreviewImg = document.getElementById('itemPhotoPreview');
 const photoPlaceholder = document.getElementById('itemPhotoPlaceholder');
 const removePhotoBtn = document.getElementById('itemRemovePhotoBtn');
+const rotatePhotoBtn = document.getElementById('itemRotatePhotoBtn');
+const adjustPhotoBtn = document.getElementById('itemAdjustPhotoBtn');
+const photoRatioBadge = document.getElementById('itemPhotoRatioBadge');
 
 const photoCompressStats = document.getElementById('itemPhotoCompressStats');
 
@@ -618,7 +664,10 @@ function setPhotoPreview(src, stats) {
         photoPreviewImg.src = src;
         photoPreviewImg.style.display = 'block';
         photoPlaceholder.style.display = 'none';
-        removePhotoBtn.style.display = 'inline-block';
+        if (photoRatioBadge) photoRatioBadge.style.display = 'block';
+        if (removePhotoBtn) removePhotoBtn.style.display = 'inline-flex';
+        if (rotatePhotoBtn) rotatePhotoBtn.style.display = 'inline-flex';
+        if (adjustPhotoBtn) adjustPhotoBtn.style.display = 'inline-flex';
         if (stats && window.ImageOptimizer && photoCompressStats) {
             window.ImageOptimizer.renderStatsBadge(photoCompressStats, stats);
         }
@@ -627,7 +676,10 @@ function setPhotoPreview(src, stats) {
         photoPreviewImg.src = '';
         photoPreviewImg.style.display = 'none';
         photoPlaceholder.style.display = 'block';
-        removePhotoBtn.style.display = 'none';
+        if (photoRatioBadge) photoRatioBadge.style.display = 'none';
+        if (removePhotoBtn) removePhotoBtn.style.display = 'none';
+        if (rotatePhotoBtn) rotatePhotoBtn.style.display = 'none';
+        if (adjustPhotoBtn) adjustPhotoBtn.style.display = 'none';
         if (photoCompressStats) {
             photoCompressStats.style.display = 'none';
             photoCompressStats.innerHTML = '';
@@ -637,53 +689,122 @@ function setPhotoPreview(src, stats) {
     }
 }
 
+// 📸 FILE CHOOSER: Opens Interactive Portrait Studio (Lighting spotlight, 3:4 crop, 90° rotation)
 if (photoFileInput) {
-    photoFileInput.addEventListener('change', async function(e) {
+    photoFileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        try {
-            if (photoCompressStats) {
-                photoCompressStats.style.display = 'inline-flex';
-                photoCompressStats.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Optimizing & compressing photo...</span>';
-            }
+        if (window.ImageOptimizer && window.ImageOptimizer.openPortraitStudio) {
+            window.ImageOptimizer.openPortraitStudio({
+                imageSource: file,
+                onSave: function(optimized) {
+                    setPhotoPreview(optimized.dataUrl, optimized);
+                }
+            });
+        } else {
+            // Fallback compression
+            window.ImageOptimizer.compressFile(file, { maxDimension: 600, quality: 0.80 })
+                .then(opt => setPhotoPreview(opt.dataUrl, opt))
+                .catch(err => Swal.fire('Error', err.message, 'error'));
+        }
+    });
+}
 
-            if (window.ImageOptimizer) {
-                // 🗜️ Ultra-smart compression: 450px retina HD, WebP, 95%+ quota saved
-                const optimized = await window.ImageOptimizer.compressFile(file, {
-                    maxDimension: 450,
-                    quality: 0.78,
-                    targetMaxBytes: 50 * 1024 // 50 KB target
-                });
-                setPhotoPreview(optimized.dataUrl, optimized);
-            } else {
-                // Fallback canvas compression
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const maxDim = 400;
-                        let w = img.width, h = img.height;
-                        if (w > h) {
-                            if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
-                        } else {
-                            if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
-                        }
-                        canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-                        setPhotoPreview(canvas.toDataURL('image/jpeg', 0.75));
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
+// 🔄 QUICK ROTATE 90° (Clockwise 0° -> 90° -> 180° -> 270° -> 0°)
+if (rotatePhotoBtn) {
+    rotatePhotoBtn.addEventListener('click', async function() {
+        if (!currentItemPhotoBase64) return;
+        try {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rotating...';
+            if (window.ImageOptimizer && window.ImageOptimizer.rotateImage90) {
+                const rotated = await window.ImageOptimizer.rotateImage90(currentItemPhotoBase64);
+                setPhotoPreview(rotated.dataUrl, rotated);
             }
         } catch (err) {
-            console.error('Photo optimization error:', err);
-            Swal.fire('Photo Error', err.message || 'Could not compress image.', 'warning');
-            if (photoCompressStats) photoCompressStats.style.display = 'none';
+            console.error('Rotation error:', err);
+            Swal.fire('Error', 'Could not rotate image: ' + err.message, 'error');
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-redo"></i> <span>Rotate 90° (گھمائیں)</span>';
         }
+    });
+}
+
+// ✂️ ADJUST / RE-CROP IN STUDIO (Admin can adjust anytime!)
+if (adjustPhotoBtn) {
+    adjustPhotoBtn.addEventListener('click', function() {
+        if (!currentItemPhotoBase64) return;
+        if (window.ImageOptimizer && window.ImageOptimizer.openPortraitStudio) {
+            window.ImageOptimizer.openPortraitStudio({
+                imageSource: currentItemPhotoBase64,
+                onSave: function(optimized) {
+                    setPhotoPreview(optimized.dataUrl, optimized);
+                }
+            });
+        }
+    });
+}
+
+const photoUrlLoadBtn = document.getElementById('itemPhotoUrlLoadBtn');
+
+async function handleUrlImageLoad(url) {
+    if (!url) return;
+    try {
+        if (photoUrlLoadBtn) {
+            photoUrlLoadBtn.disabled = true;
+            photoUrlLoadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        }
+
+        // Test loading the image
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Image load nahi ho saki. Link check karein ya direct download kar k upload karein.'));
+            img.src = url;
+        });
+
+        // Open in Portrait Studio for framing and adjusting
+        if (window.ImageOptimizer && window.ImageOptimizer.openPortraitStudio) {
+            window.ImageOptimizer.openPortraitStudio({
+                imageSource: url,
+                onSave: function(optimized) {
+                    setPhotoPreview(optimized.dataUrl, optimized);
+                }
+            });
+        } else {
+            setPhotoPreview(url);
+        }
+    } catch (err) {
+        console.warn('URL image load error:', err);
+        // Fallback: If CORS prevented canvas drawing, still allow previewing the URL directly
+        setPhotoPreview(url);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Image Loaded!',
+                text: 'Image link load ho gaya hai. Agar website security (CORS) ki wajah se studio adjust na khulay to aap image right-click save kar k Upload Photo se bhi adjust kar saktay hain.',
+                icon: 'info'
+            });
+        }
+    } finally {
+        if (photoUrlLoadBtn) {
+            photoUrlLoadBtn.disabled = false;
+            photoUrlLoadBtn.innerHTML = '<i class="fas fa-magic"></i> <span>Load & Frame</span>';
+        }
+    }
+}
+
+if (photoUrlLoadBtn) {
+    photoUrlLoadBtn.addEventListener('click', function() {
+        const val = photoUrlInput ? photoUrlInput.value.trim() : '';
+        if (!val) {
+            Swal.fire('Link Required', 'Pehle kisi bhi tasveer ka web link (URL) paste karein.', 'info');
+            return;
+        }
+        handleUrlImageLoad(val);
     });
 }
 
@@ -693,13 +814,13 @@ if (photoUrlInput) {
         if (!val) return;
         if (val.startsWith('data:image/') && window.ImageOptimizer) {
             try {
-                const opt = await window.ImageOptimizer.compressDataUrl(val, { maxDimension: 450, quality: 0.78 });
+                const opt = await window.ImageOptimizer.compressDataUrl(val, { maxDimension: 600, quality: 0.80 });
                 setPhotoPreview(opt.dataUrl, opt);
             } catch (_) {
                 setPhotoPreview(val);
             }
         } else {
-            setPhotoPreview(val);
+            handleUrlImageLoad(val);
         }
     });
 }
@@ -707,6 +828,120 @@ if (photoUrlInput) {
 if (removePhotoBtn) {
     removePhotoBtn.addEventListener('click', () => setPhotoPreview(''));
 }
+
+// ========================================================
+// 📐 ADJUST EXISTING PRODUCT PHOTO ANYTIME DIRECTLY
+// ========================================================
+window.adjustProductPhotoDirectly = function(itemId) {
+    const item = allMyStock.find(x => x.id === itemId);
+    if (!item) return;
+
+    if (item.photoUrl) {
+        if (window.ImageOptimizer && window.ImageOptimizer.openPortraitStudio) {
+            window.ImageOptimizer.openPortraitStudio({
+                imageSource: item.photoUrl,
+                onSave: async function(optimized) {
+                    await saveDirectProductPhoto(itemId, optimized.dataUrl);
+                }
+            });
+        }
+    } else {
+        const tempInput = document.createElement('input');
+        tempInput.type = 'file';
+        tempInput.accept = 'image/*';
+        tempInput.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            window.ImageOptimizer.openPortraitStudio({
+                imageSource: file,
+                onSave: async function(optimized) {
+                    await saveDirectProductPhoto(itemId, optimized.dataUrl);
+                }
+            });
+        };
+        tempInput.click();
+    }
+};
+
+async function saveDirectProductPhoto(itemId, newPhotoUrl) {
+    try {
+        Swal.fire({
+            title: 'Saving Portrait Photo...',
+            text: 'Updating product in cloud database...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        await db.collection('stock').doc(itemId).update({
+            photoUrl: newPhotoUrl,
+            updatedAt: new Date().toISOString()
+        });
+
+        // Update local memory stock
+        const localItem = allMyStock.find(x => x.id === itemId);
+        if (localItem) localItem.photoUrl = newPhotoUrl;
+
+        renderStockList();
+
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: '✅ Portrait Photo Updated (تصویر محفوظ ہو گئی)',
+            timer: 2200,
+            showConfirmButton: false
+        });
+    } catch (err) {
+        console.error('Failed to update product photo directly:', err);
+        Swal.fire('Error', 'Failed to save photo: ' + err.message, 'error');
+    }
+}
+
+window.showItemPhotoModal = function(itemId, safeName, photoUrl) {
+    const item = (typeof allMyStock !== 'undefined' && Array.isArray(allMyStock))
+        ? allMyStock.find(x => x.id === itemId)
+        : null;
+
+    const retailRate = item ? (item.retailRate || item.price || item.rate || 0) : 0;
+    const qty = item ? (item.stock || item.qty || 0) : null;
+    const unit = (item && item.unit) ? item.unit : '';
+
+    Swal.fire({
+        html: `
+            <div style="text-align: center; padding: 4px 0 2px;">
+                <!-- 🖼️ Portrait Photo on Top -->
+                <div style="display:inline-block; width: 100%; max-width: 270px; aspect-ratio: 3/4; border-radius: 16px; overflow: hidden; border: 2px solid #cbd5e1; box-shadow: 0 8px 24px rgba(0,0,0,0.12); background: #0f172a;">
+                    <img src="${photoUrl}" alt="${safeName}" style="width: 100%; height: 100%; object-fit: cover; display:block;">
+                </div>
+
+                <!-- 🏷️ Item Title at Bottom (Top per naheen) -->
+                <h3 style="margin: 14px 0 6px; font-size: 18px; font-weight: 800; color: #0f172a; line-height: 1.35; padding: 0 8px;">
+                    ${safeName}
+                </h3>
+
+                <!-- 📱 Fixed Booker Detail directly under Title -->
+                <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 4px; max-width: 92%;">
+                    <div style="font-size: 11.5px; font-weight: 700; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd; padding: 5px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-camera"></i> <span>Fixed Booker Catalog: 600 × 800 px (3:4 Portrait)</span>
+                    </div>
+                    ${(qty !== null || retailRate > 0) ? `
+                        <div style="font-size: 12px; color: #475569; display: inline-flex; align-items: center; gap: 8px;">
+                            ${qty !== null ? `<span>📦 Stock: <b style="color:#0f172a;">${qty}</b> ${unit}</span>` : ''}
+                            ${retailRate > 0 ? `<span style="color:#cbd5e1;">•</span> <span style="font-weight:700; color:#059669;">Rs ${Number(retailRate).toLocaleString()}</span>` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `,
+        showConfirmButton: true,
+        confirmButtonText: '<i class="fas fa-times"></i> Close (بند کریں)',
+        confirmButtonColor: '#475569',
+        showCancelButton: false,
+        showDenyButton: false,
+        showCloseButton: true,
+        focusConfirm: true
+    });
+};
 
 // Scheme toggle
 const schemeCheckbox = document.getElementById('itemHasScheme');

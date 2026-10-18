@@ -91,6 +91,7 @@
                         <label class="perm-check"><input type="checkbox" id="permStock" checked> 📦 Stock Bill &amp; Orders</label>
                         <label class="perm-check"><input type="checkbox" id="permCustomers" checked> 👥 Customer Khata</label>
                         <label class="perm-check"><input type="checkbox" id="permReports"> 📊 Reports</label>
+                        <label class="perm-check" style="color:#b45309; font-weight:bold;"><input type="checkbox" id="permApproveOrders"> ⚖️ Allow Self Order Approval (بکر خود آرڈر منظور کر سکے)</label>
                     </div>
                 </div>
             </div>
@@ -170,6 +171,11 @@
             <div style="margin-bottom:14px;">
                 <label style="font-size:12px; font-weight:bold;">Assigned Route / Area</label>
                 <input type="text" id="editStaffRoute" style="width:100%; box-sizing:border-box; padding:8px 10px; border:2px solid #e0e6e8; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:14px; background:#fffbeb; padding:8px 12px; border-radius:8px; border:1px solid #fde68a;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:bold; color:#b45309;">
+                    <input type="checkbox" id="editStaffApproveOrders"> ⚖️ Allow Self Order Approval (بکر خود آرڈر منظور کر سکے)
+                </label>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:8px;">
                 <button type="button" class="btn" onclick="closeEditStaffModal()" style="background:#e2e8f0; color:#475569;">Cancel</button>
@@ -338,6 +344,7 @@
             const permStock = p.stock !== false;
             const permCustomers = p.customers !== false;
             const permReports = !!p.reports;
+            const permApprove = !!p.approve_orders;
 
             html += `
             <div class="agency-item" data-id="${bk.id}">
@@ -354,6 +361,7 @@
                             <span style="font-size:11px; padding:2px 7px; border-radius:10px; background:${permStock ? '#dcfce7; color:#15803d;' : '#f1f5f9; color:#94a3b8;'} font-weight:bold;">📦 Stock: ${permStock ? 'ON' : 'OFF'}</span>
                             <span style="font-size:11px; padding:2px 7px; border-radius:10px; background:${permCustomers ? '#dcfce7; color:#15803d;' : '#f1f5f9; color:#94a3b8;'} font-weight:bold;">👥 Khata: ${permCustomers ? 'ON' : 'OFF'}</span>
                             <span style="font-size:11px; padding:2px 7px; border-radius:10px; background:${permReports ? '#dcfce7; color:#15803d;' : '#f1f5f9; color:#94a3b8;'} font-weight:bold;">📊 Reports: ${permReports ? 'ON' : 'OFF'}</span>
+                            <span style="font-size:11px; padding:2px 7px; border-radius:10px; background:${permApprove ? '#dcfce7; color:#15803d; border:1px solid #86efac;' : '#fffbeb; color:#b45309; border:1px solid #fde68a;'} font-weight:bold;">⚖️ Approval: ${permApprove ? 'ALLOWED' : 'LOCKED'}</span>
                         </div>
                     </div>
                 </div>
@@ -367,6 +375,7 @@
                     <button class="btn-sm btn-pass" onclick="changeBookerPassword('${bk.id}')" title="Change Password">🔑 Pass</button>
                     <button class="btn-sm ${permStock ? 'btn-perm-on' : 'btn-perm-off'}" onclick="togglePerm('${bk.id}', 'stock', ${permStock})">📦 Stock</button>
                     <button class="btn-sm ${permCustomers ? 'btn-perm-on' : 'btn-perm-off'}" onclick="togglePerm('${bk.id}', 'customers', ${permCustomers})">👥 Khata</button>
+                    <button class="btn-sm ${permApprove ? 'btn-perm-on' : 'btn-perm-off'}" style="${permApprove ? 'background:#10b981; color:#fff;' : 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;'}" onclick="togglePerm('${bk.id}', 'approve_orders', ${permApprove})" title="Toggle Order Approval Permission">${permApprove ? '⚖️ Approval ON' : '🔒 Approval OFF'}</button>
                     <button class="btn-sm ${bk.status === 'blocked' ? 'btn-activate' : 'btn-toggle'}" onclick="toggleBlock('${bk.id}', '${bk.status || 'active'}')">
                         ${bk.status === 'blocked' ? '✅ Unblock' : '🚫 Block'}
                     </button>
@@ -418,6 +427,7 @@
         const permStock = document.getElementById('permStock').checked;
         const permCustomers = document.getElementById('permCustomers').checked;
         const permReports = document.getElementById('permReports').checked;
+        const permApprove = document.getElementById('permApproveOrders')?.checked || false;
 
         // Validations
         if (!name) { Swal.fire('⚠️', 'Staff ka naam lazmi hai!', 'warning'); return; }
@@ -512,7 +522,8 @@
                     instant: false,
                     stock: permStock,
                     customers: permCustomers,
-                    reports: permReports
+                    reports: permReports,
+                    approve_orders: permApprove
                 },
                 status: 'active',
                 tempPassword: password,
@@ -643,6 +654,8 @@
         document.getElementById('editStaffName').value = st.name || '';
         document.getElementById('editStaffMobile').value = st.mobile || '';
         document.getElementById('editStaffRoute').value = st.route || '';
+        const editApproveCb = document.getElementById('editStaffApproveOrders');
+        if (editApproveCb) editApproveCb.checked = !!(st.permissions && st.permissions.approve_orders);
 
         document.getElementById('editStaffModalOverlay').style.display = 'flex';
     };
@@ -658,6 +671,11 @@
         const name = document.getElementById('editStaffName').value.trim();
         const mobile = document.getElementById('editStaffMobile').value.trim();
         const route = document.getElementById('editStaffRoute').value.trim();
+        const allowApprove = document.getElementById('editStaffApproveOrders')?.checked || false;
+
+        const currentStaff = allAgencyBookers.find(x => x.id === staffId);
+        const curPerms = (currentStaff && currentStaff.permissions) ? { ...currentStaff.permissions } : {};
+        curPerms.approve_orders = allowApprove;
 
         try {
             await db.collection('users').doc(staffId).update({
@@ -665,6 +683,7 @@
                 name: name,
                 mobile: mobile,
                 route: route,
+                permissions: curPerms,
                 updatedAt: new Date().toISOString()
             });
 
@@ -757,7 +776,8 @@
                 'instant': '⚡ Instant Bill',
                 'stock': '📦 Stock Bill',
                 'customers': '👥 Customer Khata',
-                'reports': '📊 Reports'
+                'reports': '📊 Reports',
+                'approve_orders': '⚖️ Order Self-Approval'
             };
 
             await db.collection('users').doc(bookerId).update({ permissions: perms });

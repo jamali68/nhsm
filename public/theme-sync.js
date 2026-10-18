@@ -1,11 +1,16 @@
 // 🏷️ Central Application Version (Single source of truth)
-window.EASYBILL_VERSION = '4.2.0';
+window.EASYBILL_VERSION = '4.2.8';
 
 // 🔄 Live Version Synchronization with manifest.json
 (function syncManifestVersion() {
     if (typeof window !== 'undefined' && window.fetch) {
-        fetch('manifest.json?t=' + Math.floor(Date.now() / 60000), { cache: 'default' })
-            .then(function(r) { return r.json(); })
+        fetch('manifest.json?t=' + Date.now(), { cache: 'no-cache' })
+            .then(function(r) {
+                if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
+                    return r.json();
+                }
+                return null;
+            })
             .then(function(m) {
                 if (m && m.version) {
                     window.EASYBILL_VERSION = m.version;
@@ -176,24 +181,33 @@ window.EASYBILL_VERSION = '4.2.0';
         }
     };
 
-    // 📱 PWA Service Worker Registration & Offline App Cache
-    if ('serviceWorker' in navigator) {
+    // 📱 PWA Service Worker Registration & Live Version Deployment
+    const isDevPreview = window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname.includes('run.app');
+
+    if ('serviceWorker' in navigator && !isDevPreview) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js', { scope: '/' })
                 .then((registration) => {
+                    // Check for updates on page load
+                    try { registration.update(); } catch (_) {}
+
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         if (installingWorker) {
                             installingWorker.onstatechange = () => {
                                 if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    console.log('[PWA] New offline version available.');
+                                    console.log('[PWA] New version installed! Activating immediately...');
+                                    installingWorker.postMessage({ type: 'SKIP_WAITING' });
                                 }
                             };
                         }
                     };
                 })
                 .catch((err) => {
-                    console.warn('[PWA] ServiceWorker registration failed:', err.message);
+                    console.warn('[PWA] ServiceWorker registration info:', err.message);
                 });
         });
     }
