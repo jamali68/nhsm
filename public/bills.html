@@ -509,7 +509,7 @@
     </div>
 
     <!-- ===== BILL FORM CARD (LIST VIEW) ===== -->
-    <div class="panel-card" id="billFormCard" style="padding-bottom:75px; padding-top:2px;">
+    <div class="panel-card" id="billFormCard" style="padding-bottom:110px; padding-top:2px;">
 
         <!-- 👤 SHOPKEEPER SELECTION BOX (Directly under the top view buttons row!) -->
         <div class="shopkeeper-box-card" style="background:#fff; border:1.5px solid #e2e8f0; border-radius:8px; padding:5px 8px; margin-bottom:2px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
@@ -538,6 +538,17 @@
 
             <!-- ℹ️ CUSTOMER INFO & CHIPS DISPLAY -->
             <div class="cust-info-box" id="custInfoBox" style="margin-top:2px;"></div>
+
+            <!-- 💵 TOP PENDING KHATA & QUICK PAYMENT BAR (SHOWS AS SOON AS CUSTOMER IS SELECTED) -->
+            <div id="topCustKhataRecoveryBar" style="display:none; background:#fffbeb; border:1.5px solid #fde68a; border-radius:8px; padding:6px 10px; margin-top:3px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+                <div style="min-width:0;">
+                    <div style="font-size:10.5px; font-weight:700; color:#92400e;">💰 Pending Khata (پچھلا بقایا کھاتہ):</div>
+                    <div style="font-size:15px; font-weight:900; color:#b45309;" id="topCustKhataAmount">Rs 0.00</div>
+                </div>
+                <button type="button" id="btnTopReceivePayment" onclick="openDirectRecoveryModal()" style="background:#10b981; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:11.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(16,185,129,0.3); white-space:nowrap;">
+                    <i class="fas fa-hand-holding-dollar"></i> <span>Receive Payment <span class="ur-sub">(رقم وصول کریں)</span></span>
+                </button>
+            </div>
 
             <!-- 👥 ORDER BOOKER HELPER NOTICE (SHOWN ONLY WHEN BOOKER HAS NOT SELECTED CUSTOMER YET - NO LOCK ICON) -->
             <div id="bookerCustNotice" style="display:none; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:7px; padding:6px 10px; margin-top:4px; color:#475569; font-size:11.5px; font-weight:700; align-items:center; justify-content:space-between; gap:8px;">
@@ -584,8 +595,8 @@
             </div>
         </div>
 
-        <!-- 💰 FINANCIAL TOTALS & KHATA RUNNING BALANCE -->
-        <div class="totals-box" style="margin-top:15px;">
+        <!-- 💰 FINANCIAL TOTALS & KHATA RUNNING BALANCE (COUNTER / DIRECT SALE MODE) -->
+        <div class="totals-box" id="regularBillTotalsBox" style="margin-top:15px;">
             <div class="total-row">
                 <span>Sub Total:</span>
                 <span>Rs <span id="sumSubTotal">0.00</span></span>
@@ -631,11 +642,78 @@
             </div>
         </div>
 
+        <!-- 📕 ORDER BOOKER KHATA & QUICK PAYMENT RECOVERY CARD (REPLACES SUBTOTAL/TAX/NET PAYABLE IN BOOKER MODE) -->
+        <div id="bookerRecoverySection" style="display:none; margin-top:12px; background:#fff; border:1.5px solid #cbd5e1; border-radius:10px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:18px;">💰</span>
+                    <div>
+                        <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Customer Khata & Payment Recovery</div>
+                        <div style="font-size:10px; color:#64748b; font-weight:600;">(دکان دار پچھلا بقایا کھاتہ اور وصولی)</div>
+                    </div>
+                </div>
+                <div id="bookerSelectedCustBadge" style="font-size:11px; font-weight:700; background:#f8fafc; border:1px solid #e2e8f0; padding:3px 8px; border-radius:6px; color:#334155;">
+                    👤 No shopkeeper selected
+                </div>
+            </div>
+
+            <!-- Balance & Recovery Row -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:8px; margin-bottom:10px;">
+                <!-- Pending Khata -->
+                <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:10px; font-weight:800; color:#92400e; text-transform:uppercase;">Pending Khata (پچھلا بقایا)</div>
+                    <div id="bookerPendingKhataDisplay" style="font-size:17px; font-weight:900; color:#b45309; margin-top:2px;">Rs 0.00</div>
+                </div>
+
+                <!-- Cash Received Input -->
+                <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:10px; font-weight:800; color:#166534; text-transform:uppercase;">Cash Received (وصول رقم)</div>
+                    <div style="display:flex; align-items:center; gap:4px; margin-top:2px;">
+                        <span style="font-size:13px; font-weight:800; color:#15803d;">Rs</span>
+                        <input type="number" id="bookerQuickReceivedInput" placeholder="0" min="0" step="1"
+                               style="width:100%; border:1px solid #86efac; background:#fff; border-radius:5px; padding:4px 6px; font-size:15px; font-weight:900; color:#15803d; text-align:right;">
+                    </div>
+                </div>
+
+                <!-- Remaining Balance -->
+                <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:10px; font-weight:800; color:#475569; text-transform:uppercase;">New Balance (نیا بقایا)</div>
+                    <div id="bookerRemainingKhataDisplay" style="font-size:17px; font-weight:900; color:#0f172a; margin-top:2px;">Rs 0.00</div>
+                </div>
+            </div>
+
+            <!-- Fast Amount Quick Chips -->
+            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:12px;">
+                <span style="font-size:10.5px; font-weight:700; color:#64748b;">⚡ Quick:</span>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(500)">+500</button>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(1000)">+1,000</button>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(2000)">+2,000</button>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(5000)">+5,000</button>
+                <button type="button" class="quick-rec-chip full" onclick="applyBookerQuickFullAmt()">Full Khata</button>
+                <button type="button" class="quick-rec-chip clear" onclick="applyBookerQuickAmt(0)">Reset (0)</button>
+            </div>
+
+            <!-- Booker Action Buttons (Receive Payment vs Book Field Order) -->
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <!-- 💵 Save Recovery (Works immediately without booking order!) -->
+                <button type="button" id="btnBookerSavePaymentOnly" onclick="saveBookerDirectPayment()" style="flex:1 1 200px; background:#10b981; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-size:13.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 3px 8px rgba(16,185,129,0.35);">
+                    <i class="fas fa-hand-holding-dollar" style="font-size:15px;"></i>
+                    <span>Receive Payment Only <span class="ur-sub">(صرف رقم وصول کریں)</span></span>
+                </button>
+
+                <!-- 📥 Book Field Order (When items are also selected) -->
+                <button type="button" id="btnBookerReviewSubmit" onclick="handleBookFieldOrderClick()" style="flex:1 1 200px; background:#d97706; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-size:13.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 3px 8px rgba(217,119,6,0.35);">
+                    <i class="fas fa-clipboard-check" style="font-size:15px;"></i>
+                    <span>Review & Book Order <span id="bookerCartItemsSummaryTag" style="font-size:11px; opacity:0.9;">(0 Items)</span></span>
+                </button>
+            </div>
+        </div>
+
         <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;" id="billActionBtnsContainer">
             <button class="btn-save-bill" id="saveBillBtn" style="flex:1; margin-top:0; min-width:200px; background:#0284c7;">
                 <i class="fas fa-check-circle"></i> 💾 DIRECT SALE INVOICE <span class="ur-sub">(کاؤنٹر سیل)</span>
             </button>
-            <button type="button" class="btn" id="bookFieldOrderBtn" style="flex:1; margin-top:0; min-width:200px; background:#d97706; color:#fff; font-size:15px; font-weight:bold; padding:12px; border-radius:10px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 8px rgba(217,119,6,0.3);">
+            <button type="button" class="btn" id="bookFieldOrderBtn" onclick="handleBookFieldOrderClick()" style="flex:1; margin-top:0; min-width:200px; background:#d97706; color:#fff; font-size:15px; font-weight:bold; padding:12px; border-radius:10px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 8px rgba(217,119,6,0.3);">
                 <i class="fas fa-clipboard-check"></i> 📥 BOOK FIELD ORDER <span class="ur-sub">(بکر آرڈر بکنگ)</span>
             </button>
         </div>

@@ -54,7 +54,7 @@ let listFilterState = {
 };
 
 // ============================================
-// 📕 ORDER BOOKER MODE DETECTOR (TOP-LEVEL GLOBAL)
+// 📕 ORDER BOOKER MODE DETECTOR & RECOVERY ENGINE (TOP-LEVEL GLOBAL)
 // ============================================
 function isOrderBookerMode() {
     try {
@@ -67,6 +67,449 @@ function isOrderBookerMode() {
     return false;
 }
 window.isOrderBookerMode = isOrderBookerMode;
+
+function applyBookerModeUI() {
+    const isBooker = isOrderBookerMode();
+    const regTotals = document.getElementById('regularBillTotalsBox');
+    const bookerSec = document.getElementById('bookerRecoverySection');
+    const bActions = document.getElementById('billActionBtnsContainer');
+    const saveBtn = document.getElementById('saveBillBtn');
+    const brandSub = document.querySelector('.brand-sub');
+
+    if (isBooker) {
+        // 🎯 Hide Sub Total, Discount, Tax, Net Payable for bookers!
+        if (regTotals) regTotals.style.display = 'none';
+        // 🎯 Hide inline recovery card so all items show freely and scroll to the very end!
+        if (bookerSec) bookerSec.style.display = 'none';
+        if (bActions) bActions.style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (brandSub) brandSub.innerText = `📕 Order Booker Mode: ${(myUser && myUser.name) || 'Staff'}`;
+    } else {
+        if (regTotals) regTotals.style.display = 'block';
+        if (bookerSec) bookerSec.style.display = 'none';
+        if (bActions) bActions.style.display = 'flex';
+        if (saveBtn) saveBtn.style.display = 'block';
+    }
+}
+window.applyBookerModeUI = applyBookerModeUI;
+
+function updateBookerRecoveryRemaining() {
+    const prevBal = selectedCustomer ? parseFloat(selectedCustomer.balance || 0) : 0;
+    const rcvInp = document.getElementById('bookerQuickReceivedInput');
+    const rcvVal = rcvInp ? (parseFloat(rcvInp.value) || 0) : 0;
+    const remBal = Math.max(0, prevBal - rcvVal);
+
+    const remEl = document.getElementById('bookerRemainingKhataDisplay');
+    if (remEl) {
+        remEl.innerText = 'Rs ' + remBal.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    const sumRec = document.getElementById('sumReceived');
+    if (sumRec) {
+        sumRec.value = rcvVal;
+    }
+}
+window.updateBookerRecoveryRemaining = updateBookerRecoveryRemaining;
+
+window.applyBookerQuickAmt = function(amt) {
+    const rcvInp = document.getElementById('bookerQuickReceivedInput');
+    if (!rcvInp) return;
+    if (amt === 0) {
+        rcvInp.value = '';
+    } else {
+        const current = parseFloat(rcvInp.value) || 0;
+        rcvInp.value = (current + amt).toString();
+    }
+    updateBookerRecoveryRemaining();
+};
+
+window.applyBookerQuickFullAmt = function() {
+    const rcvInp = document.getElementById('bookerQuickReceivedInput');
+    if (!rcvInp) return;
+    const prevBal = selectedCustomer ? parseFloat(selectedCustomer.balance || 0) : 0;
+    rcvInp.value = Math.max(0, prevBal).toString();
+    updateBookerRecoveryRemaining();
+};
+
+window.clearSelectedCustomer = function() {
+    selectedCustomer = null;
+    updateLockState();
+    const custInput = document.getElementById('custNameInput');
+    const catInput = document.getElementById('catCustInput');
+    const custSuggest = document.getElementById('custSuggest');
+    const catSuggest = document.getElementById('catCustSuggest');
+    const custInfoBox = document.getElementById('custInfoBox');
+    const catInfo = document.getElementById('catCustInfo');
+    const topRecoveryBar = document.getElementById('topCustKhataRecoveryBar');
+
+    if (custInput) custInput.value = '';
+    if (catInput) catInput.value = '';
+    if (custSuggest) custSuggest.classList.remove('show');
+    if (catSuggest) catSuggest.classList.remove('show');
+    if (custInfoBox) {
+        custInfoBox.innerHTML = '';
+        custInfoBox.classList.remove('show');
+        custInfoBox.style.display = 'none';
+    }
+    if (catInfo) catInfo.style.display = 'none';
+    if (topRecoveryBar) topRecoveryBar.style.display = 'none';
+
+    const bCustBadge = document.getElementById('bookerSelectedCustBadge');
+    if (bCustBadge) bCustBadge.innerText = '👤 No shopkeeper selected';
+    const bPending = document.getElementById('bookerPendingKhataDisplay');
+    if (bPending) bPending.innerText = 'Rs 0.00';
+    const bRem = document.getElementById('bookerRemainingKhataDisplay');
+    if (bRem) bRem.innerText = 'Rs 0.00';
+    const bInp = document.getElementById('bookerQuickReceivedInput');
+    if (bInp) bInp.value = '';
+
+    calcTotals();
+    syncCatCartToTotals();
+    if (typeof renderInteractiveProductList === 'function') {
+        renderInteractiveProductList();
+    }
+};
+
+async function openDirectRecoveryModal() {
+    if (!selectedCustomer) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Select Shopkeeper First',
+            text: 'پہلے اوپر دکان دار کا نام منتخب کریں جس سے رقم وصول کرنی ہے!',
+            confirmButtonColor: '#0284c7'
+        });
+        window.focusShopkeeperInput();
+        return;
+    }
+
+    const c = selectedCustomer;
+    const currentBal = parseFloat(c.balance || 0);
+
+    const { value: formValues } = await Swal.fire({
+        title: '💵 Receive Payment / ریکوری وصول کریں',
+        html: `
+            <div style="text-align:left; font-size:12.5px; line-height:1.6; margin-bottom:12px; background:#f8fafc; padding:10px 14px; border-radius:8px; border:1px solid #e2e8f0;">
+                <div>👤 <b>Customer:</b> ${c.name} ${c.shopName ? `(${c.shopName})` : ''}</div>
+                <div>📱 <b>Mobile:</b> ${c.mobile || '-'}</div>
+                <div>💰 <b>Pending Khata:</b> <b style="color:#b45309; font-size:15px;">Rs ${currentBal.toLocaleString()}</b></div>
+            </div>
+            <div style="text-align:left; margin-bottom:8px;">
+                <label style="font-size:12px; font-weight:800; color:#334155;">Amount Received (وصول شدہ رقم) *</label>
+                <input id="swalPayAmount" type="number" min="1" step="1" placeholder="Enter amount (e.g. 5000)" 
+                       style="width:100%; font-size:18px; font-weight:900; color:#15803d; padding:8px 10px; border:2px solid #86efac; border-radius:8px; margin-top:4px; box-sizing:border-box;">
+            </div>
+            <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:12px;">
+                <button type="button" class="quick-rec-chip" onclick="document.getElementById('swalPayAmount').value = 1000">+1,000</button>
+                <button type="button" class="quick-rec-chip" onclick="document.getElementById('swalPayAmount').value = 2000">+2,000</button>
+                <button type="button" class="quick-rec-chip" onclick="document.getElementById('swalPayAmount').value = 5000">+5,000</button>
+                <button type="button" class="quick-rec-chip" onclick="document.getElementById('swalPayAmount').value = 10000">+10,000</button>
+                <button type="button" class="quick-rec-chip full" onclick="document.getElementById('swalPayAmount').value = ${currentBal}">Full (${currentBal.toLocaleString()})</button>
+            </div>
+            <div style="text-align:left; margin-bottom:8px;">
+                <label style="font-size:11.5px; font-weight:700; color:#475569;">Payment Method (طریقہ ادائیگی)</label>
+                <select id="swalPayMethod" style="width:100%; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px; font-size:13px; font-weight:600; box-sizing:border-box;">
+                    <option value="Cash" selected>💵 Cash (نقد)</option>
+                    <option value="Bank Transfer">🏦 Bank Transfer</option>
+                    <option value="EasyPaisa / JazzCash">📱 EasyPaisa / JazzCash</option>
+                    <option value="Cheque">📜 Cheque</option>
+                </select>
+            </div>
+            <div style="text-align:left;">
+                <label style="font-size:11.5px; font-weight:700; color:#475569;">Notes / Remarks (تفصیل)</label>
+                <input id="swalPayNote" type="text" placeholder="e.g. Field recovery by order booker" 
+                       style="width:100%; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; margin-top:4px; font-size:12px; box-sizing:border-box;">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        confirmButtonText: '💾 Save Payment (محفوظ کریں)',
+        cancelButtonText: 'Cancel',
+        didOpen: () => {
+            const inp = document.getElementById('swalPayAmount');
+            if (inp) {
+                const quickVal = parseFloat(document.getElementById('bookerQuickReceivedInput')?.value) || 0;
+                if (quickVal > 0) inp.value = quickVal;
+                inp.focus();
+            }
+        },
+        preConfirm: () => {
+            const amt = parseFloat(document.getElementById('swalPayAmount').value);
+            if (!amt || amt <= 0) {
+                Swal.showValidationMessage('Raqam likhna lazmi hai!');
+                return false;
+            }
+            return {
+                amount: amt,
+                method: document.getElementById('swalPayMethod').value,
+                note: document.getElementById('swalPayNote').value.trim()
+            };
+        }
+    });
+
+    if (!formValues) return;
+    await executeDirectRecoveryPayment(c, formValues.amount, formValues.method, formValues.note);
+}
+window.openDirectRecoveryModal = openDirectRecoveryModal;
+
+async function saveBookerDirectPayment() {
+    if (!selectedCustomer) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Select Shopkeeper First',
+            text: 'پہلے اوپر دکان دار منتخب کریں جس سے رقم وصول کرنی ہے۔',
+            confirmButtonColor: '#0284c7'
+        });
+        window.focusShopkeeperInput();
+        return;
+    }
+
+    const rcvInp = document.getElementById('bookerQuickReceivedInput');
+    const amount = rcvInp ? (parseFloat(rcvInp.value) || 0) : 0;
+    if (amount <= 0) {
+        openDirectRecoveryModal();
+        return;
+    }
+
+    await executeDirectRecoveryPayment(selectedCustomer, amount, 'Cash', 'Direct Field Recovery');
+}
+window.saveBookerDirectPayment = saveBookerDirectPayment;
+
+async function executeDirectRecoveryPayment(c, amount, method = 'Cash', note = '') {
+    const currentBal = parseFloat(c.balance || 0);
+    const newBal = currentBal - amount;
+    const pBillNo = 'PAY-' + Math.floor(10000 + Math.random() * 90000);
+    const nowIso = new Date().toISOString();
+    const dateStr = nowIso.slice(0, 10);
+    const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    const payDoc = {
+        billNo: pBillNo,
+        type: 'payment',
+        agencyId: myAgencyId,
+        createdBy: myUid,
+        bookerName: (myUser && myUser.name) || 'Order Booker',
+        bookerMobile: (myUser && myUser.mobile) || '',
+        customerId: c.id,
+        customerName: c.name,
+        customerMobile: c.mobile || '',
+        customerShop: c.shopName || '',
+        paymentAmount: amount,
+        paymentMethod: method,
+        note: note || 'Field recovery without order booking',
+        items: [{
+            name: `Payment Recovery (${method})${note ? ' - ' + note : ''}`,
+            qty: 1,
+            rate: amount,
+            total: amount
+        }],
+        subTotal: 0,
+        discount: 0,
+        grandTotal: 0,
+        received: amount,
+        previousBalance: currentBal,
+        balance: newBal,
+        date: dateStr,
+        time: timeStr,
+        createdAt: nowIso
+    };
+
+    // 1. If online write to Firestore, else offline queue
+    if (navigator.onLine && typeof db !== 'undefined') {
+        try {
+            await db.collection('customers').doc(c.id).update({
+                balance: newBal,
+                lastPaymentAt: nowIso,
+                lastPaymentAmount: amount,
+                updatedAt: nowIso
+            });
+            const ref = await db.collection('bills').add(payDoc);
+            payDoc.id = ref.id;
+        } catch (err) {
+            console.warn('Online recovery save failed, falling back to offline queue:', err);
+            const offQueue = getOfflineOrders();
+            offQueue.push({ ...payDoc, id: 'off_pay_' + Date.now() });
+            saveOfflineOrders(offQueue);
+        }
+    } else {
+        const offQueue = getOfflineOrders();
+        offQueue.push({ ...payDoc, id: 'off_pay_' + Date.now() });
+        saveOfflineOrders(offQueue);
+    }
+
+    // 2. Update in-memory customer and local customer cache
+    c.balance = newBal;
+    selectedCustomer.balance = newBal;
+    const cacheIdx = allMyCustomers.findIndex(x => x.id === c.id);
+    if (cacheIdx !== -1) {
+        allMyCustomers[cacheIdx].balance = newBal;
+    }
+    if (myAgencyId) {
+        try {
+            localStorage.setItem(`eb_cust_cache_${myAgencyId}`, JSON.stringify(allMyCustomers));
+        } catch (e) {}
+    }
+
+    // 3. Update all UI elements on screen
+    const topKhata = document.getElementById('topCustKhataAmount');
+    if (topKhata) topKhata.innerText = 'Rs ' + newBal.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
+    const bPending = document.getElementById('bookerPendingKhataDisplay');
+    if (bPending) bPending.innerText = 'Rs ' + newBal.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const bInp = document.getElementById('bookerQuickReceivedInput');
+    if (bInp) bInp.value = '';
+
+    const bRem = document.getElementById('bookerRemainingKhataDisplay');
+    if (bRem) bRem.innerText = 'Rs ' + newBal.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Refresh chips & catalogue
+    selectCustomerObject(c);
+
+    // 4. Show success alert with WhatsApp & Print receipt buttons
+    Swal.fire({
+        icon: 'success',
+        title: '✅ رقم وصول ہو گئی!',
+        html: `
+            <div style="font-size:13.5px; line-height:1.7; text-align:left; background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px; margin:8px 0;">
+                <div><b>Voucher No:</b> <span style="color:#0284c7; font-weight:800;">${pBillNo}</span></div>
+                <div><b>Customer:</b> ${c.name} ${c.shopName ? `(${c.shopName})` : ''}</div>
+                <div><b>Amount Received:</b> <span style="color:#16a34a; font-weight:900; font-size:16px;">Rs ${amount.toLocaleString()}</span></div>
+                <div><b>New Remaining Balance:</b> <span style="color:#b45309; font-weight:900; font-size:16px;">Rs ${newBal.toLocaleString()}</span></div>
+            </div>
+            <div style="display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap;">
+                <button type="button" id="btnShareWaRecovery" class="swal2-confirm swal2-styled" style="background:#25D366; font-size:12px; padding:8px 14px;">
+                    <i class="fab fa-whatsapp"></i> WhatsApp Receipt
+                </button>
+                <button type="button" id="btnPrintVoucherRecovery" class="swal2-confirm swal2-styled" style="background:#0284c7; font-size:12px; padding:8px 14px;">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
+        `,
+        confirmButtonColor: '#10b981',
+        confirmButtonText: 'Done / نیا کسٹمر منتخب کریں',
+        didOpen: () => {
+            const btnWa = document.getElementById('btnShareWaRecovery');
+            if (btnWa) {
+                btnWa.addEventListener('click', () => {
+                    shareDirectPaymentWhatsApp(payDoc, c);
+                });
+            }
+            const btnPr = document.getElementById('btnPrintVoucherRecovery');
+            if (btnPr) {
+                btnPr.addEventListener('click', () => {
+                    printDirectPaymentReceipt(payDoc, c);
+                });
+            }
+        }
+    });
+}
+window.executeDirectRecoveryPayment = executeDirectRecoveryPayment;
+
+function shareDirectPaymentWhatsApp(pay, c) {
+    const mob = (c.mobile || '').replace(/[^0-9]/g, '');
+    const amt = parseFloat(pay.received || pay.paymentAmount || 0);
+    const bal = parseFloat(pay.balance !== undefined ? pay.balance : (c.balance || 0));
+    const lines = [];
+    lines.push(`💵 *PAYMENT RECEIPT / رسید وصولی*`);
+    lines.push(`🏢 *${(myAgency && myAgency.name) || 'Easy Bill POS'}*`);
+    lines.push(`🧾 Receipt No: *${pay.billNo}*`);
+    lines.push(`👤 Customer: *${c.name}* ${c.shopName ? '(' + c.shopName + ')' : ''}`);
+    lines.push(`📅 Date: ${pay.date || '-'} ${pay.time || ''}`);
+    lines.push('-----------------------------');
+    lines.push(`💰 *Amount Received: Rs ${Math.round(amt).toLocaleString()}*`);
+    lines.push(`💳 Mode: ${pay.paymentMethod || 'Cash'}`);
+    if (pay.note) lines.push(`📝 Remarks: ${pay.note}`);
+    lines.push('-----------------------------');
+    lines.push(`⚖️ *Remaining Balance: Rs ${Math.round(bal).toLocaleString()}*`);
+    lines.push(`🙏 Wasooli ki tasdeeq ki jati hai. Shukriya!`);
+
+    const text = encodeURIComponent(lines.join('\n'));
+    const url = mob 
+        ? `https://api.whatsapp.com/send?phone=${mob.startsWith('0') ? '92' + mob.substring(1) : mob}&text=${text}`
+        : `https://api.whatsapp.com/send?text=${text}`;
+    window.open(url, '_blank');
+}
+window.shareDirectPaymentWhatsApp = shareDirectPaymentWhatsApp;
+
+function printDirectPaymentReceipt(pay, c) {
+    const agencyName = (myAgency && myAgency.name) ? myAgency.name : 'Easy Bill POS';
+    const agencyPhone = (myAgency && myAgency.mobile) ? myAgency.mobile : '';
+    const amt = parseFloat(pay.received || pay.paymentAmount || 0);
+    const bal = parseFloat(pay.balance !== undefined ? pay.balance : (c.balance || 0));
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Receipt - ${pay.billNo}</title>
+        <style>
+            @media print { @page { size: 80mm auto; margin: 4mm; } }
+            body { font-family: monospace, sans-serif; font-size: 12px; margin: 0; padding: 10px; color: #000; }
+            .tc { text-align: center; }
+            .b { font-weight: bold; }
+            .hr { border-top: 1px dashed #000; margin: 6px 0; }
+            .row { display: flex; justify-content: space-between; margin: 3px 0; }
+            .amt-box { border: 2px solid #000; padding: 6px; text-align: center; font-size: 14px; font-weight: bold; margin: 8px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="tc b" style="font-size:15px;">${agencyName}</div>
+        <div class="tc">${agencyPhone ? 'Ph: ' + agencyPhone : ''}</div>
+        <div class="tc b" style="margin-top:4px;">*** CASH RECEIPT VOUCHER ***</div>
+        <div class="hr"></div>
+        <div class="row"><span>Voucher No:</span><b>${pay.billNo}</b></div>
+        <div class="row"><span>Date:</span><span>${pay.date} ${pay.time || ''}</span></div>
+        <div class="row"><span>Customer:</span><b>${c.name} ${c.shopName ? '(' + c.shopName + ')' : ''}</b></div>
+        <div class="row"><span>Payment Mode:</span><b>${pay.paymentMethod || 'Cash'}</b></div>
+        <div class="amt-box">AMOUNT: Rs ${Math.round(amt).toLocaleString()} /-</div>
+        <div class="row"><span>Remaining Balance:</span><b>Rs ${Math.round(bal).toLocaleString()}</b></div>
+        <div class="hr"></div>
+        <div class="tc" style="font-size:10px;">Thank you for your payment!</div>
+        <script>
+            window.onload = function() { window.print(); }
+        </script>
+    </body>
+    </html>`;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+}
+window.printDirectPaymentReceipt = printDirectPaymentReceipt;
+
+window.handleBookFieldOrderClick = function() {
+    if (!selectedCustomer) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Select Shopkeeper First',
+            text: 'آرڈر بکنگ کے لیے پہلے اوپر دکان دار منتخب کریں!',
+            confirmButtonColor: '#0284c7'
+        });
+        window.focusShopkeeperInput();
+        return;
+    }
+    const entries = Object.values(catCart).filter(e => e.qty > 0);
+    if (entries.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'No Items Added',
+            html: `
+                <div>آرڈر بکنگ کے لیے لسٹ میں سے آئٹمز شامل کریں۔</div>
+                <div style="font-size:12px; color:#64748b; margin-top:6px;">
+                    اگر کسٹمر نے نیا آرڈر نہیں دیا بلکہ صرف پچھلے کھاتے کی رقم دی ہے تو نیچے <b>"Receive Payment (رقم وصول کریں)"</b> پر کلک کریں۔
+                </div>
+            `,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: '💵 Receive Payment Instead',
+            showCancelButton: true,
+            cancelButtonText: 'Add Items'
+        }).then(r => {
+            if (r.isConfirmed) {
+                openDirectRecoveryModal();
+            }
+        });
+        return;
+    }
+    openCatalogueReviewModal();
+};
 
 // ============================================
 // 📏 UNIT HELPER
@@ -297,30 +740,15 @@ auth.onAuthStateChanged(async (user) => {
             dateEl.innerText = '📅 ' + new Date().toLocaleDateString('en-PK', {day:'numeric', month:'short', year:'numeric'});
         }
 
-        // 📕 Booker Role Customization: Field Order Mode
-        if (isOrderBookerMode()) {
-            document.body.classList.add('booker-hide-balance');
-            const saveBtn = document.getElementById('saveBillBtn');
-            const bookBtn = document.getElementById('bookFieldOrderBtn');
-            if (saveBtn) saveBtn.style.display = 'none'; // Only field orders for bookers
-            if (bookBtn) {
-                bookBtn.style.width = '100%';
-                bookBtn.style.flex = '1 1 100%';
-            }
-            const brandSub = document.querySelector('.brand-sub');
-            if (brandSub) brandSub.innerText = `📕 Order Booker Mode: ${(myUser && myUser.name) || 'Staff'}`;
-
-            // Hide previous balance & cash received from screen for bookers
-            const sumPrev = document.getElementById('sumPrevBalanceRow');
-            const sumRec = document.getElementById('sumReceivedRow');
-            const sumBal = document.getElementById('sumBalanceRow');
-            if (sumPrev) sumPrev.style.display = 'none';
-            if (sumRec) sumRec.style.display = 'none';
-            if (sumBal) sumBal.style.display = 'none';
-        }
+        // 📕 Apply Booker Mode vs Direct Sale UI
+        applyBookerModeUI();
 
         // Setup rate tier buttons
-        setupRateTiers();
+        try {
+            setupRateTiers();
+        } catch (e) {
+            console.warn('setupRateTiers error:', e);
+        }
 
         // Load cached & live data
         try {
@@ -349,15 +777,26 @@ auth.onAuthStateChanged(async (user) => {
         }
 
         // Setup Offline queue listener
-        updateNetworkStatus();
+        try {
+            updateNetworkStatus();
+        } catch (e) {
+            console.warn('updateNetworkStatus error:', e);
+        }
 
         // 📱 Initialize Visual Catalogue Order Booking System
-        initVisualCatalogue();
-        updateLockState();
+        try {
+            initVisualCatalogue();
+        } catch (e) {
+            console.warn('initVisualCatalogue error:', e);
+        }
+        try {
+            updateLockState();
+        } catch (e) {
+            console.warn('updateLockState error:', e);
+        }
 
     } catch (error) {
         console.error('Bills init error:', error);
-        Swal.fire('Error', 'Billing load error: ' + (error.code || error.message), 'error');
     }
 });
 
@@ -526,9 +965,8 @@ function selectCustomerObject(c) {
     if (c.fbrStatus || ntnVal) {
         info += `<span class="c-chip ${isFiler ? 'filer-yes' : 'filer-no'}">${isFiler ? '🟢 Filer' : '🔴 Non-Filer'}</span>`;
     }
-    if (!isOrderBookerMode() && prevBal > 0) {
-        info += `<span class="c-chip c-chip-balance" title="Previous Balance: Rs ${prevBal.toLocaleString()}">💰 Khata: <b>Rs ${prevBal.toLocaleString()}</b></span>`;
-    }
+    info += `<span class="c-chip c-chip-balance" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;" title="Previous Balance: Rs ${prevBal.toLocaleString()}">💰 Khata: <b>Rs ${prevBal.toLocaleString()}</b></span>`;
+    info += `<button type="button" onclick="clearSelectedCustomer()" style="background:transparent; border:none; color:#ef4444; font-size:10px; font-weight:800; cursor:pointer; padding:1px 6px; margin-left:auto; display:inline-flex; align-items:center; gap:2px;"><i class="fas fa-times-circle"></i> Change</button>`;
     info += '</div>';
 
     if (custInfoBox) {
@@ -536,6 +974,27 @@ function selectCustomerObject(c) {
         custInfoBox.classList.add('show');
         custInfoBox.style.display = 'block';
     }
+
+    // Update Top Khata & Quick Payment Bar
+    const topRecoveryBar = document.getElementById('topCustKhataRecoveryBar');
+    const topKhataAmt = document.getElementById('topCustKhataAmount');
+    if (topRecoveryBar) {
+        topRecoveryBar.style.display = 'flex';
+    }
+    if (topKhataAmt) {
+        topKhataAmt.innerText = 'Rs ' + prevBal.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Update Booker Recovery Section (below items in list view)
+    const bBadge = document.getElementById('bookerSelectedCustBadge');
+    if (bBadge) {
+        bBadge.innerHTML = `👤 <b>${displayName}${displayShop}</b>`;
+    }
+    const bPending = document.getElementById('bookerPendingKhataDisplay');
+    if (bPending) {
+        bPending.innerText = 'Rs ' + prevBal.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    updateBookerRecoveryRemaining();
 
     if (typeof syncCatalogueCustomer === 'function') {
         syncCatalogueCustomer(c);
@@ -2854,11 +3313,27 @@ function syncCatCartToTotals() {
     updateCatalogueStickyBar();
     updateListStickyBar(Object.keys(catCart).length, totalUnits, bookedOrderTotal);
 
+    // Sync to Booker Review & Book Order button
+    const bookedEntries = Object.values(catCart).filter(e => e.qty > 0);
+    const bCartTag = document.getElementById('bookerCartItemsSummaryTag');
+    if (bCartTag) {
+        bCartTag.innerText = bookedEntries.length > 0 
+            ? `(${bookedEntries.length} Items - Rs ${Math.round(bookedOrderTotal).toLocaleString()})` 
+            : `(0 Items)`;
+    }
+
     // Sync to itemsRows for background printing/invoice compatibility
     syncCatCartToTableRows();
 }
 
 function initInteractiveListView() {
+    // 0. Booker Quick Recovery Input listener
+    const bQuickInp = document.getElementById('bookerQuickReceivedInput');
+    if (bQuickInp && !bQuickInp.dataset.bound) {
+        bQuickInp.dataset.bound = 'true';
+        bQuickInp.addEventListener('input', updateBookerRecoveryRemaining);
+    }
+
     // 1. Search input
     const searchInp = document.getElementById('listSearchInput');
     if (searchInp) {
@@ -3163,8 +3638,8 @@ function syncCatalogueCustomer(c) {
         if (c.customerType) {
             info += `<span class="c-chip ${c.customerType === 'retail' ? 'tier-retail' : 'tier-wholesale'}">${c.customerType === 'retail' ? '🏷️ Retail' : '🏪 Wholesale'}</span>`;
         }
-        if (!isOrderBookerMode() && prevBal > 0) {
-            info += `<span class="c-chip c-chip-balance" title="Previous Balance: Rs ${prevBal.toLocaleString()}">💰 Khata: <b>Rs ${prevBal.toLocaleString()}</b></span>`;
+        if (prevBal > 0) {
+            info += `<span class="c-chip c-chip-balance" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;" title="Previous Balance: Rs ${prevBal.toLocaleString()}">💰 Khata: <b>Rs ${prevBal.toLocaleString()}</b></span>`;
         }
         info += '</div>';
         custInfo.innerHTML = info;
