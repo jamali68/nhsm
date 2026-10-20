@@ -303,7 +303,7 @@
 
     // 6️⃣ EXPOSE GLOBAL GUARD INTERFACE (WITH LAYER 6 SERVERLESS SHIELD)
     window.EB_GUARD = {
-        version: '4.2.8-enterprise-shield-layer6',
+        version: '4.2.9-enterprise-shield-layer6',
         layer6: 'Netlify-Serverless-Active',
         isAuthorized: isAuthorized,
         host: currentHost,

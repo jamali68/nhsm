@@ -847,3 +847,28 @@
         font-size: 12.5px;
     }
 }
+
+/* ============================================================
+   🏢 ADMIN POS BILLING vs 📕 ORDER BOOKER VIEW MODE RULES
+   ============================================================ */
+body.is-admin-mode #adminPosTableSection { display: block !important; }
+body.is-admin-mode #manualRowsWrapper { display: block !important; }
+body.is-admin-mode #interactiveListSection { display: none !important; }
+body.is-admin-mode #interactiveProductsContainer { display: none !important; }
+body.is-admin-mode #listStickyBottomBar { display: none !important; }
+body.is-admin-mode #catStickyBar { display: none !important; }
+body.is-admin-mode #bookingModeToggleBar { display: none !important; }
+body.is-admin-mode #adminModeBadge { display: inline-flex !important; }
+body.is-admin-mode #regularBillTotalsBox { display: block !important; }
+body.is-admin-mode #billActionBtnsContainer { display: flex !important; }
+body.is-admin-mode #topCustKhataRecoveryBar { display: none !important; }
+body.is-admin-mode #bookerCustNotice { display: none !important; }
+
+body.is-order-booker-mode #adminPosTableSection { display: none !important; }
+body.is-order-booker-mode #manualRowsWrapper { display: none !important; }
+body.is-order-booker-mode #interactiveListSection { display: block !important; }
+body.is-order-booker-mode #interactiveProductsContainer { display: flex !important; }
+body.is-order-booker-mode #bookingModeToggleBar { display: inline-flex !important; }
+body.is-order-booker-mode #adminModeBadge { display: none !important; }
+body.is-order-booker-mode #regularBillTotalsBox { display: none !important; }
+body.is-order-booker-mode #billActionBtnsContainer { display: none !important; }

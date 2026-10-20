@@ -61,8 +61,13 @@ function isOrderBookerMode() {
         const urlParams = new URLSearchParams(window.location.search);
         const m = urlParams.get('mode');
         if (m === 'booker' || m === 'order') return true;
-        if (typeof myUser !== 'undefined' && myUser && myUser.role === 'booker') return true;
-        if (localStorage.getItem('eb_user_role') === 'booker') return true;
+        if (m === 'admin' || m === 'pos' || m === 'counter' || m === 'direct') return false;
+        if (typeof myUser !== 'undefined' && myUser && myUser.role) {
+            return myUser.role === 'booker';
+        }
+        const storedRole = localStorage.getItem('eb_user_role');
+        if (storedRole === 'booker') return true;
+        if (storedRole && storedRole !== 'booker') return false;
     } catch (e) {}
     return false;
 }
@@ -73,22 +78,81 @@ function applyBookerModeUI() {
     const regTotals = document.getElementById('regularBillTotalsBox');
     const bookerSec = document.getElementById('bookerRecoverySection');
     const bActions = document.getElementById('billActionBtnsContainer');
-    const saveBtn = document.getElementById('saveBillBtn');
     const brandSub = document.querySelector('.brand-sub');
+    const topSwitcher = document.getElementById('bookingModeToggleBar');
+    const adminModeBadge = document.getElementById('adminModeBadge');
+    const interactiveList = document.getElementById('interactiveListSection');
+    const interactiveContainer = document.getElementById('interactiveProductsContainer');
+    const adminPosSection = document.getElementById('adminPosTableSection');
+    const manualRowsWrapper = document.getElementById('manualRowsWrapper');
+    const listSticky = document.getElementById('listStickyBottomBar');
+    const catSticky = document.getElementById('catStickyBar');
+    const topRecoveryBar = document.getElementById('topCustKhataRecoveryBar');
+    const bookerCustNotice = document.getElementById('bookerCustNotice');
+    const catSection = document.getElementById('catalogueOrderSection');
 
     if (isBooker) {
-        // 🎯 Hide Sub Total, Discount, Tax, Net Payable for bookers!
+        // 📕 ORDER BOOKER MODE (as in User's Screenshot)
+        document.body.classList.add('is-order-booker-mode');
+        document.body.classList.remove('is-admin-mode');
+
+        if (topSwitcher) topSwitcher.style.display = 'inline-flex';
+        if (adminModeBadge) adminModeBadge.style.display = 'none';
+
+        // Show Booker interactive product card list
+        if (interactiveList) interactiveList.style.display = 'block';
+        if (interactiveContainer) interactiveContainer.style.display = 'flex';
+
+        // Hide Admin manual table rows & classic section
+        if (adminPosSection) adminPosSection.style.display = 'none';
+        if (manualRowsWrapper) manualRowsWrapper.style.display = 'none';
+
+        // Hide regular financial totals from list view (Subtotal, Discount, Tax, Net Payable)
         if (regTotals) regTotals.style.display = 'none';
-        // 🎯 Hide inline recovery card so all items show freely and scroll to the very end!
         if (bookerSec) bookerSec.style.display = 'none';
         if (bActions) bActions.style.display = 'none';
-        if (saveBtn) saveBtn.style.display = 'none';
+
+        // Booker Notice & Recovery Bar
+        if (bookerCustNotice) bookerCustNotice.style.display = selectedCustomer ? 'none' : 'flex';
+        if (topRecoveryBar) topRecoveryBar.style.display = selectedCustomer ? 'flex' : 'none';
+
         if (brandSub) brandSub.innerText = `📕 Order Booker Mode: ${(myUser && myUser.name) || 'Staff'}`;
     } else {
-        if (regTotals) regTotals.style.display = 'block';
+        // 🏢 ADMIN / AGENCY OWNER / COUNTER SALE MODE (Previous Classic Design)
+        document.body.classList.add('is-admin-mode');
+        document.body.classList.remove('is-order-booker-mode');
+
+        // Hide Order Booker top switcher, show Admin Mode badge
+        if (topSwitcher) topSwitcher.style.display = 'none';
+        if (adminModeBadge) adminModeBadge.style.display = 'inline-flex';
+        if (catSection) catSection.style.display = 'none';
+
+        // Hide Order Booker interactive product cards & sticky bottom cart
+        if (interactiveList) interactiveList.style.display = 'none';
+        if (interactiveContainer) interactiveContainer.style.display = 'none';
+        if (listSticky) listSticky.style.display = 'none';
+        if (catSticky) catSticky.style.display = 'none';
+        if (topRecoveryBar) topRecoveryBar.style.display = 'none';
+        if (bookerCustNotice) bookerCustNotice.style.display = 'none';
         if (bookerSec) bookerSec.style.display = 'none';
+
+        // SHOW Admin Classic Rows Table
+        if (adminPosSection) adminPosSection.style.display = 'block';
+        if (manualRowsWrapper) manualRowsWrapper.style.display = 'block';
+
+        // Ensure at least one item row exists in #itemsRows
+        const rowsDiv = document.getElementById('itemsRows');
+        if (rowsDiv && rowsDiv.children.length === 0) {
+            try { addRow(); } catch (e) {}
+        }
+
+        // SHOW Full Financial Totals Box (Subtotal, Discount, Prev Khata, Tax, Grand Total, Cash Received, Remaining Balance)
+        if (regTotals) regTotals.style.display = 'block';
+
+        // SHOW Admin Action Buttons (Save & Direct Print, Save Invoice, New Bill)
         if (bActions) bActions.style.display = 'flex';
-        if (saveBtn) saveBtn.style.display = 'block';
+
+        if (brandSub) brandSub.innerText = `🏢 Counter POS Billing: ${(myAgency && myAgency.name) || (myUser && myUser.name) || 'Admin'}`;
     }
 }
 window.applyBookerModeUI = applyBookerModeUI;
@@ -672,6 +736,9 @@ auth.onAuthStateChanged(async (user) => {
             return;
         }
         myUser = doc.data();
+        if (myUser && myUser.role) {
+            localStorage.setItem('eb_user_role', myUser.role);
+        }
 
         if (myUser.status === 'blocked' || myUser.status === 'deleted') {
             await auth.signOut();
@@ -975,15 +1042,17 @@ function selectCustomerObject(c) {
         custInfoBox.style.display = 'block';
     }
 
-    // Update Top Khata & Quick Payment Bar
+    // Update Top Khata & Quick Payment Bar (Shown for Booker)
     const topRecoveryBar = document.getElementById('topCustKhataRecoveryBar');
     const topKhataAmt = document.getElementById('topCustKhataAmount');
     if (topRecoveryBar) {
-        topRecoveryBar.style.display = 'flex';
+        topRecoveryBar.style.display = isOrderBookerMode() ? 'flex' : 'none';
     }
     if (topKhataAmt) {
         topKhataAmt.innerText = 'Rs ' + prevBal.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    // Update Totals box Previous Khata row immediately
+    try { calcTotals(); } catch (e) {}
 
     // Update Booker Recovery Section (below items in list view)
     const bBadge = document.getElementById('bookerSelectedCustBadge');
@@ -2053,9 +2122,11 @@ document.getElementById('taxRate').addEventListener('input', calcTotals);
 // ============================================
 // 💾 SAVE BILL & OFFLINE ORDER COMMIT (DIRECT BILL vs FIELD ORDER)
 // ============================================
-async function executeSaveBill(forceFieldOrder = false) {
-    // Ensure all booked items from List View / Visual Catalogue are synced into itemsRows
-    syncCatCartToTableRows();
+async function executeSaveBill(forceFieldOrder = false, directPrint = false) {
+    // Ensure all booked items from List View / Visual Catalogue are synced into itemsRows ONLY for Booker
+    if (isOrderBookerMode()) {
+        syncCatCartToTableRows();
+    }
 
     const items = [];
     let hasError = false;
@@ -2189,8 +2260,10 @@ async function executeSaveBill(forceFieldOrder = false) {
     }
 
     const saveBtn = document.getElementById('saveBillBtn');
+    const savePrintBtn = document.getElementById('saveAndPrintBillBtn');
     const bookBtn = document.getElementById('bookFieldOrderBtn');
     if (saveBtn) saveBtn.disabled = true;
+    if (savePrintBtn) savePrintBtn.disabled = true;
     if (bookBtn) bookBtn.disabled = true;
 
     const bookerName = (myUser && myUser.name) ? myUser.name : ((myUser && myUser.email) ? myUser.email.split('@')[0] : 'Staff');
@@ -2362,18 +2435,115 @@ async function executeSaveBill(forceFieldOrder = false) {
 
         showSuccessScreen(billData, false);
         if (saveBtn) saveBtn.disabled = false;
+        if (savePrintBtn) savePrintBtn.disabled = false;
         if (bookBtn) bookBtn.disabled = false;
+
+        // 🖨️ DIRECT PRINT IF REQUESTED BY ADMIN
+        if (directPrint) {
+            try {
+                printBillDirectly(billData);
+            } catch (pErr) {
+                console.warn('Direct print error:', pErr);
+            }
+        }
 
     } catch (error) {
         if (saveBtn) saveBtn.disabled = false;
+        if (savePrintBtn) savePrintBtn.disabled = false;
         if (bookBtn) bookBtn.disabled = false;
         console.error('Invoice save error:', error);
         Swal.fire('❌ Error', 'Bill save fail: ' + (error.code || error.message), 'error');
     }
 }
 
-// Bind both button listeners
-document.getElementById('saveBillBtn')?.addEventListener('click', () => executeSaveBill(false));
+// 🖨️ DIRECT BILL PRINT HELPER (Works in Iframe & Desktop/Mobile browsers)
+function printBillDirectly(b) {
+    const bill = b || lastSavedBill;
+    if (!bill) return;
+
+    const tplSelect = document.getElementById('ssTemplateSelect');
+    const selectedTemplate = tplSelect ? tplSelect.value : ((typeof myAgency !== 'undefined' && myAgency && myAgency.defaultTemplate) ? myAgency.defaultTemplate : 'template8');
+
+    let billHTML = '';
+    try {
+        billHTML = (window.buildBillHTML) 
+            ? window.buildBillHTML(bill, selectedTemplate)
+            : buildFallbackHTML(bill);
+    } catch (e) {
+        billHTML = buildFallbackHTML(bill);
+    }
+
+    try {
+        let printIframe = document.getElementById('directPrintIframe');
+        if (!printIframe) {
+            printIframe = document.createElement('iframe');
+            printIframe.id = 'directPrintIframe';
+            printIframe.style.position = 'fixed';
+            printIframe.style.right = '0';
+            printIframe.style.bottom = '0';
+            printIframe.style.width = '0';
+            printIframe.style.height = '0';
+            printIframe.style.border = '0';
+            document.body.appendChild(printIframe);
+        }
+        const doc = printIframe.contentWindow.document;
+        doc.open();
+        doc.write(billHTML);
+        doc.close();
+        setTimeout(() => {
+            try {
+                printIframe.contentWindow.focus();
+                printIframe.contentWindow.print();
+            } catch (eP) {
+                const win = window.open('', '_blank', 'width=800,height=700');
+                if (win) {
+                    win.document.write(billHTML);
+                    win.document.close();
+                    setTimeout(() => win.print(), 800);
+                }
+            }
+        }, 500);
+    } catch (e) {
+        const win = window.open('', '_blank', 'width=800,height=700');
+        if (win) {
+            win.document.write(billHTML);
+            win.document.close();
+            setTimeout(() => win.print(), 800);
+        }
+    }
+}
+window.printBillDirectly = printBillDirectly;
+
+// Bind Admin and Booker Button Listeners
+document.getElementById('saveAndPrintBillBtn')?.addEventListener('click', () => executeSaveBill(false, true));
+document.getElementById('saveBillBtn')?.addEventListener('click', () => executeSaveBill(false, false));
+document.getElementById('adminNewBillBtn')?.addEventListener('click', () => {
+    selectedCustomer = null;
+    const custInput = document.getElementById('custNameInput');
+    if (custInput) custInput.value = '';
+    const custInfoBox = document.getElementById('custInfoBox');
+    if (custInfoBox) {
+        custInfoBox.innerHTML = '';
+        custInfoBox.style.display = 'none';
+    }
+    const rowsDiv = document.getElementById('itemsRows');
+    if (rowsDiv) {
+        rowsDiv.innerHTML = '';
+        try { addRow(); } catch(e){}
+    }
+    const sumDisc = document.getElementById('sumDiscount');
+    if (sumDisc) sumDisc.value = '0';
+    const sumRec = document.getElementById('sumReceived');
+    if (sumRec) sumRec.value = '0';
+    const taxCheck = document.getElementById('taxEnabled');
+    if (taxCheck) taxCheck.checked = false;
+    const taxRate = document.getElementById('taxRate');
+    if (taxRate) taxRate.value = '0';
+    calcTotals();
+    previewBillNo();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
 document.getElementById('bookFieldOrderBtn')?.addEventListener('click', () => {
     if (typeof catCart !== 'undefined' && Object.keys(catCart).length > 0) {
         openOrderRecheckModal();
@@ -2942,9 +3112,10 @@ function computeItemOffer(item, qty, rate, isUrdu) {
 }
 
 // ============================================
-// 📋 INTERACTIVE LIST VIEW RENDERER
+// 📋 INTERACTIVE LIST VIEW RENDERER (ORDER BOOKER ONLY)
 // ============================================
 function renderInteractiveProductList() {
+    if (!isOrderBookerMode()) return;
     const container = document.getElementById('interactiveProductsContainer');
     if (!container) return;
 
@@ -4075,7 +4246,10 @@ function updateCatalogueStickyBar() {
 }
 
 function syncCatCartToTableRows() {
-    // Keep classic table rows in sync with catalogue cart
+    // Keep classic table rows in sync with catalogue cart (ONLY FOR BOOKER)
+    if (!isOrderBookerMode()) {
+        return;
+    }
     const rowsDiv = document.getElementById('itemsRows');
     if (!rowsDiv) return;
 

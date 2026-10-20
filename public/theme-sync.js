@@ -1,5 +1,5 @@
 // 🏷️ Central Application Version (Single source of truth)
-window.EASYBILL_VERSION = '4.2.8';
+window.EASYBILL_VERSION = '4.2.9';
 
 // 🔄 Live Version Synchronization with manifest.json
 (function syncManifestVersion() {

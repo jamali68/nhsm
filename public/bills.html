@@ -355,6 +355,10 @@
                     <i class="fas fa-images"></i> <span id="lblViewCatalogue">Visual Catalogue</span>
                 </label>
             </div>
+            <!-- 🏢 Admin Mode Badge (Shown when Admin/Owner is logged in) -->
+            <div id="adminModeBadge" style="display:none; background:#f0fdf4; color:#15803d; border:1px solid #86efac; border-radius:6px; padding:4px 9px; font-size:11px; font-weight:800; align-items:center; gap:5px;">
+                <i class="fas fa-cash-register"></i> <span>Counter POS (سیلز انوائس)</span>
+            </div>
             <button type="button" id="btnLangToggle" style="background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; padding:5px 9px; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;" title="Toggle English / Urdu Language Mode">
                 <i class="fas fa-language"></i> <span id="langToggleText">English</span>
             </button>
@@ -566,7 +570,7 @@
              📋 INTERACTIVE LIST VIEW (ORDER BOOKER PRO)
              ============================================ -->
         <div id="interactiveListSection" style="margin-top:2px;">
-            <!-- Hidden backward-compatibility elements (No second search bar as requested: 'serf aik search bar ho') -->
+            <!-- Hidden backward-compatibility elements -->
             <div style="display:none;" aria-hidden="true">
                 <input type="text" id="listSearchInput">
                 <button type="button" id="openCameraBtn"></button>
@@ -583,15 +587,32 @@
                 <button type="button" id="toggleManualRowsBtn"></button>
             </div>
 
-            <!-- 📦 Real-time Interactive Products List (DIRECTLY UNDER CUSTOMER SEARCH!) -->
+            <!-- 📦 Real-time Interactive Products List (FOR ORDER BOOKERS) -->
             <div id="interactiveProductsContainer" style="min-height:60px; margin-top:2px; display:flex; flex-direction:column; gap:4px; width:100%; box-sizing:border-box;">
-                <!-- Product list item cards rendered here directly -->
+                <!-- Product list item cards rendered here directly for bookers -->
+            </div>
+        </div>
+
+        <!-- ============================================
+             📝 ADMIN / AGENCY OWNER CLASSIC POS BILLING (ADD NEW ROW & DIRECT PRINT)
+             ============================================ -->
+        <div id="adminPosTableSection" style="margin-top:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:0 2px; flex-wrap:wrap; gap:6px;">
+                <div style="font-size:13px; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-boxes-stacked" style="color:#0284c7;"></i>
+                    <span>Bill Items / Products <span class="ur-sub">(بل میں اشیاء اور ریٹ)</span></span>
+                </div>
+                <button type="button" id="addItemRowBtn" class="btn" style="background:#0284c7; color:#fff; border:none; padding:7px 15px; border-radius:8px; font-size:12.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(2,132,199,0.3);">
+                    <i class="fas fa-plus-circle"></i> <span>+ Add New Row <span class="ur-sub">(نئی رو شامل کریں)</span></span>
+                </button>
             </div>
 
-            <!-- Custom Manual Item Row (Hidden by default for invoice calculations) -->
-            <div id="manualRowsWrapper" style="display:none; margin-top:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px;">
+            <!-- Custom Manual Item Rows (Classic Admin Table) -->
+            <div id="manualRowsWrapper" style="display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;">
                 <div id="itemsRows"></div>
-                <button type="button" id="addItemRowBtn" style="display:none;"></button>
+                <button type="button" id="addItemRowBtnBottom" onclick="addRow()" style="width:100%; margin-top:8px; background:#f0f9ff; border:1.5px dashed #0284c7; color:#0284c7; padding:10px; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <i class="fas fa-plus"></i> <span>+ Add Another Item Row <span class="ur-sub">(مزید آئٹم رو شامل کریں)</span></span>
+                </button>
             </div>
         </div>
 
@@ -709,13 +730,18 @@
             </div>
         </div>
 
+        <!-- 🏢 ADMIN ACTION BUTTONS (DIRECT PRINT & SAVE) -->
         <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;" id="billActionBtnsContainer">
-            <button class="btn-save-bill" id="saveBillBtn" style="flex:1; margin-top:0; min-width:200px; background:#0284c7;">
-                <i class="fas fa-check-circle"></i> 💾 DIRECT SALE INVOICE <span class="ur-sub">(کاؤنٹر سیل)</span>
+            <button type="button" class="btn-save-bill" id="saveAndPrintBillBtn" style="flex:1 1 240px; margin-top:0; min-width:200px; background:#10b981; color:#fff; border:none; padding:13px 18px; border-radius:10px; font-size:15px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 10px rgba(16,185,129,0.35);">
+                <i class="fas fa-print" style="font-size:18px;"></i> <span>🖨️ SAVE & DIRECT PRINT BILL <span class="ur-sub">(محفوظ اور پرنٹ کریں)</span></span>
             </button>
-            <button type="button" class="btn" id="bookFieldOrderBtn" onclick="handleBookFieldOrderClick()" style="flex:1; margin-top:0; min-width:200px; background:#d97706; color:#fff; font-size:15px; font-weight:bold; padding:12px; border-radius:10px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 8px rgba(217,119,6,0.3);">
-                <i class="fas fa-clipboard-check"></i> 📥 BOOK FIELD ORDER <span class="ur-sub">(بکر آرڈر بکنگ)</span>
+            <button class="btn-save-bill" id="saveBillBtn" style="flex:1 1 200px; margin-top:0; min-width:180px; background:#0284c7; color:#fff; border:none; padding:13px 16px; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 8px rgba(2,132,199,0.3);">
+                <i class="fas fa-check-circle"></i> <span>💾 SAVE INVOICE ONLY <span class="ur-sub">(صرف بل محفوظ کریں)</span></span>
             </button>
+            <button type="button" class="btn" id="adminNewBillBtn" style="flex:0 0 auto; background:#f8fafc; color:#475569; border:1.5px solid #cbd5e1; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                <i class="fas fa-redo"></i> <span>Reset / New Bill <span class="ur-sub">(نیا بل)</span></span>
+            </button>
+            <button type="button" id="bookFieldOrderBtn" style="display:none;"></button>
         </div>
     </div>
 
@@ -900,7 +926,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <!-- 🧭 SIDEBAR SYSTEM -->
-<script src="sidebar.js?v=4.2.8"></script>
+<script src="sidebar.js?v=4.2.9"></script>
 <!-- ⚡ CLOUD SYNC & FIREBASE QUOTA SAVER -->
 <script src="sync-engine.js"></script>
 <!-- ⚙️ PRINT ENGINE -->
@@ -908,6 +934,6 @@
 <!-- 🎨 BILL TEMPLATES -->
 <script src="bill-templates.js"></script>
 <!-- 🧾 PRO BILLING & OFFLINE ENGINE -->
-<script src="bills.js?v=4.2.8"></script>
+<script src="bills.js?v=4.2.9"></script>
 </body>
 </html>

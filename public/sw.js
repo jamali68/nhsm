@@ -1,5 +1,5 @@
 // ==========================================================================
-// 🚀 EASY BILL GENERATOR — TURBO SERVICE WORKER (v4.2.8)
+// 🚀 EASY BILL GENERATOR — TURBO SERVICE WORKER (v4.2.9)
 // ✅ Ultra-lean App Shell pre-caching (No network choke on install)
 // ✅ Instant Stale-While-Revalidate caching for lightning-fast loads
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
