@@ -390,14 +390,10 @@ async function executeDirectRecoveryPayment(c, amount, method = 'Cash', note = '
             payDoc.id = ref.id;
         } catch (err) {
             console.warn('Online recovery save failed, falling back to offline queue:', err);
-            const offQueue = getOfflineOrders();
-            offQueue.push({ ...payDoc, id: 'off_pay_' + Date.now() });
-            saveOfflineOrders(offQueue);
+            await saveOfflineBill({ ...payDoc, id: 'off_pay_' + Date.now(), localId: 'off_pay_' + Date.now() });
         }
     } else {
-        const offQueue = getOfflineOrders();
-        offQueue.push({ ...payDoc, id: 'off_pay_' + Date.now() });
-        saveOfflineOrders(offQueue);
+        await saveOfflineBill({ ...payDoc, id: 'off_pay_' + Date.now(), localId: 'off_pay_' + Date.now() });
     }
 
     // 2. Update in-memory customer and local customer cache
@@ -589,28 +585,93 @@ function UNIT_LBL(u) {
 }
 
 // ============================================
-// 📶 OFFLINE QUEUE HELPERS
+// 📶 OFFLINE QUEUE HELPERS (POWERED BY INDEXEDDB + LOCALSTORAGE MIRROR)
 // ============================================
+let cachedOfflineOrders = [];
+
 function getOfflineQueueKey() {
-    return `eb_offline_orders_${myAgencyId}`;
+    return `eb_offline_orders_${myAgencyId || 'default'}`;
 }
 
 function getOfflineOrders() {
+    if (Array.isArray(cachedOfflineOrders) && cachedOfflineOrders.length > 0) {
+        return cachedOfflineOrders;
+    }
     try {
         const val = localStorage.getItem(getOfflineQueueKey());
-        return val ? JSON.parse(val) : [];
+        cachedOfflineOrders = val ? JSON.parse(val) : [];
+        return cachedOfflineOrders;
     } catch (e) {
         return [];
     }
 }
 
-function saveOfflineOrders(orders) {
+async function initOfflineBillsFromDB() {
     try {
-        localStorage.setItem(getOfflineQueueKey(), JSON.stringify(orders));
-        updateOfflineQueueUI();
+        if (window.BillsDB) {
+            const list = await window.BillsDB.getPendingBills(myAgencyId);
+            if (Array.isArray(list)) {
+                cachedOfflineOrders = list;
+            }
+        } else {
+            getOfflineOrders();
+        }
     } catch (e) {
-        console.error('Save offline orders failed:', e);
+        console.warn('initOfflineBillsFromDB error:', e);
+        getOfflineOrders();
     }
+    updateOfflineQueueUI();
+}
+
+async function saveOfflineBill(billData) {
+    if (!billData.localId) {
+        billData.localId = 'bill_off_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    }
+    billData.isOffline = true;
+    billData.syncStatus = 'pending';
+    billData.agencyId = billData.agencyId || myAgencyId || 'default';
+    billData.savedAt = billData.savedAt || new Date().toISOString();
+
+    // 1. Save to IndexedDB
+    if (window.BillsDB) {
+        try {
+            await window.BillsDB.savePendingBill(billData);
+        } catch (e) {
+            console.warn('BillsDB.savePendingBill error:', e);
+        }
+    }
+
+    // 2. Update cached array
+    const idx = cachedOfflineOrders.findIndex(x => (x.localId && x.localId === billData.localId) || (x.billNo && x.billNo === billData.billNo));
+    if (idx >= 0) {
+        cachedOfflineOrders[idx] = billData;
+    } else {
+        cachedOfflineOrders.push(billData);
+    }
+
+    // 3. Mirror to localStorage
+    try {
+        localStorage.setItem(getOfflineQueueKey(), JSON.stringify(cachedOfflineOrders));
+    } catch (e) {}
+
+    updateOfflineQueueUI();
+    return billData;
+}
+
+async function saveOfflineOrders(orders) {
+    cachedOfflineOrders = Array.isArray(orders) ? orders : [];
+    try {
+        localStorage.setItem(getOfflineQueueKey(), JSON.stringify(cachedOfflineOrders));
+    } catch (e) {}
+
+    if (window.BillsDB && Array.isArray(orders)) {
+        for (const ord of orders) {
+            try {
+                await window.BillsDB.savePendingBill(ord);
+            } catch (e) {}
+        }
+    }
+    updateOfflineQueueUI();
 }
 
 function updateNetworkStatus() {
@@ -641,6 +702,157 @@ function updateOfflineQueueUI() {
         }
     }
 }
+
+// 📦 OFFLINE QUEUE MODAL CONTROLS
+function openOfflineQueueModal() {
+    const modal = document.getElementById('offlineQueueModal');
+    if (!modal) return;
+    renderOfflineQueueList();
+    modal.style.display = 'flex';
+}
+
+function closeOfflineQueueModal() {
+    const modal = document.getElementById('offlineQueueModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function renderOfflineQueueList() {
+    const container = document.getElementById('offlineBillsListContainer');
+    const emptyState = document.getElementById('offlineEmptyState');
+    if (!container) return;
+
+    let orders = [];
+    if (window.BillsDB) {
+        try {
+            orders = await window.BillsDB.getPendingBills(myAgencyId);
+        } catch (e) {
+            orders = getOfflineOrders();
+        }
+    } else {
+        orders = getOfflineOrders();
+    }
+
+    if (!orders || orders.length === 0) {
+        container.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'block';
+        return;
+    }
+
+    if (emptyState) emptyState.style.display = 'none';
+
+    let html = '';
+    orders.forEach((b, idx) => {
+        const custName = b.customerName || (b.customer && b.customer.name) || 'Counter Sale';
+        const billTotal = parseFloat(b.billAmount || b.grandTotal || 0).toLocaleString();
+        const itemCount = Array.isArray(b.items) ? b.items.length : 0;
+        const timeStr = b.time || (b.savedAt ? new Date(b.savedAt).toLocaleTimeString() : '');
+        const dateStr = b.date || (b.savedAt ? new Date(b.savedAt).toLocaleDateString() : '');
+        const orderTypeLbl = b.orderType === 'field_order' 
+            ? '<span style="background:#fef3c7; color:#92400e; font-size:10px; font-weight:800; padding:2px 6px; border-radius:6px;">📕 Field Order</span>'
+            : '<span style="background:#e0f2fe; color:#0369a1; font-size:10px; font-weight:800; padding:2px 6px; border-radius:6px;">🏢 Direct Bill</span>';
+
+        html += `
+        <div style="background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <span style="font-weight:900; color:#0f172a; font-size:14px;">${b.billNo || ('Bill #' + (idx + 1))}</span>
+                    ${orderTypeLbl}
+                    <span style="background:#dcfce7; color:#166534; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:6px;">IndexedDB</span>
+                </div>
+                <div style="font-size:13px; font-weight:800; color:#334155;">
+                    👤 ${custName}
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">
+                    📦 ${itemCount} Item(s) &bull; 📅 ${dateStr} ${timeStr}
+                </div>
+            </div>
+            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                <div style="font-size:16px; font-weight:900; color:#0284c7;">
+                    Rs ${billTotal}
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="btn-print-off-bill" data-idx="${idx}" style="background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1; padding:5px 10px; border-radius:6px; font-size:11.5px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button type="button" class="btn-del-off-bill" data-id="${b.localId || b.id || b.billNo}" style="background:#fee2e2; color:#ef4444; border:1px solid #fecaca; padding:5px 10px; border-radius:6px; font-size:11.5px; font-weight:bold; cursor:pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+
+    // Attach listeners
+    container.querySelectorAll('.btn-print-off-bill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.idx);
+            if (orders[idx]) {
+                printBillDirectly(orders[idx]);
+            }
+        });
+    });
+
+    container.querySelectorAll('.btn-del-off-bill').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            const res = await Swal.fire({
+                title: 'بل ڈیلیٹ کریں؟',
+                text: 'کیا آپ واقعی یہ آف لائن بل ضائع کرنا چاہتے ہیں؟',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'ہاں، ڈیلیٹ کریں',
+                cancelButtonText: 'کینسل'
+            });
+            if (res.isConfirmed) {
+                if (window.BillsDB) {
+                    await window.BillsDB.removePendingBill(id, myAgencyId);
+                }
+                cachedOfflineOrders = cachedOfflineOrders.filter(x => x.localId !== id && x.id !== id && x.billNo !== id);
+                try {
+                    localStorage.setItem(getOfflineQueueKey(), JSON.stringify(cachedOfflineOrders));
+                } catch(e) {}
+                updateOfflineQueueUI();
+                renderOfflineQueueList();
+                Swal.fire('Deleted', 'آف لائن بل حذف کر دیا گیا', 'success');
+            }
+        });
+    });
+}
+
+// Bind offline modal button triggers
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('viewOfflineQueueBtn')?.addEventListener('click', openOfflineQueueModal);
+    document.getElementById('closeOfflineModalBtn')?.addEventListener('click', closeOfflineQueueModal);
+    document.getElementById('closeOfflineModalFooterBtn')?.addEventListener('click', closeOfflineQueueModal);
+    document.getElementById('modalSyncOfflineBtn')?.addEventListener('click', () => {
+        closeOfflineQueueModal();
+        syncAllOfflineOrders(true);
+    });
+    document.getElementById('clearOfflineQueueBtn')?.addEventListener('click', async () => {
+        const res = await Swal.fire({
+            title: 'سارے آف لائن بلز کلیئر کریں؟',
+            text: 'تمام غیر محفوظ شدہ آف لائن بلز لوکل IndexedDB سے ختم ہو جائیں گے۔',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ہاں، سب کلیئر کریں',
+            cancelButtonText: 'منسوخ'
+        });
+        if (res.isConfirmed) {
+            if (window.BillsDB) {
+                await window.BillsDB.clearAllPendingBills(myAgencyId);
+            }
+            cachedOfflineOrders = [];
+            localStorage.removeItem(getOfflineQueueKey());
+            updateOfflineQueueUI();
+            renderOfflineQueueList();
+            Swal.fire('Cleared', 'تمام آف لائن بلز صاف کر دیے گئے', 'success');
+        }
+    });
+});
 
 window.addEventListener('online', () => {
     updateNetworkStatus();
@@ -838,14 +1050,18 @@ auth.onAuthStateChanged(async (user) => {
         }
 
         try {
-            addRow();
+            const rowsDiv = document.getElementById('itemsRows');
+            if (rowsDiv && rowsDiv.children.length === 0) {
+                addRow();
+            }
         } catch (e) {
             console.warn('addRow error:', e);
         }
 
-        // Setup Offline queue listener
+        // Setup Offline queue listener & IndexedDB Pending Bills
         try {
             updateNetworkStatus();
+            initOfflineBillsFromDB();
         } catch (e) {
             console.warn('updateNetworkStatus error:', e);
         }
@@ -1157,6 +1373,9 @@ function handlePopulatedCustomers(custList) {
     }
     if (myAgencyId) {
         localStorage.setItem(`eb_cust_cache_${myAgencyId}`, JSON.stringify(allMyCustomers));
+        if (window.BillsDB) {
+            window.BillsDB.cacheCustomers(myAgencyId, allMyCustomers);
+        }
     }
 }
 
@@ -1187,6 +1406,16 @@ function loadCustomers() {
         }
     };
     checkPreselect();
+
+    // 1b. Try IndexedDB if in-memory list is still empty
+    if (allMyCustomers.length === 0 && window.BillsDB) {
+        window.BillsDB.getCachedCustomers(myAgencyId).then(list => {
+            if (Array.isArray(list) && list.length > 0 && allMyCustomers.length === 0) {
+                allMyCustomers = list;
+                checkPreselect();
+            }
+        }).catch(() => {});
+    }
 
     if (!myAgencyId) {
         if (allMyCustomers.length === 0) handlePopulatedCustomers([]);
@@ -1582,6 +1811,9 @@ function handlePopulatedStock(itemsList) {
     allMyStock.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     if (myAgencyId) {
         localStorage.setItem(`eb_stock_cache_${myAgencyId}`, JSON.stringify({ items: allMyStock, timestamp: new Date().toISOString() }));
+        if (window.BillsDB) {
+            window.BillsDB.cacheStock(myAgencyId, allMyStock);
+        }
     }
     if (typeof refreshCatalogueData === 'function') {
         refreshCatalogueData();
@@ -1602,6 +1834,16 @@ function loadStock() {
             }
         }
     } catch (e) {}
+
+    // 1b. Try IndexedDB cached stock if in-memory list is still empty
+    if (allMyStock.length === 0 && window.BillsDB) {
+        window.BillsDB.getCachedStock(myAgencyId).then(items => {
+            if (Array.isArray(items) && items.length > 0 && allMyStock.length === 0) {
+                allMyStock = items;
+                if (typeof refreshCatalogueData === 'function') refreshCatalogueData();
+            }
+        }).catch(() => {});
+    }
 
     if (allMyStock.length > 0 && typeof refreshCatalogueData === 'function') {
         refreshCatalogueData();
@@ -1796,6 +2038,8 @@ function closeCameraScanner() {
         } catch (e) {}
     }
 }
+window.openCameraScanner = openCameraScanner;
+window.closeCameraScanner = closeCameraScanner;
 
 const openCamBtn = document.getElementById('openCameraBtn');
 if (openCamBtn) openCamBtn.addEventListener('click', openCameraScanner);
@@ -2312,14 +2556,12 @@ async function executeSaveBill(forceFieldOrder = false, directPrint = false) {
         createdAt: new Date().toISOString()
     };
 
-    // 🌐 CASE 1: OFFLINE MODE (Saved to Local Queue)
+    // 🌐 CASE 1: OFFLINE MODE (Saved to Local Queue via IndexedDB)
     if (!navigator.onLine) {
         billData.billNo = (isBookerMode ? 'ORD-OFF-' : 'OFF-') + (getOfflineOrders().length + 1) + '-' + Date.now().toString().slice(-4);
         billData.isOffline = true;
 
-        const queue = getOfflineOrders();
-        queue.push(billData);
-        saveOfflineOrders(queue);
+        await saveOfflineBill(billData);
 
         // Adjust local stock cache immediately only if direct sale
         if (!isBookerMode) {
@@ -2330,6 +2572,9 @@ async function executeSaveBill(forceFieldOrder = false, directPrint = false) {
                 }
             });
             localStorage.setItem(`eb_stock_cache_${myAgencyId}`, JSON.stringify({ items: allMyStock, timestamp: new Date().toISOString() }));
+            if (window.BillsDB) {
+                window.BillsDB.cacheStock(myAgencyId, allMyStock);
+            }
 
             if (selectedCustomer) {
                 selectedCustomer.balance = balance;
@@ -2338,7 +2583,16 @@ async function executeSaveBill(forceFieldOrder = false, directPrint = false) {
 
         showSuccessScreen(billData, true);
         if (saveBtn) saveBtn.disabled = false;
+        if (savePrintBtn) savePrintBtn.disabled = false;
         if (bookBtn) bookBtn.disabled = false;
+
+        if (directPrint) {
+            try {
+                printBillDirectly(billData);
+            } catch (pErr) {
+                console.warn('Direct print error:', pErr);
+            }
+        }
         return;
     }
 
@@ -2452,6 +2706,41 @@ async function executeSaveBill(forceFieldOrder = false, directPrint = false) {
         if (savePrintBtn) savePrintBtn.disabled = false;
         if (bookBtn) bookBtn.disabled = false;
         console.error('Invoice save error:', error);
+
+        // Network loss fallback to IndexedDB
+        const isNetworkErr = !navigator.onLine || 
+            (error && (error.code === 'unavailable' || error.message?.includes('offline') || error.message?.includes('network') || error.message?.includes('client is offline')));
+
+        if (isNetworkErr) {
+            billData.billNo = (isBookerMode ? 'ORD-OFF-' : 'OFF-') + (getOfflineOrders().length + 1) + '-' + Date.now().toString().slice(-4);
+            billData.isOffline = true;
+            await saveOfflineBill(billData);
+
+            if (!isBookerMode) {
+                items.forEach(it => {
+                    if (it.stockId) {
+                        const s = allMyStock.find(x => x.id === it.stockId);
+                        if (s) s.qty = (s.qty || 0) - it.qty;
+                    }
+                });
+                if (window.BillsDB) window.BillsDB.cacheStock(myAgencyId, allMyStock);
+                if (selectedCustomer) selectedCustomer.balance = balance;
+            }
+
+            showSuccessScreen(billData, true);
+            Swal.fire({
+                icon: 'warning',
+                title: '📶 Offline Saved (IndexedDB)',
+                html: `انٹرنیٹ کنکشن منقطع ہونے کی وجہ سے بل لوکل <b>IndexedDB</b> میں محفوظ کر دیا گیا ہے۔<br><br>بل ریفرنس نمبر: <b>${billData.billNo}</b><br>انٹرنیٹ بحال ہونے پر یہ کلاؤڈ پر سنک ہو جائے گا۔`,
+                confirmButtonColor: '#d97706'
+            });
+
+            if (directPrint) {
+                try { printBillDirectly(billData); } catch (e) {}
+            }
+            return;
+        }
+
         Swal.fire('❌ Error', 'Bill save fail: ' + (error.code || error.message), 'error');
     }
 }
@@ -2553,11 +2842,21 @@ document.getElementById('bookFieldOrderBtn')?.addEventListener('click', () => {
 });
 
 // ============================================
-// 🔄 SYNC OFFLINE ORDERS TO FIRESTORE
+// 🔄 SYNC OFFLINE ORDERS TO FIRESTORE (INDEXEDDB -> CLOUD)
 // ============================================
 async function syncAllOfflineOrders(isManual = true) {
-    const orders = getOfflineOrders();
-    if (orders.length === 0) {
+    let orders = [];
+    if (window.BillsDB) {
+        try {
+            orders = await window.BillsDB.getPendingBills(myAgencyId);
+        } catch (e) {
+            orders = getOfflineOrders();
+        }
+    } else {
+        orders = getOfflineOrders();
+    }
+
+    if (!orders || orders.length === 0) {
         if (isManual) Swal.fire('ℹ️', 'Koi offline order pending nahi hai!', 'info');
         return;
     }
@@ -2568,9 +2867,14 @@ async function syncAllOfflineOrders(isManual = true) {
     }
 
     const btn = document.getElementById('syncOfflineNowBtn');
+    const modalSyncBtn = document.getElementById('modalSyncOfflineBtn');
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+    }
+    if (modalSyncBtn) {
+        modalSyncBtn.disabled = true;
+        modalSyncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
     }
 
     let syncedCount = 0;
@@ -2579,26 +2883,32 @@ async function syncAllOfflineOrders(isManual = true) {
             const liveBillNo = await getNextLiveBillNo();
             const batch = db.batch();
 
-            ord.billNo = liveBillNo;
-            delete ord.isOffline;
+            const billToSync = { ...ord };
+            const oldLocalId = billToSync.localId || billToSync.id || billToSync.billNo;
+            billToSync.billNo = liveBillNo;
+            delete billToSync.isOffline;
+            delete billToSync.syncStatus;
+            delete billToSync.localId;
 
             const billRef = db.collection('bills').doc();
-            batch.set(billRef, ord);
+            batch.set(billRef, billToSync);
 
-            // Deduct stock
-            (ord.items || []).forEach(it => {
-                if (it.stockId) {
-                    batch.update(db.collection('stock').doc(it.stockId), {
-                        qty: firebase.firestore.FieldValue.increment(-it.qty),
-                        updatedAt: new Date().toISOString()
-                    });
-                }
-            });
+            // Deduct stock if not a booker pending approval
+            if (billToSync.orderType !== 'field_order') {
+                (billToSync.items || []).forEach(it => {
+                    if (it.stockId) {
+                        batch.update(db.collection('stock').doc(it.stockId), {
+                            qty: firebase.firestore.FieldValue.increment(-it.qty),
+                            updatedAt: new Date().toISOString()
+                        });
+                    }
+                });
+            }
 
             // Update customer balance
-            if (ord.customerId) {
-                batch.update(db.collection('customers').doc(ord.customerId), {
-                    balance: ord.balance,
+            if (billToSync.customerId) {
+                batch.update(db.collection('customers').doc(billToSync.customerId), {
+                    balance: billToSync.balance,
                     lastBillNo: liveBillNo,
                     lastBillAt: new Date().toISOString()
                 });
@@ -2606,11 +2916,25 @@ async function syncAllOfflineOrders(isManual = true) {
 
             await batch.commit();
             syncedCount++;
+
+            // Remove synced bill from IndexedDB immediately
+            if (window.BillsDB) {
+                try {
+                    await window.BillsDB.removePendingBill(oldLocalId, myAgencyId);
+                } catch(remErr) {}
+            }
         }
 
-        // Clear offline orders queue
+        // Clear offline orders queue completely
+        if (window.BillsDB) {
+            await window.BillsDB.clearAllPendingBills(myAgencyId);
+        }
+        cachedOfflineOrders = [];
         localStorage.removeItem(getOfflineQueueKey());
         updateOfflineQueueUI();
+        if (typeof renderOfflineQueueList === 'function') {
+            renderOfflineQueueList();
+        }
 
         Swal.fire({
             icon: 'success',
@@ -2626,10 +2950,14 @@ async function syncAllOfflineOrders(isManual = true) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Sync All to Cloud';
         }
+        if (modalSyncBtn) {
+            modalSyncBtn.disabled = false;
+            modalSyncBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Sync All to Cloud';
+        }
     }
 }
 
-document.getElementById('syncOfflineNowBtn').addEventListener('click', () => syncAllOfflineOrders(true));
+document.getElementById('syncOfflineNowBtn')?.addEventListener('click', () => syncAllOfflineOrders(true));
 
 // ============================================
 // 🎉 SUCCESS SCREEN & OUTPUTS
@@ -4839,11 +5167,9 @@ window.openQuickKhataRecoveryModal = async function(custId) {
                 await db.collection('orders').doc(docRef.id).set(payDoc);
             } catch(e) {}
         } else {
-            // Offline support
+            // Offline support via IndexedDB
             payDoc.isOffline = true;
-            const offQueue = getOfflineOrders();
-            offQueue.push(payDoc);
-            saveOfflineOrders(offQueue);
+            await saveOfflineBill(payDoc);
         }
 
         // Update local object & memory
