@@ -527,10 +527,33 @@ export default function App() {
       }`}>
         {viewMode === 'app' ? (
           <div className="flex-1 w-full h-[calc(100vh-57px)] flex flex-col relative">
-            {/* Loading progress bar on connecting */}
+            {/* 🌟 NH POS Official Splash Screen Overlay on Connecting */}
             {connectionStatus === 'connecting' && (
-              <div className="absolute top-0 left-0 right-0 h-1 bg-slate-800 overflow-hidden z-20">
-                <div className="h-full bg-emerald-500 animate-pulse w-full"></div>
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#f7f6f0] p-4 select-none transition-opacity duration-300">
+                <style>{`
+                  @keyframes runDotsApp {
+                    0% { content: ''; }
+                    20% { content: ' .'; }
+                    40% { content: ' . .'; }
+                    60% { content: ' . . .'; }
+                    80% { content: ' . . . .'; }
+                    100% { content: ' . . . . .'; }
+                  }
+                  .app-running-dots::after {
+                    content: '';
+                    animation: runDotsApp 1.5s steps(5, end) infinite;
+                  }
+                `}</style>
+                <div className="max-w-[340px] w-full flex flex-col items-center text-center">
+                  <img
+                    src="/nh-pos-splash.jpg"
+                    alt="NH POS Splash"
+                    className="max-h-[70vh] max-w-full object-contain rounded-2xl drop-shadow-md"
+                  />
+                  <div className="mt-3.5 text-[14px] font-bold text-[#14532d] tracking-wide inline-flex items-center justify-center font-sans">
+                    <span>System is Loading Please Wait<span className="app-running-dots"></span></span>
+                  </div>
+                </div>
               </div>
             )}
 

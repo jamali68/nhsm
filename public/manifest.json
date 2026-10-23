@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "version": "4.2.9",
+  "version": "4.3.0",
   "name": "NH POS — Wholesale ERP & POS",
   "short_name": "NH POS",
   "description": "Smart Business & Inventory Management, Offline Billing, Stock Tracking & Order Booker Portal",
   "start_url": "/dashboard.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#f7f6f0",
+  "theme_color": "#4a7c59",
   "orientation": "any",
   "categories": ["business", "finance", "productivity", "utilities"],
   "icons": [
