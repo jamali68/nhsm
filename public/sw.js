@@ -1,11 +1,11 @@
 // ==========================================================================
-// 🚀 NH POS — TURBO SERVICE WORKER (v4.3.0)
+// 🚀 NH POS — TURBO SERVICE WORKER (v4.3.2)
 // ✅ Ultra-lean App Shell pre-caching (No network choke on install)
 // ✅ Instant Stale-While-Revalidate caching for lightning-fast loads
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'nhpos-pwa-v4.3.1-turbo';
+const CACHE_NAME = 'nhpos-pwa-v4.3.2-turbo';
 
 // Core essential App Shell only (pre-cache in < 0.5s without bandwidth flood)
 const CORE_SHELL_ASSETS = [

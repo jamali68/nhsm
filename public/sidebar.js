@@ -7,7 +7,7 @@
 // ✅ Role-aware menu (Booker ko limited)
 // ============================================
 
-window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.1';
+window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.2';
 
 (function initSidebar() {
     // Inject dark-theme.css link dynamically if not present
@@ -945,7 +945,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.1';
                 <div class="eb-sidebar-appname">${isSuperAdmin ? 'NH POS Super Admin' : 'NH POS'}</div>
             </div>
             <div class="eb-sidebar-agency">${agencyTitleText}</div>
-            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.3.1'}</div>
+            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.3.2'}</div>
         </div>`;
 
         const activeMenuList = isSuperAdmin ? SUPER_ADMIN_MENU : MENU;
