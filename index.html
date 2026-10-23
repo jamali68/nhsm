@@ -16,19 +16,30 @@
     <meta name="apple-mobile-web-app-title" content="NH POS" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <script>
+      // 📱 Register Service Worker immediately in top-level head
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+        });
+      }
+    </script>
   </head>
   <body>
     <script>
-      // 🚀 Auto-route for GitHub Pages, Netlify or static web hosting:
+      // 🚀 Auto-route: On mobile devices, standalone mode, or production hosting, route directly to top-level app!
       (function() {
+        var isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (isMobile || isStandalone) {
+          window.location.replace('/dashboard.html');
+          return;
+        }
+
         var isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '0.0.0.0';
         var isAISPreview = window.location.hostname.indexOf('run.app') !== -1;
         if (!isLocalDev && !isAISPreview) {
-          if (window.location.hostname.indexOf('github.io') !== -1) {
-            window.location.replace('public/auth.html');
-          } else {
-            window.location.replace('auth.html');
-          }
+          window.location.replace('/dashboard.html');
         }
       })();
     </script>

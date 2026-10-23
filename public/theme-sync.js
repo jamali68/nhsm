@@ -1,5 +1,5 @@
 // 🏷️ Central Application Version (Single source of truth)
-window.EASYBILL_VERSION = '4.3.2';
+window.EASYBILL_VERSION = '4.3.3';
 
 // 🔄 Live Version Synchronization with manifest.json
 (function syncManifestVersion() {
@@ -219,6 +219,9 @@ window.EASYBILL_VERSION = '4.3.2';
 
     // Function to render floating auto-install badge if not yet installed
     function showAutoInstallBadge() {
+        // Never show inside an iframe (browsers block iframes from installing PWAs)
+        if (window.self !== window.top) return;
+
         if (isRunningStandalone()) return;
         if (localStorage.getItem('nhpos_pwa_installed') === 'true') return;
 
