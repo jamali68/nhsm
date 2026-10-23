@@ -471,7 +471,7 @@ function shareDirectPaymentWhatsApp(pay, c) {
     const bal = parseFloat(pay.balance !== undefined ? pay.balance : (c.balance || 0));
     const lines = [];
     lines.push(`💵 *PAYMENT RECEIPT / رسید وصولی*`);
-    lines.push(`🏢 *${(myAgency && myAgency.name) || 'Easy Bill POS'}*`);
+    lines.push(`🏢 *${(myAgency && myAgency.name) || 'NH POS'}*`);
     lines.push(`🧾 Receipt No: *${pay.billNo}*`);
     lines.push(`👤 Customer: *${c.name}* ${c.shopName ? '(' + c.shopName + ')' : ''}`);
     lines.push(`📅 Date: ${pay.date || '-'} ${pay.time || ''}`);
@@ -492,7 +492,7 @@ function shareDirectPaymentWhatsApp(pay, c) {
 window.shareDirectPaymentWhatsApp = shareDirectPaymentWhatsApp;
 
 function printDirectPaymentReceipt(pay, c) {
-    const agencyName = (myAgency && myAgency.name) ? myAgency.name : 'Easy Bill POS';
+    const agencyName = (myAgency && myAgency.name) ? myAgency.name : 'NH POS';
     const agencyPhone = (myAgency && myAgency.mobile) ? myAgency.mobile : '';
     const amt = parseFloat(pay.received || pay.paymentAmount || 0);
     const bal = parseFloat(pay.balance !== undefined ? pay.balance : (c.balance || 0));

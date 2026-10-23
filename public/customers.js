@@ -1610,7 +1610,7 @@ async function adjustCustomerOpeningBalance() {
 function printCustomerLedger() {
     if (!activeModalCustomer) return;
     const c = activeModalCustomer;
-    const agencyName = (myAgency && myAgency.name) ? myAgency.name : 'Easy Bill Generator';
+    const agencyName = (myAgency && myAgency.name) ? myAgency.name : 'NH POS';
     const agencyPhone = (myAgency && myAgency.mobile) ? myAgency.mobile : '';
     const agencyAddress = (myAgency && myAgency.address) ? myAgency.address : '';
     const agencyCity = (myAgency && myAgency.city) ? myAgency.city : '';
@@ -1802,7 +1802,7 @@ function printPaymentReceipt(payId) {
     if (!pay) return;
 
     const c = activeModalCustomer || allCustomers.find(x => x.id === pay.customerId) || {};
-    const agencyName = (myAgency && myAgency.name) ? myAgency.name : 'Easy Bill Generator';
+    const agencyName = (myAgency && myAgency.name) ? myAgency.name : 'NH POS';
     const agencyPhone = (myAgency && myAgency.mobile) ? myAgency.mobile : '';
     const agencyAddress = (myAgency && myAgency.address) ? myAgency.address : '';
 
@@ -1906,7 +1906,7 @@ function shareLedgerWhatsapp() {
 
     const lines = [];
     lines.push(`📜 *KHATA STATEMENT / کھاتہ تفصیل*`);
-    lines.push(`🏢 *${(myAgency && myAgency.name) || 'Easy Bill'}*`);
+    lines.push(`🏢 *${(myAgency && myAgency.name) || 'NH POS'}*`);
     lines.push(`👤 Customer: *${c.name}* ${c.shopName ? '(' + c.shopName + ')' : ''}`);
     if (c.mobile) lines.push(`📱 Mobile: ${c.mobile}`);
     lines.push(`📅 Statement Date: ${new Date().toLocaleDateString('en-GB')}`);
@@ -1945,7 +1945,7 @@ function sharePaymentWhatsapp(payId) {
 
     const lines = [];
     lines.push(`💵 *PAYMENT RECEIPT / رسید وصولی*`);
-    lines.push(`🏢 *${(myAgency && myAgency.name) || 'Easy Bill'}*`);
+    lines.push(`🏢 *${(myAgency && myAgency.name) || 'NH POS'}*`);
     lines.push(`🧾 Receipt No: *${pay.billNo}*`);
     lines.push(`👤 Customer: ${pay.customerName || c.name}`);
     lines.push(`📅 Date: ${pay.date || '-'} ${pay.time || ''}`);
@@ -2002,7 +2002,7 @@ function shareBillWhatsapp(billId) {
 
     const lines = [];
     lines.push(`🧾 *INVOICE: ${bill.billNo}*`);
-    lines.push(`🏢 *${(myAgency && myAgency.name) || 'Easy Bill'}*`);
+    lines.push(`🏢 *${(myAgency && myAgency.name) || 'NH POS'}*`);
     lines.push(`👤 Customer: ${bill.customerName || c.name || 'Valued Customer'}`);
     lines.push(`📅 Date: ${bill.date || '-'} ${bill.time || ''}`);
     lines.push('-------------------------');

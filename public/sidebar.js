@@ -942,7 +942,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.9';
         let menuHtml = `<div class="eb-sidebar-header">
             <div class="eb-sidebar-brand">
                 <div class="eb-sidebar-logo">${isSuperAdmin ? '👑' : '⚡'}</div>
-                <div class="eb-sidebar-appname">${isSuperAdmin ? 'Easy Bill Super Admin' : 'Easy Bill Generator'}</div>
+                <div class="eb-sidebar-appname">${isSuperAdmin ? 'NH POS Super Admin' : 'NH POS'}</div>
             </div>
             <div class="eb-sidebar-agency">${agencyTitleText}</div>
             <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.2.9'}</div>
@@ -1200,9 +1200,9 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.2.9';
         };
 
         const activeFile = window.location.pathname.split('/').pop() || 'index.html';
-        const pageConf = PAGE_CONFIG[activeFile] || { title: (document.title ? document.title.replace('Easy Bill Generator — ', '') : 'Easy Bill'), icon: '⚡', color: '#10b981' };
+        const pageConf = PAGE_CONFIG[activeFile] || { title: (document.title ? document.title.replace('Easy Bill Generator — ', '').replace('NH POS — ', '') : 'NH POS'), icon: '⚡', color: '#10b981' };
 
-        const agencyTitle = isSuperAdmin ? 'SaaS Master Platform' : (myProfile.agencyName || (myProfile.name ? myProfile.name : 'Easy Bill Enterprise'));
+        const agencyTitle = isSuperAdmin ? 'SaaS Master Platform' : (myProfile.agencyName || (myProfile.name ? myProfile.name : 'NH POS Enterprise'));
         const agencyCity = isSuperAdmin ? 'Master Platform HQ' : (myProfile.city || myProfile.depot || '');
         const agencySubtitle = agencyCity ? `${agencyTitle} • ${agencyCity}` : agencyTitle;
         const userInitial = (myProfile.name || 'User').charAt(0).toUpperCase();

@@ -1173,7 +1173,7 @@ window.printSingleVoucher = function(id) {
     if (!printArea) return;
 
     const catObj = expenseCategories.find(c => c.id === exp.categoryId || c.name === exp.category) || { name: exp.category || 'General' };
-    const agencyName = (myAgency && myAgency.name) || 'Easy Bill Enterprise';
+    const agencyName = (myAgency && myAgency.name) || 'NH POS Enterprise';
     const agencyPhone = (myAgency && (myAgency.phone || myAgency.mobile)) || '';
     const agencyCity = (myAgency && myAgency.city) || '';
 

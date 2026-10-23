@@ -381,7 +381,7 @@ function setupPushNotificationUI() {
             btn.style.background = '#64748b';
 
             if (lowStockItems.length > 0) {
-                new Notification('⚠️ Easy Bill Generator — Low Stock Alert', {
+                new Notification('⚠️ NH POS — Low Stock Alert', {
                     body: `${lowStockItems.length} items require immediate restocking!`,
                     icon: 'icon-192.png'
                 });

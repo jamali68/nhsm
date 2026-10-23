@@ -146,7 +146,7 @@ document.getElementById('btnDownloadBackup').addEventListener('click', async () 
         await loadStatsCounts();
 
         const backupPayload = {
-            app: "Easy Bill Generator",
+            app: "NH POS",
             formatVersion: "1.0",
             exportDate: new Date().toISOString(),
             agencyId: myAgencyId,
@@ -172,7 +172,7 @@ document.getElementById('btnDownloadBackup').addEventListener('click', async () 
 
         const safeName = ((myAgency && myAgency.name) || 'Agency').replace(/[^a-zA-Z0-9]/g, '_');
         const dateStr = new Date().toISOString().slice(0, 10);
-        const filename = `EasyBill_Backup_${safeName}_${dateStr}.json`;
+        const filename = `NHPOS_Backup_${safeName}_${dateStr}.json`;
 
         const a = document.createElement('a');
         a.href = url;
@@ -236,7 +236,7 @@ function processRestoreFile(file) {
         try {
             const parsed = JSON.parse(event.target.result);
             if (!parsed.app || !parsed.data) {
-                Swal.fire('❌ Invalid Backup Format', 'Ye Easy Bill Generator ki valid backup file nahi hai!', 'error');
+                Swal.fire('❌ Invalid Backup Format', 'Ye NH POS ki valid backup file nahi hai!', 'error');
                 return;
             }
 

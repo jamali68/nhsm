@@ -23,7 +23,7 @@ const firebaseConfig = {
 // ============================================
 const AUTH_TEXTS = {
     en: {
-        appTitle: "Easy Bill Generator",
+        appTitle: "NH POS",
         appSubtitle: "Smart Business Management",
         tabLogin: "Login",
         tabSignup: "Sign Up",

@@ -30,7 +30,7 @@ function getTemplateAgency(agency, bill) {
     const ag = agency || {};
     const b = bill || {};
     return {
-        name: ag.name || b.agencyName || 'Easy Bill Generator',
+        name: ag.name || b.agencyName || 'NH POS',
         tagline: ag.tagline || ag.slogan || b.agencyTagline || '',
         ownerName: ag.ownerName || ag.proprietor || b.agencyOwner || '',
         mobile: ag.mobile || ag.ownerMobile || b.agencyMobile || '',
@@ -314,7 +314,7 @@ function template1Urdu(bill, agency, customer, settings) {
                 ${s.showTermsAndConditions !== false ? `
                 مال موقع پر چیک کریں۔ بعد میں کمپنی ذمہ دار نہ ہوگی۔<br>
                 ${agency.invoiceFooter ? agency.invoiceFooter + '<br>' : ''}` : ''}
-                بل نمبر: ${bill.billNo} — Easy Bill Generator
+                بل نمبر: ${bill.billNo} — NH POS
             </div>
         </div>
     </body>
@@ -512,7 +512,7 @@ function template2Traders(bill, agency, customer, settings) {
 
         <div class="footer">
             ${s.showTermsAndConditions !== false && agency.invoiceFooter ? agency.invoiceFooter + '<br>' : ''}
-            (Sales &amp; Distribution App) Developed by Easy Bill Generator
+            (Sales &amp; Distribution App) Developed by NH POS
         </div>
     </body>
     </html>
@@ -979,7 +979,7 @@ function template4Modern(bill, agency, customer, settings) {
             <div class="sig-line">Authorized Signature</div>
         </div>` : ''}
 
-        <div class="footer-note">Bill ${bill.billNo} — Easy Bill Generator se generate hua hai.</div>
+        <div class="footer-note">Bill ${bill.billNo} — NH POS se generate hua hai.</div>
 
         <!-- 🌟 AUTO-SHRINK (24px se shuru — naam lamba to chota!) -->
         <script>
@@ -1312,7 +1312,7 @@ function template6Thermal(bill, agency, customer, settings) {
         <div class="t-footer">
             ${s.showThankYouNote ? '<div>Thank You! Visit Again.</div>' : ''}
             ${s.showSignatureAuthorized ? '<div style="margin-top:20px; border-top:1px dashed #000; padding-top:4px;">Signature</div>' : ''}
-            ${s.showAppWatermark ? '<div style="font-size:8px; color:#666; margin-top:4px;">Easy Bill Generator</div>' : ''}
+            ${s.showAppWatermark ? '<div style="font-size:8px; color:#666; margin-top:4px;">NH POS</div>' : ''}
         </div>
     </body>
     </html>

@@ -2191,7 +2191,7 @@ window.printPendingOrdersList = function() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Pending Approval Orders - Easy Bill ERP</title>
+            <title>Pending Approval Orders - NH POS</title>
             <style>
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #0f172a; margin: 0; }
                 table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -2310,7 +2310,7 @@ window.printVanLoadingChallan = function() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Van Loading Gate Pass - Easy Bill ERP</title>
+            <title>Van Loading Gate Pass - NH POS</title>
             <style>
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #0f172a; margin: 0; }
                 table { width: 100%; border-collapse: collapse; margin-top: 14px; }
@@ -2517,7 +2517,7 @@ window.printAllBookersPerformanceSheet = function() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Order Bookers Performance Report - Easy Bill ERP</title>
+            <title>Order Bookers Performance Report - NH POS</title>
             <style>
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #0f172a; margin: 0; }
                 table { width: 100%; border-collapse: collapse; margin-top: 14px; }

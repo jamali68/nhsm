@@ -201,7 +201,7 @@ export default function App() {
         }
       } else {
         navigator.serviceWorker.register('/sw.js').then((reg) => {
-          console.log('Easy Bill Service Worker active:', reg.scope);
+          console.log('NH POS Service Worker active:', reg.scope);
         }).catch((err) => {
           console.warn('SW registration info:', err);
         });
@@ -310,7 +310,7 @@ export default function App() {
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-base tracking-tight">Easy Bill Generator</span>
+              <span className="font-bold text-base tracking-tight">NH POS</span>
               <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full border ${
                 isDark 
                   ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
@@ -541,7 +541,7 @@ export default function App() {
               src={activeFrame}
               onLoad={handleIframeLoad}
               onError={handleIframeError}
-              title="Easy Bill Generator App"
+              title="NH POS App"
               className="w-full flex-1 border-0"
               allow="camera; clipboard-read; clipboard-write; geolocation"
             />
@@ -552,7 +552,7 @@ export default function App() {
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Easy Bill Generator — System Architecture
+                  NH POS — System Architecture
                 </h2>
                 <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   All modules from your repository are connected and live. Click any card to launch it directly.

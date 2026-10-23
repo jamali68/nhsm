@@ -1764,7 +1764,7 @@ document.getElementById('btnWhatsAppShareVoucher').addEventListener('click', fun
     if (!lastCreatedVoucher) return;
     const v = lastCreatedVoucher;
 
-    let text = `🔄 *EASY BILL ERP — مال واپسی رسید (RETURN INWARD)*\n`;
+    let text = `🔄 *NH POS — مال واپسی رسید (RETURN INWARD)*\n`;
     text += `🏢 *${(myAgency && myAgency.name) || 'Agency Depot'}*\n`;
     text += `📄 Voucher #: *${v.voucherNo}*\n`;
     text += `📅 Date: ${v.date} (${v.time})\n`;

@@ -1,8 +1,8 @@
 {
   "id": "/",
   "version": "4.2.9",
-  "name": "Easy Bill Generator — Wholesale ERP & POS",
-  "short_name": "EasyBill",
+  "name": "NH POS — Wholesale ERP & POS",
+  "short_name": "NH POS",
   "description": "Smart Business & Inventory Management, Offline Billing, Stock Tracking & Order Booker Portal",
   "start_url": "/dashboard.html",
   "scope": "/",

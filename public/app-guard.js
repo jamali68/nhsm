@@ -73,7 +73,7 @@
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>🔒 Unauthorized License — Easy Bill Generator</title>
+                <title>🔒 Unauthorized License — NH POS</title>
                 <style>
                     * { box-sizing: border-box; margin: 0; padding: 0; }
                     body {
@@ -173,21 +173,21 @@
                     <h1>UNLICENSED COPY DETECTED</h1>
                     <h3>غیر مجاز ڈومین — سافٹ ویئر کاپی رائٹ لاک</h3>
                     <p class="desc-en">
-                        This deployment of <b>Easy Bill Generator System</b> is running on an unauthorized domain or server.
+                        This deployment of <b>NH POS System</b> is running on an unauthorized domain or server.
                         All cloud sync and operations have been halted to protect software integrity.
                     </p>
                     <p class="desc-ur">
-                        یہ سافٹ ویئر <b>Easy Bill Generator</b> کے اصل مالک کے لیے محفوظ اور رجسٹرڈ ہے۔ 
+                        یہ سافٹ ویئر <b>NH POS</b> کے اصل مالک کے لیے محفوظ اور رجسٹرڈ ہے۔ 
                         اسے کسی دوسری ڈومین، سرور یا پی سی پر بغیر لائسنس چلانا قانوناً منع ہے۔ برائے تصدیق ڈویلپر سے رابطہ کریں۔
                     </p>
                     <div class="badge-info">
                         🚫 Blocked Domain: <strong>${window.location.hostname || 'Unknown Host'}</strong> &nbsp;|&nbsp; Status: <strong>Blocked (403 Unauthorized)</strong>
                     </div>
-                    <a href="https://wa.me/923346800959?text=Hello%20Developer,%20I%20need%20an%20official%20license%20key%20for%20Easy%20Bill%20Generator%20for%20domain:%20${encodeURIComponent(window.location.hostname)}" target="_blank" rel="noopener noreferrer" class="btn-wa">
+                    <a href="https://wa.me/923346800959?text=Hello%20Developer,%20I%20need%20an%20official%20license%20key%20for%20NH%20POS%20for%20domain:%20${encodeURIComponent(window.location.hostname)}" target="_blank" rel="noopener noreferrer" class="btn-wa">
                         <span>💬 Contact Developer for License (+92 334 6800959)</span>
                     </a>
                     <div class="footer-txt">
-                        Easy Bill Generator &copy; All Rights Reserved. Proprietary Commercial Software.
+                        NH POS &copy; All Rights Reserved. Proprietary Commercial Software.
                     </div>
                 </div>
             </body>
@@ -292,7 +292,7 @@
         const consoleStyleText = 'color: #38bdf8; font-size: 12px; font-weight: 600; line-height: 1.5;';
         console.log('%c🛑 STOP! SECURITY & COPYRIGHT NOTICE', consoleStyleTitle);
         console.log(
-            '%cEasy Bill Generator & Customer Ledger System\n' +
+            '%cNH POS & Customer Ledger System\n' +
             'Proprietary Software — All rights reserved.\n' +
             'Unauthorized reproduction, scraping, reverse-engineering, or hosting\n' +
             'without a valid license is strictly prohibited.\n' +

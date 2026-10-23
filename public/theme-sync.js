@@ -254,11 +254,11 @@ window.EASYBILL_VERSION = '4.2.9';
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         icon: 'info',
-                        title: '📱 EasyBill پہلے سے انسٹال ہے!',
+                        title: '📱 NH POS پہلے سے انسٹال ہے!',
                         text: 'یہ ایپ آپ کے موبائل کی ہوم اسکرین پر موجود ہے۔'
                     });
                 } else {
-                    alert('EasyBill App is already installed on your device!');
+                    alert('NH POS App is already installed on your device!');
                 }
                 return;
             }
@@ -267,7 +267,7 @@ window.EASYBILL_VERSION = '4.2.9';
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: '📲 Install EasyBill App',
+                    title: '📲 Install NH POS App',
                     html: isIOS
                         ? `<div style="text-align:left; font-size:13px; line-height:1.6;">
                             <b>iPhone / iPad (Safari) پر انسٹال کرنے کا طریقہ:</b><br><br>
