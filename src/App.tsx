@@ -21,7 +21,9 @@ import {
   WifiOff,
   AlertTriangle,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  Download,
+  Check
 } from 'lucide-react';
 
 interface ModuleCard {
@@ -117,7 +119,16 @@ export default function App() {
   const [activeFrame, setActiveFrame] = useState<string>('/dashboard.html');
   const [viewMode, setViewMode] = useState<'app' | 'catalog'>('app');
   const [iframeKey, setIframeKey] = useState<number>(0);
-  const [pwaInstalled, setPwaInstalled] = useState<boolean>(false);
+  const [pwaInstalled, setPwaInstalled] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      localStorage.getItem('nhpos_pwa_installed') === 'true'
+    );
+  });
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState<boolean>(true);
+  const [showIOSModal, setShowIOSModal] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [lastConnectedTime, setLastConnectedTime] = useState<string | null>(null);
   const [statusTooltip, setStatusTooltip] = useState<string>('Connecting to module...');
@@ -185,35 +196,46 @@ export default function App() {
       window.location.hostname.includes('run.app');
 
     if ('serviceWorker' in navigator) {
-      if (isDev) {
-        // Dev / AI Studio preview: Unregister existing service workers to ensure fresh modules
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-          for (const reg of registrations) {
-            reg.unregister();
-          }
-        });
-        if ('caches' in window) {
-          caches.keys().then((names) => {
-            for (const name of names) {
-              if (name !== 'easybill-pwa-v4.2.8-turbo') caches.delete(name);
-            }
-          });
-        }
-      } else {
-        navigator.serviceWorker.register('/sw.js').then((reg) => {
-          console.log('NH POS Service Worker active:', reg.scope);
-        }).catch((err) => {
-          console.warn('SW registration info:', err);
-        });
-      }
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        console.log('[PWA] NH POS Service Worker active:', reg.scope);
+      }).catch((err) => {
+        console.warn('[PWA] SW registration info:', err);
+      });
     }
 
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Detect standalone mode (already installed on device)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      localStorage.getItem('nhpos_pwa_installed') === 'true';
+
+    if (isStandalone) {
       setPwaInstalled(true);
+      setShowInstallBanner(false);
     }
+
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      (window as any).deferredInstallPrompt = e;
+      setShowInstallBanner(true);
+    };
+
+    const handleAppInstalled = () => {
+      console.log('[PWA] NH POS successfully installed');
+      setPwaInstalled(true);
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+      (window as any).deferredInstallPrompt = null;
+      localStorage.setItem('nhpos_pwa_installed', 'true');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'THEME_CHANGED') {
+      if (event.data && event.data.type === 'PWA_TRIGGER_INSTALL') {
+        handleInstallPWA();
+      } else if (event.data && event.data.type === 'THEME_CHANGED') {
         setTheme(event.data.theme);
       } else if (event.data && event.data.type === 'MODULE_STATUS') {
         if (event.data.status === 'connected') {
@@ -252,8 +274,45 @@ export default function App() {
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
+
+  const handleInstallPWA = async () => {
+    const promptEvent = deferredPrompt || (window as any).deferredInstallPrompt;
+    if (promptEvent) {
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          setPwaInstalled(true);
+          setShowInstallBanner(false);
+          localStorage.setItem('nhpos_pwa_installed', 'true');
+          if (iframeRef.current && iframeRef.current.contentWindow) {
+            try {
+              iframeRef.current.contentWindow.postMessage({ type: 'PWA_INSTALLED_SUCCESS' }, '*');
+            } catch (_) {}
+          }
+        }
+      } catch (err) {
+        console.warn('PWA install prompt error:', err);
+      }
+      setDeferredPrompt(null);
+      (window as any).deferredInstallPrompt = null;
+    } else {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      if (isIOS) {
+        setShowIOSModal(true);
+      } else {
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          try {
+            iframeRef.current.contentWindow.postMessage({ type: 'PWA_SHOW_GUIDE' }, '*');
+          } catch (_) {}
+        }
+      }
+    }
+  };
 
   const handleIframeLoad = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -305,19 +364,31 @@ export default function App() {
           : 'bg-white border-b border-slate-200 text-slate-900'
       }`}>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
-            ⚡
-          </div>
+          <img
+            src="/icon-192.png"
+            alt="NH POS"
+            className="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0 border border-emerald-600/30"
+          />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-base tracking-tight">NH POS</span>
-              <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full border ${
-                isDark 
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                  : 'bg-emerald-100 text-emerald-700 border-emerald-200'
-              }`}>
-                PWA Ready
-              </span>
+              
+              {/* 📲 PWA INSTALL BUTTON OR INSTALLED BADGE */}
+              {!pwaInstalled ? (
+                <button
+                  onClick={handleInstallPWA}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-sm transition-all cursor-pointer border border-emerald-500"
+                  title="Install NH POS as a native app on this device"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>Install App</span>
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <Check className="w-3 h-3 text-emerald-400" />
+                  <span>Installed</span>
+                </span>
+              )}
 
               {/* 🟢 REAL-TIME CONNECTION STATUS BADGE */}
               <div 
@@ -527,9 +598,9 @@ export default function App() {
       }`}>
         {viewMode === 'app' ? (
           <div className="flex-1 w-full h-[calc(100vh-57px)] flex flex-col relative">
-            {/* 🌟 NH POS Official Splash Screen Overlay on Connecting */}
+            {/* 🌟 NH POS Official Fullscreen Splash Screen Overlay on Connecting */}
             {connectionStatus === 'connecting' && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#f7f6f0] p-4 select-none transition-opacity duration-300">
+              <div className="absolute inset-0 z-30 w-full h-full bg-[#f7f6ed] overflow-hidden select-none transition-opacity duration-300">
                 <style>{`
                   @keyframes runDotsApp {
                     0% { content: ''; }
@@ -544,13 +615,13 @@ export default function App() {
                     animation: runDotsApp 1.5s steps(5, end) infinite;
                   }
                 `}</style>
-                <div className="max-w-[340px] w-full flex flex-col items-center text-center">
-                  <img
-                    src="/nh-pos-splash.jpg"
-                    alt="NH POS Splash"
-                    className="max-h-[70vh] max-w-full object-contain rounded-2xl drop-shadow-md"
-                  />
-                  <div className="mt-3.5 text-[14px] font-bold text-[#14532d] tracking-wide inline-flex items-center justify-center font-sans">
+                <img
+                  src="/nh-pos-splash.jpg"
+                  alt="NH POS Splash"
+                  className="absolute inset-0 w-full h-full object-cover object-center block"
+                />
+                <div className="absolute left-0 right-0 top-[74%] flex justify-center items-center z-10 text-center px-4">
+                  <div className="text-[14px] font-bold text-[#14532d] tracking-wide inline-flex items-center justify-center font-sans">
                     <span>System is Loading Please Wait<span className="app-running-dots"></span></span>
                   </div>
                 </div>
@@ -691,6 +762,80 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* 📲 Floating PWA Auto-Install Banner if not yet installed */}
+      {!pwaInstalled && showInstallBanner && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-[420px] z-50 bg-white dark:bg-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 shadow-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src="/icon-192.png"
+              alt="NH POS"
+              className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0 border border-slate-200 dark:border-slate-800"
+            />
+            <div className="min-w-0">
+              <div className="font-bold text-sm text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                <span>NH POS App</span>
+                <span className="text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded">
+                  PWA
+                </span>
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                فاسٹ آف لائن اور ہوم اسکرین انسٹال
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={handleInstallPWA}
+              className="px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-xl shadow-sm transition cursor-pointer"
+            >
+              📲 Install
+            </button>
+            <button
+              onClick={() => setShowInstallBanner(false)}
+              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              title="Close"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🍏 iOS Safari Install Guide Modal */}
+      {showIOSModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-3 mb-4">
+              <img src="/icon-192.png" alt="NH POS" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Install NH POS on iPhone / iPad</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">iOS Safari Instructions</p>
+              </div>
+            </div>
+            <div className="text-sm text-slate-600 dark:text-slate-300 space-y-2.5 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-start gap-2">
+                <span className="font-bold text-emerald-600">1.</span>
+                <span>Safari کے نیچے <strong>Share بٹن</strong> پر کلک کریں۔</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-bold text-emerald-600">2.</span>
+                <span>نیچے اسکرول کر کے <strong>"Add to Home Screen"</strong> منتخب کریں۔</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-bold text-emerald-600">3.</span>
+                <span>اوپر دائیں کونے میں <strong>"Add"</strong> پر کلک کریں — ایپ ہوم اسکرین پر آ جائے گی!</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowIOSModal(false)}
+              className="mt-4 w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition"
+            >
+              سمجھ گیا (OK)
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

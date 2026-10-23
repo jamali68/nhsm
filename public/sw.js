@@ -5,13 +5,15 @@
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'nhpos-pwa-v4.3.0-turbo';
+const CACHE_NAME = 'nhpos-pwa-v4.3.1-turbo';
 
 // Core essential App Shell only (pre-cache in < 0.5s without bandwidth flood)
 const CORE_SHELL_ASSETS = [
   '/manifest.json',
   '/nh-pos-splash.jpg',
   '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
   '/auth.html',
   '/dashboard.html',
   '/auth.css',
@@ -59,15 +61,11 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Bypass dev tooling, Vite internal routes, APIs, and dev server hosts
+  // Bypass internal dev bundling paths & external auth APIs
   if (
     url.pathname.startsWith('/@') ||
     url.pathname.startsWith('/src/') ||
     url.pathname.startsWith('/node_modules/') ||
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
-    url.hostname === '0.0.0.0' ||
-    url.hostname.includes('run.app') ||
     url.origin.includes('firestore.googleapis.com') ||
     url.origin.includes('identitytoolkit.googleapis.com') ||
     url.origin.includes('securetoken.googleapis.com') ||

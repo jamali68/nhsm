@@ -133,6 +133,15 @@ body, body.dark-theme, [data-theme="dark"] {
     display: flex; align-items: center; justify-content: center;
     margin: 0 auto 10px;
 }
+.auth-logo-img {
+    width: 76px; height: 76px;
+    border-radius: 20px;
+    object-fit: cover;
+    margin: 0 auto 12px;
+    display: block;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.06);
+}
 .app-title { color: var(--primary); font-size: 26px; }
 .app-subtitle { color: #7f8c8d; font-size: 13px; margin-top: 3px; }
 

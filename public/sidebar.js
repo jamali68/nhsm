@@ -7,7 +7,7 @@
 // ✅ Role-aware menu (Booker ko limited)
 // ============================================
 
-window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.0';
+window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.1';
 
 (function initSidebar() {
     // Inject dark-theme.css link dynamically if not present
@@ -945,7 +945,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.0';
                 <div class="eb-sidebar-appname">${isSuperAdmin ? 'NH POS Super Admin' : 'NH POS'}</div>
             </div>
             <div class="eb-sidebar-agency">${agencyTitleText}</div>
-            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.3.0'}</div>
+            <div class="eb-sidebar-version">Version ${window.EASYBILL_VERSION || '4.3.1'}</div>
         </div>`;
 
         const activeMenuList = isSuperAdmin ? SUPER_ADMIN_MENU : MENU;
@@ -1031,7 +1031,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.0';
                     </a>`;
                 } else {
                     menuHtml += `
-                    <a class="eb-menu-item ${isActive}" href="${item.url === '#install-pwa' ? 'javascript:void(0)' : item.url}" ${item.url === '#install-pwa' ? 'onclick="window.installEasyBillPWA && window.installEasyBillPWA(); return false;"' : ''}>
+                    <a class="eb-menu-item ${isActive}" href="${item.url === '#install-pwa' ? 'javascript:void(0)' : item.url}" ${item.url === '#install-pwa' ? 'onclick="(window.installNHPOSApp || window.installEasyBillPWA) && (window.installNHPOSApp || window.installEasyBillPWA)(); return false;"' : ''}>
                         <i class="fas ${itemIcon}"></i>
                         <div class="eb-item-content">
                             <div class="eb-item-topline">
