@@ -168,7 +168,9 @@ function populateSettingsFields() {
 
     // Invoicing & POS
     document.getElementById('setDefaultTemplate').value = myAgency.defaultTemplate || 'template4';
-    document.getElementById('setThermalWidth').value = myAgency.thermalPaperWidth || '58';
+    document.getElementById('setThermalWidth').value = myAgency.thermalPaperWidth || localStorage.getItem('eb_thermal_width') || '80';
+    const billLangEl = document.getElementById('setDefaultBillLanguage');
+    if (billLangEl) billLangEl.value = myAgency.billLanguage || localStorage.getItem('eb_bill_language') || 'en';
     document.getElementById('setDefaultPriceMode').value = myAgency.defaultPriceMode || 'wholesale';
     document.getElementById('setBillPrefix').value = (myAgency.billPrefixes && myAgency.billPrefixes.stock) || 'STK-';
     document.getElementById('setInvoiceFooter').value = myAgency.invoiceFooter || 'مال واپس یا تبدیل 3 دن میں ہو سکتا ہے۔ کیش واپس نہیں ہوگا۔';
@@ -412,6 +414,7 @@ document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
 
     const defaultTemplate = document.getElementById('setDefaultTemplate').value;
     const thermalPaperWidth = document.getElementById('setThermalWidth').value;
+    const billLanguage = document.getElementById('setDefaultBillLanguage')?.value || 'en';
     const defaultPriceMode = document.getElementById('setDefaultPriceMode').value;
     const prefix = document.getElementById('setBillPrefix').value.trim().toUpperCase() || 'STK-';
     const invoiceFooter = document.getElementById('setInvoiceFooter').value.trim();
@@ -466,6 +469,7 @@ document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
         await db.collection('agencies').doc(myAgencyId).update({
             defaultTemplate: defaultTemplate,
             thermalPaperWidth: thermalPaperWidth,
+            billLanguage: billLanguage,
             defaultPriceMode: defaultPriceMode,
             'billPrefixes.stock': prefix,
             invoiceFooter: invoiceFooter,
@@ -482,6 +486,8 @@ document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
         localStorage.setItem('eb_filer_tax_rate', String(filerTaxRate));
         localStorage.setItem('eb_nonfiler_tax_rate', String(nonFilerTaxRate));
         localStorage.setItem('eb_print_settings', JSON.stringify(printSettings));
+        localStorage.setItem('eb_thermal_width', thermalPaperWidth);
+        localStorage.setItem('eb_bill_language', billLanguage);
 
         Swal.fire({
             toast: true, position: 'top-end', showConfirmButton: false,

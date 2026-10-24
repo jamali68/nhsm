@@ -1213,106 +1213,510 @@ function template5Premium(bill, agency, customer) {
 }
 
 // ============================================
-// 🎨 TEMPLATE 6: 🧾 THERMAL POS RECEIPT (58mm / 80mm)
-// Ultra-fast compact thermal slip format
+// 🎨 TEMPLATE 6: 🧾 ULTRA-ADAPTIVE SMART THERMAL POS SLIP (80mm & 58mm)
+// Bilingual Engine (English LTR & Urdu RTL):
+// - English (LTR): Clean Left-to-Right layout, monospace font, standard English POS labels
+// - Urdu (RTL): Authentic Right-to-Left layout, Nastaliq typography, pure Urdu labels
+// - Auto width adaptation: 80mm (Default) & 58mm (Portable / Handheld Bluetooth)
+// - Anti-truncation 2-line item architecture
 // ============================================
 function template6Thermal(bill, agency, customer, settings) {
     const s = settings || (window.ebPrintEngine ? window.ebPrintEngine.getEffectivePrintSettings(agency) : {});
     const items = getTemplateItems(bill);
     const tot = getTemplateTotals(bill);
-    const dateStr = bill.date || '-';
-    const timeStr = bill.time || '-';
-    const payType = bill.payType || (agency.payType || 'CASH');
+    const dateStr = bill.date || new Date().toISOString().split('T')[0];
+    const timeStr = bill.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // 🌐 Language & Direction Detection (English LTR vs Urdu RTL)
+    const rawLang = (s && s.billLanguage) ||
+                    (bill && bill.language) ||
+                    (agency && agency.billLanguage) ||
+                    (typeof localStorage !== 'undefined' ? (localStorage.getItem('eb_bill_language') || localStorage.getItem('eb_app_language')) : null) ||
+                    'en';
+    const isUrdu = String(rawLang).toLowerCase() === 'ur';
+
+    // Direction & Typography
+    const dir = isUrdu ? 'rtl' : 'ltr';
+    const textAlign = isUrdu ? 'right' : 'left';
+    const fontFamily = isUrdu
+        ? "'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', 'Segoe UI', Tahoma, sans-serif"
+        : "'Courier New', Courier, 'Lucida Console', Monaco, monospace, sans-serif";
+
+    // 🖨️ Determine Thermal Paper Width (Priority: settings > bill > agency > localStorage > default '80')
+    const rawWidth = (s && s.thermalWidth) ||
+                     (bill && bill.thermalWidth) ||
+                     (agency && agency.thermalPaperWidth) ||
+                     (typeof localStorage !== 'undefined' ? localStorage.getItem('eb_thermal_width') : null) ||
+                     '80';
+    const is58 = String(rawWidth).trim() === '58';
+
+    // Dynamic Sizing Tokens based on paper width
+    const pageWidth = is58 ? '58mm' : '80mm';
+    const printableWidth = is58 ? '48mm' : '72mm';
+    const baseFontSize = isUrdu ? (is58 ? '11.5px' : '13px') : (is58 ? '11px' : '12px');
+    const titleSize = isUrdu ? (is58 ? '16px' : '19px') : (is58 ? '15px' : '18px');
+    const grandSize = isUrdu ? (is58 ? '15px' : '17px') : (is58 ? '14px' : '16px');
+    const logoMaxHeight = is58 ? '42px' : '56px';
+    const logoMaxWidth = is58 ? '110px' : '150px';
+    const lineSpacing = isUrdu ? '1.5' : (is58 ? '1.25' : '1.35');
+
+    // Language Dictionary (English vs Urdu)
+    const rawPayType = String(bill.payType || (agency && agency.payType) || 'CASH').toUpperCase();
+    let payTypeBadge = '*** CASH SALE ***';
+    if (isUrdu) {
+        if (rawPayType.includes('CREDIT') || rawPayType.includes('UDHAAR')) payTypeBadge = '*** ادھار کھاتہ بل ***';
+        else if (rawPayType.includes('BANK') || rawPayType.includes('ONLINE')) payTypeBadge = '*** آن لائن / بینک ادائیگی ***';
+        else if (rawPayType.includes('CHEQUE')) payTypeBadge = '*** چیک ادائیگی ***';
+        else payTypeBadge = '*** نقد فروخت ***';
+    } else {
+        if (rawPayType.includes('CREDIT') || rawPayType.includes('UDHAAR')) payTypeBadge = '*** CREDIT / UDHAAR ***';
+        else if (rawPayType.includes('BANK') || rawPayType.includes('ONLINE')) payTypeBadge = '*** BANK / ONLINE ***';
+        else if (rawPayType.includes('CHEQUE')) payTypeBadge = '*** CHEQUE ***';
+        else payTypeBadge = '*** CASH SALE ***';
+    }
+
+    const L = {
+        title: isUrdu ? (agency.name || 'آسان بل اسٹور') : (agency.name || 'EasyBill Store'),
+        prop: isUrdu ? 'پروپرائٹر:' : 'Prop:',
+        phone: isUrdu ? 'فون:' : 'Phone:',
+        ntn: isUrdu ? 'این ٹی این:' : 'NTN / STRN:',
+        invoiceNo: isUrdu ? 'بل نمبر:' : 'Invoice / Bill #:',
+        dateTime: isUrdu ? 'تاریخ و وقت:' : 'Date & Time:',
+        customer: isUrdu ? 'گاہک / خریدار:' : 'Customer:',
+        walkInCustomer: isUrdu ? 'کاؤنٹر گاہک (نقد)' : 'Cash Customer',
+        customerPhone: isUrdu ? 'گاہک فون:' : 'Customer Phone:',
+        routeArea: isUrdu ? 'علاقہ / روٹ:' : 'Route / Area:',
+        booker: isUrdu ? 'سیلز مین / آرڈر بکر:' : 'Booker / Sales:',
+        itemsHeaderName: isUrdu ? 'نام و تفصیل آئٹم' : 'Item Description',
+        itemsHeaderCalc: isUrdu ? 'تعداد × ریٹ &nbsp; کل رقم' : 'Qty × Rate &nbsp; Total',
+        currPrefix: isUrdu ? '' : 'Rs ',
+        currSuffix: isUrdu ? ' روپے' : '',
+        subTotal: isUrdu ? 'خام رقم:' : 'Sub Total:',
+        discount: isUrdu ? 'رعایت (ڈسکاؤنٹ):' : 'Discount:',
+        tax: isUrdu ? 'ٹیکس / جی ایس ٹی:' : 'Tax / GST:',
+        grandTotal: isUrdu ? 'کل میزان (ٹوٹل):' : 'NET TOTAL:',
+        prevBalance: isUrdu ? 'پچھلا بقایا (کھاتہ):' : 'Prev Balance:',
+        totalDue: isUrdu ? 'کل واجب الادا:' : 'Total Due:',
+        received: isUrdu ? 'وصول شدہ رقم:' : 'Received / Paid:',
+        remainingBalance: isUrdu ? 'موجودہ بقایا کھاتہ:' : 'Remaining Balance:',
+        changeReturn: isUrdu ? 'واپسی رقم:' : 'Change Return:',
+        paidStatus: isUrdu ? 'مکمل ادا شدہ' : 'PAID (CLEAR)',
+        totalItemsCount: isUrdu ? 'کل آئٹمز:' : 'Total Items:',
+        totalQuantityCount: isUrdu ? 'کل تعداد:' : 'Total Qty:',
+        termsDefault: isUrdu
+            ? 'مال واپس یا تبدیل 3 دن کے اندر بل کے ساتھ ممکن ہے۔'
+            : 'Return / Exchange within 3 days with original receipt.',
+        thankYou: isUrdu ? 'شکریہ! دوبارہ تشریف لائیں۔' : 'Thank you for your business!',
+        thankYouSub: isUrdu ? 'آپ کے تعاون کا بہت شکریہ۔' : 'Please visit us again soon.',
+        signature: isUrdu ? 'دستخط مجاز' : 'Authorized Signature',
+        softwareFooter: isUrdu ? 'این ایچ پی او ایس سسٹم' : 'Printed via NH POS System'
+    };
+
+    // Formatted Values Helper
+    const fmt = (v) => `${L.currPrefix}${parseFloat(v || 0).toLocaleString()}${L.currSuffix}`;
+    const subTotalFormatted = fmt(tot.subTotal);
+    const discountVal = parseFloat(tot.discount || 0);
+    const discountFormatted = discountVal > 0 ? fmt(discountVal) : null;
+    const taxVal = parseFloat(tot.tax || 0);
+    const taxFormatted = taxVal > 0 ? fmt(taxVal) : null;
+    const grandTotalFormatted = fmt(tot.grandTotal);
+    const prevBalVal = parseFloat(tot.prevBalance || 0);
+    const prevBalFormatted = prevBalVal > 0 ? fmt(prevBalVal) : null;
+    const totalDueFormatted = fmt(parseFloat(tot.grandTotal || 0) + prevBalVal);
+    const receivedVal = parseFloat(tot.received || 0);
+    const receivedFormatted = receivedVal > 0 ? fmt(receivedVal) : null;
+    const balanceVal = parseFloat(tot.balance || 0);
 
     return `
-    <html>
+    <!DOCTYPE html>
+    <html dir="${dir}">
     <head>
-        <title>Receipt ${bill.billNo}</title>
+        <meta charset="UTF-8">
+        <title>${isUrdu ? 'بل نمبر' : 'Receipt'} #${bill.billNo || '0000'}</title>
         <style>
             @media print {
-                @page { margin: 0; size: 80mm auto; }
-                body { margin: 0; padding: 6px; }
+                @page {
+                    margin: 0;
+                    size: ${pageWidth} auto;
+                }
+                html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: ${pageWidth} !important;
+                    background: #fff !important;
+                }
+                .no-print { display: none !important; }
+            }
+            * {
+                box-sizing: border-box;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             body {
-                font-family: 'Courier New', Courier, monospace, sans-serif;
-                width: 76mm;
-                margin: auto;
-                padding: 8px 4px;
+                direction: ${dir};
+                text-align: ${textAlign};
+                font-family: ${fontFamily};
+                width: ${printableWidth};
+                max-width: ${printableWidth};
+                margin: 0 auto;
+                padding: ${is58 ? '4px 2px 10px 2px' : '6px 4px 14px 4px'};
                 color: #000;
-                font-size: 12px;
-                line-height: 1.3;
+                background: #fff;
+                font-size: ${baseFontSize};
+                line-height: ${lineSpacing};
+                text-rendering: optimizeLegibility;
             }
             .t-center { text-align: center; }
             .t-bold { font-weight: bold; }
-            .t-header { border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; }
-            .t-title { font-size: 16px; font-weight: 900; margin: 0; text-transform: uppercase; }
-            .t-sub { font-size: 11px; margin: 2px 0; }
-            .t-meta { font-size: 11px; margin-bottom: 6px; border-bottom: 1px dashed #000; padding-bottom: 4px; }
-            .t-row { display: flex; justify-content: space-between; }
-            .t-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
-            .t-table th { border-bottom: 1px solid #000; text-align: left; padding: 2px 0; }
-            .t-table td { padding: 3px 0; }
-            .t-right { text-align: right; }
-            .t-totals { border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 4px 0; margin-top: 4px; }
-            .t-totals .t-row { margin: 2px 0; }
-            .t-grand { font-size: 14px; font-weight: bold; border-top: 1px solid #000; padding-top: 2px; }
-            .t-footer { margin-top: 8px; text-align: center; font-size: 10px; }
+            
+            /* Dividers */
+            .t-divider {
+                border-top: 1px dashed #000;
+                margin: 5px 0;
+            }
+            .t-divider-double {
+                border-top: 3px double #000;
+                margin: 5px 0;
+            }
+
+            /* Header Section */
+            .t-header {
+                text-align: center;
+                padding-bottom: 4px;
+            }
+            .t-logo-wrap {
+                margin-bottom: 4px;
+            }
+            .t-logo {
+                max-height: ${logoMaxHeight};
+                max-width: ${logoMaxWidth};
+                object-fit: contain;
+                filter: grayscale(100%) contrast(140%);
+                display: inline-block;
+            }
+            .t-store-name {
+                font-size: ${titleSize};
+                font-weight: 900;
+                line-height: 1.25;
+                margin: 2px 0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .t-subtext {
+                font-size: ${is58 ? '10px' : '11px'};
+                margin: 1.5px 0;
+                line-height: 1.3;
+            }
+            .t-pay-badge {
+                display: inline-block;
+                font-weight: 900;
+                font-size: ${is58 ? '11px' : '12px'};
+                padding: 1px 6px;
+                border: 1px solid #000;
+                margin-top: 3px;
+                text-transform: uppercase;
+            }
+
+            /* Meta Information Table */
+            .t-meta-table {
+                width: 100%;
+                font-size: ${is58 ? '10.5px' : '11px'};
+                line-height: 1.35;
+                margin: 3px 0;
+            }
+            .t-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin: 1.5px 0;
+            }
+            .t-row > span:first-child {
+                color: #222;
+            }
+
+            /* Items Section - Ultra-clean 2-line layout */
+            .t-items-header {
+                display: flex;
+                justify-content: space-between;
+                font-weight: bold;
+                font-size: ${is58 ? '10.5px' : '11px'};
+                border-top: 1px dashed #000;
+                border-bottom: 1px dashed #000;
+                padding: 3px 0;
+                margin: 4px 0 3px 0;
+                text-transform: uppercase;
+            }
+            .t-item-block {
+                padding: 3.5px 0;
+                border-bottom: 1px dotted #bbb;
+            }
+            .t-item-block:last-child {
+                border-bottom: none;
+            }
+            .t-item-top {
+                font-weight: 800;
+                font-size: ${is58 ? '11px' : '12px'};
+                word-break: break-word;
+                line-height: 1.3;
+                color: #000;
+            }
+            .t-item-bottom {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: ${is58 ? '10.5px' : '11.5px'};
+                margin-top: 1.5px;
+            }
+            .t-item-calc {
+                color: #333;
+            }
+            .t-item-amount {
+                font-weight: 800;
+                color: #000;
+            }
+
+            /* Totals Section */
+            .t-totals-wrap {
+                margin-top: 4px;
+                padding: 3px 0;
+            }
+            .t-totals-row {
+                display: flex;
+                justify-content: space-between;
+                font-size: ${is58 ? '11px' : '12px'};
+                margin: 2px 0;
+            }
+            .t-grand-box {
+                border-top: 1.5px solid #000;
+                border-bottom: 1.5px solid #000;
+                padding: 4px 0;
+                margin: 4px 0;
+                font-size: ${grandSize};
+                font-weight: 900;
+                display: flex;
+                justify-content: space-between;
+                letter-spacing: 0.5px;
+            }
+            .t-bal-row {
+                font-size: ${is58 ? '12px' : '13px'};
+                font-weight: 800;
+                padding-top: 2px;
+            }
+
+            /* Footer Section */
+            .t-footer {
+                margin-top: 8px;
+                text-align: center;
+                font-size: ${is58 ? '10px' : '11px'};
+                line-height: 1.4;
+            }
+            .t-terms {
+                font-size: ${is58 ? '9.5px' : '10px'};
+                margin: 5px 0;
+                padding: 3px;
+                border: 1px dashed #888;
+                border-radius: 3px;
+            }
+            .t-barcode-text {
+                letter-spacing: 3px;
+                font-weight: bold;
+                margin-top: 6px;
+                font-size: ${is58 ? '11px' : '13px'};
+                font-family: monospace;
+            }
         </style>
     </head>
     <body>
-        <div class="t-center t-header">
-            ${s.showLogo && agency.logo ? `<div style="margin-bottom:4px;"><img src="${agency.logo}" style="max-height:40px; max-width:120px;"></div>` : ''}
-            ${s.showAgencyName ? `<div class="t-title">${agency.name}</div>` : ''}
-            ${s.showOwnerName && agency.ownerName ? `<div class="t-sub">👤 ${agency.ownerName}</div>` : ''}
-            ${s.showAddress && agency.address ? `<div class="t-sub">${agency.address}</div>` : ''}
-            ${s.showMobiles && agency.mobile ? `<div class="t-sub">Cell: ${agency.mobile}</div>` : ''}
-            ${s.showNTN && agency.ntn ? `<div class="t-sub">NTN: ${agency.ntn}</div>` : ''}
-            ${s.showPayType ? `<div style="font-weight:bold; margin-top:3px;">*** ${payType} ***</div>` : ''}
+        <!-- STORE HEADER -->
+        <div class="t-header">
+            ${(s.showLogo !== false) && agency.logo ? `
+                <div class="t-logo-wrap">
+                    <img src="${agency.logo}" alt="Store Logo" class="t-logo" />
+                </div>
+            ` : ''}
+
+            ${(s.showAgencyName !== false) ? `
+                <div class="t-store-name">${L.title}</div>
+            ` : ''}
+
+            ${(s.showOwnerName !== false) && agency.ownerName ? `
+                <div class="t-subtext">${L.prop} ${agency.ownerName}</div>
+            ` : ''}
+
+            ${(s.showAddress !== false) && agency.address ? `
+                <div class="t-subtext">${agency.address}${agency.city ? ', ' + agency.city : ''}</div>
+            ` : ''}
+
+            ${(s.showMobiles !== false) && agency.mobile ? `
+                <div class="t-subtext">${L.phone} ${agency.mobile}</div>
+            ` : ''}
+
+            ${(s.showNTN !== false) && agency.ntn ? `
+                <div class="t-subtext">${L.ntn} ${agency.ntn}</div>
+            ` : ''}
+
+            ${(s.showPayType !== false) ? `
+                <div class="t-pay-badge">${payTypeBadge}</div>
+            ` : ''}
         </div>
 
-        <div class="t-meta">
-            ${s.showBillNo ? `<div class="t-row"><span>Bill No:</span><span class="t-bold">${bill.billNo}</span></div>` : ''}
-            ${s.showDate ? `<div class="t-row"><span>Date:</span><span>${dateStr} ${s.showTime ? timeStr : ''}</span></div>` : ''}
-            ${s.showCustomerName ? `<div class="t-row"><span>Customer:</span><span class="t-bold">${customer.name}</span></div>` : ''}
-            ${s.showCustomerPhone && customer.mobile ? `<div class="t-row"><span>Phone:</span><span>${customer.mobile}</span></div>` : ''}
+        <div class="t-divider"></div>
+
+        <!-- BILL METADATA -->
+        <div class="t-meta-table">
+            ${(s.showBillNo !== false) ? `
+                <div class="t-row">
+                    <span>${L.invoiceNo}</span>
+                    <span class="t-bold">${bill.billNo || '0000'}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showDate !== false) ? `
+                <div class="t-row">
+                    <span>${L.dateTime}</span>
+                    <span>${dateStr}${(s.showTime !== false) ? ' ' + timeStr : ''}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showCustomerName !== false) ? `
+                <div class="t-row">
+                    <span>${L.customer}</span>
+                    <span class="t-bold">${customer.name || L.walkInCustomer}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showCustomerPhone !== false) && customer.mobile ? `
+                <div class="t-row">
+                    <span>${L.customerPhone}</span>
+                    <span>${customer.mobile}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showCustomerRoute !== false) && (customer.route || customer.area) ? `
+                <div class="t-row">
+                    <span>${L.routeArea}</span>
+                    <span>${customer.route || customer.area}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showBookerName !== false) && (bill.bookerName || bill.salesmanName) ? `
+                <div class="t-row">
+                    <span>${L.booker}</span>
+                    <span>${bill.bookerName || bill.salesmanName}</span>
+                </div>
+            ` : ''}
         </div>
 
-        <table class="t-table">
-            <thead>
-                <tr>
-                    ${s.showItemSno ? '<th style="width:20px;">#</th>' : ''}
-                    <th>Item</th>
-                    ${s.showItemQty ? '<th class="t-right">Qty</th>' : ''}
-                    ${s.showItemRate ? '<th class="t-right">Rate</th>' : ''}
-                    ${s.showItemTotal ? '<th class="t-right">Total</th>' : ''}
-                </tr>
-            </thead>
-            <tbody>
-                ${items.map(it => `
-                    <tr>
-                        ${s.showItemSno ? `<td>${it.sno}</td>` : ''}
-                        <td>${it.name}</td>
-                        ${s.showItemQty ? `<td class="t-right">${it.qty}</td>` : ''}
-                        ${s.showItemRate ? `<td class="t-right">${it.rate}</td>` : ''}
-                        ${s.showItemTotal ? `<td class="t-right">${it.total}</td>` : ''}
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-
-        <div class="t-totals">
-            ${s.showSubTotal ? `<div class="t-row"><span>Sub Total:</span><span>Rs ${tot.subTotal}</span></div>` : ''}
-            ${s.showDiscount && parseFloat(tot.discount) > 0 ? `<div class="t-row"><span>Discount:</span><span>- Rs ${tot.discount}</span></div>` : ''}
-            ${s.showGrandTotal ? `<div class="t-row t-grand"><span>Grand Total:</span><span>Rs ${tot.grandTotal}</span></div>` : ''}
-            ${s.showPreviousBalance && parseFloat(tot.prevBalance) > 0 ? `<div class="t-row"><span>Prev Bal:</span><span>Rs ${tot.prevBalance}</span></div>` : ''}
-            ${s.showReceivedAmount ? `<div class="t-row"><span>Paid:</span><span>- Rs ${tot.received}</span></div>` : ''}
-            ${s.showBalance ? `<div class="t-row t-bold" style="color:#000;"><span>Balance:</span><span>Rs ${tot.balance}</span></div>` : ''}
+        <!-- ITEMS HEADER -->
+        <div class="t-items-header">
+            <span>${L.itemsHeaderName}</span>
+            <span>${L.itemsHeaderCalc}</span>
         </div>
 
+        <!-- ITEMS LIST (Smart 2-Line Architecture: Anti-truncation & 100% Readable) -->
+        <div class="t-items-list">
+            ${items.map(it => `
+                <div class="t-item-block">
+                    <div class="t-item-top">
+                        ${(s.showItemSno !== false) ? `<span>${it.sno}.</span> ` : ''}${it.name}${it.unit ? ` <span style="font-weight:normal; font-size:0.9em;">(${it.unit})</span>` : ''}
+                    </div>
+                    <div class="t-item-bottom">
+                        <span class="t-item-calc">
+                            ${it.qty} × ${fmt(it.rate)}${it.discount && parseFloat(it.discount) > 0 ? ` <small>(-${it.discount})</small>` : ''}
+                        </span>
+                        <span class="t-item-amount">${fmt(it.total)}</span>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+
+        <div class="t-divider"></div>
+
+        <!-- TOTALS & KHATA SECTION -->
+        <div class="t-totals-wrap">
+            ${(s.showSubTotal !== false) ? `
+                <div class="t-totals-row">
+                    <span>${L.subTotal}</span>
+                    <span>${subTotalFormatted}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showDiscount !== false && discountFormatted) ? `
+                <div class="t-totals-row">
+                    <span>${L.discount}</span>
+                    <span>- ${discountFormatted}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showTax !== false && taxFormatted) ? `
+                <div class="t-totals-row">
+                    <span>${L.tax}</span>
+                    <span>+ ${taxFormatted}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showGrandTotal !== false) ? `
+                <div class="t-grand-box">
+                    <span>${L.grandTotal}</span>
+                    <span>${grandTotalFormatted}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showPreviousBalance !== false && prevBalFormatted) ? `
+                <div class="t-totals-row">
+                    <span>${L.prevBalance}</span>
+                    <span>${prevBalFormatted}</span>
+                </div>
+                <div class="t-totals-row t-bold" style="border-top:1px dotted #000; padding-top:2px;">
+                    <span>${L.totalDue}</span>
+                    <span>${totalDueFormatted}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showReceivedAmount !== false && receivedFormatted) ? `
+                <div class="t-totals-row">
+                    <span>${L.received}</span>
+                    <span>- ${receivedFormatted}</span>
+                </div>
+            ` : ''}
+
+            ${(s.showBalance !== false) ? `
+                <div class="t-totals-row t-bal-row" style="border-top:1px dashed #000; margin-top:3px;">
+                    <span>${balanceVal > 0 ? L.remainingBalance : (balanceVal < 0 ? L.changeReturn : (isUrdu ? 'حیثیت بل:' : 'Status:'))}</span>
+                    <span>${balanceVal === 0 ? L.paidStatus : fmt(Math.abs(balanceVal))}</span>
+                </div>
+            ` : ''}
+        </div>
+
+        <div class="t-divider-double"></div>
+
+        <!-- TOTAL ITEMS COUNT -->
+        <div class="t-row t-bold" style="font-size:${is58 ? '10px' : '11px'}; margin-bottom:4px;">
+            <span>${L.totalItemsCount} ${items.length}</span>
+            <span>${L.totalQuantityCount} ${items.reduce((acc, it) => acc + (parseFloat(it.qty) || 0), 0)}</span>
+        </div>
+
+        <!-- FOOTER & POLICIES -->
         <div class="t-footer">
-            ${s.showThankYouNote ? '<div>Thank You! Visit Again.</div>' : ''}
-            ${s.showSignatureAuthorized ? '<div style="margin-top:20px; border-top:1px dashed #000; padding-top:4px;">Signature</div>' : ''}
-            ${s.showAppWatermark ? '<div style="font-size:8px; color:#666; margin-top:4px;">NH POS</div>' : ''}
+            ${(s.showTermsAndConditions !== false && agency.invoiceFooter) ? `
+                <div class="t-terms">${agency.invoiceFooter}</div>
+            ` : `
+                <div class="t-terms">${L.termsDefault}</div>
+            `}
+
+            ${(s.showThankYouNote !== false) ? `
+                <div class="t-bold" style="margin-top:5px;">${L.thankYou}</div>
+                <div style="font-size:${is58 ? '9.5px' : '10.5px'};">${L.thankYouSub}</div>
+            ` : ''}
+
+            ${(s.showSignatureAuthorized !== false) ? `
+                <div style="margin-top:16px; border-top:1px dashed #000; padding-top:3px; display:inline-block; min-width:120px;">
+                    ${L.signature}
+                </div>
+            ` : ''}
+
+            <div class="t-barcode-text">*${bill.billNo || '0000'}*</div>
+            <div style="font-size:8.5px; color:#444; margin-top:4px;">${L.softwareFooter}</div>
         </div>
     </body>
     </html>

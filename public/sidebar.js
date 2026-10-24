@@ -93,6 +93,15 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.3';
         document.body.setAttribute('data-theme', savedTheme);
     }
 
+    // Global toggle function
+    function toggleSidebar() {
+        const sidebar = document.getElementById('ebSidebar');
+        const overlay = document.getElementById('ebSidebarOverlay');
+        if (sidebar) sidebar.classList.toggle('open');
+        if (overlay) overlay.classList.toggle('show');
+    }
+    window.toggleSidebar = toggleSidebar;
+
     // 1️⃣ CONFIG: Menu items
     const MENU = [
         {
@@ -914,7 +923,6 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.3';
         renderSidebar();
     }
 
-
     // 4️⃣ SIDEBAR RENDER
     function renderSidebar() {
         const existingSidebar = document.getElementById('ebSidebar');
@@ -1173,11 +1181,6 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.3.3';
         overlay.id = 'ebSidebarOverlay';
         document.body.appendChild(overlay);
 
-        // Toggle function
-        const toggleSidebar = () => {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('show');
-        };
         overlay.addEventListener('click', toggleSidebar);
 
         // 🔝 INJECT SOLID STICKY UNIVERSAL TOPBAR ON ALL PAGES (Dark Navy Sleek)

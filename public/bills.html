@@ -802,21 +802,28 @@
             <div class="total-row balance"><span>New Customer Balance:</span><span>Rs <span id="ssBalance">0.00</span></span></div>
         </div>
         
-        <!-- Print Template Selector -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-            <div style="font-size:13px; font-weight:bold; color:var(--primary);">
-                🎨 Invoice Style / Thermal Slip:
+        <!-- Print Template & Language Selector -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:13px; font-weight:bold; color:var(--primary);">🎨 Style:</span>
+                <select id="ssTemplateSelect" style="padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:13px; font-weight:bold; outline:none; background:#fff;">
+                    <option value="template8" selected>🇵🇰 Classic Wholesale Urdu Grid (Legal Half-Cut 8.5"x7")</option>
+                    <option value="template7">📦 FMCG Corporate Distribution Invoice (A4)</option>
+                    <option value="template4">⚡ Modern Minimal / Table Invoice</option>
+                    <option value="template1">🇵🇰 Urdu Classic (Nastaliq)</option>
+                    <option value="template2">📋 Traders English (Header)</option>
+                    <option value="template3">🇵🇰 Urdu + English Mix</option>
+                    <option value="template5">💎 Premium Full (All Boxes)</option>
+                    <option value="template6">🧾 Thermal POS Slip (58mm / 80mm)</option>
+                </select>
             </div>
-            <select id="ssTemplateSelect" style="padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:13px; font-weight:bold; outline:none;">
-                <option value="template8" selected>🇵🇰 Classic Wholesale Urdu Grid (Legal Half-Cut 8.5"x7")</option>
-                <option value="template7">📦 FMCG Corporate Distribution Invoice (A4)</option>
-                <option value="template4">⚡ Modern Minimal / Table Invoice</option>
-                <option value="template1">🇵🇰 Urdu Classic (Nastaliq)</option>
-                <option value="template2">📋 Traders English (Header)</option>
-                <option value="template3">🇵🇰 Urdu + English Mix</option>
-                <option value="template5">💎 Premium Full (All Boxes)</option>
-                <option value="template6">🧾 Thermal POS Slip (58mm / 80mm)</option>
-            </select>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:13px; font-weight:bold; color:var(--primary);">🌐 Language (زبان و رخ):</span>
+                <select id="ssLanguageSelect" style="padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:13px; font-weight:bold; outline:none; background:#fff;">
+                    <option value="en" selected>English (Left-to-Right ➡️ LTR)</option>
+                    <option value="ur">اردو (دائیں سے بائیں ⬅️ RTL)</option>
+                </select>
+            </div>
         </div>
 
         <div class="output-grid">

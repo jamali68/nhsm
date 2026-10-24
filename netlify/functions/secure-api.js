@@ -1,19 +1,20 @@
 /**
- * 🛡️ EASY BILL GENERATOR — NETLIFY SERVERLESS SECURITY VAULT (6th LAYER)
- * ---------------------------------------------------------------------
- * Netlify Serverless Function (100% Free Tier: 125,000 calls / month, No Card Needed)
+ * 🛡️ EASY BILL GENERATOR — NETLIFY SERVERLESS SECURITY HANDLER
+ * -------------------------------------------------------------
+ * Provider-specific handler for Netlify Serverless Functions.
  * 
- * Functions & Capabilities:
- * 1. Server-side Secret Logic (Client browser cannot inspect or steal this code)
- * 2. Cryptographic Bill Checksum (HMAC tamper protection for invoices)
- * 3. Authoritative Server Timestamp (Prevents device clock tampering)
- * 4. License & Quota Validation Shield
+ * ARCHITECTURE COMPLIANCE:
+ * 1. Provider-Specific Handler: Handles Netlify event, context, and HTTP responses.
+ * 2. Shared Core Logic: All cryptographic, licensing, and calculations are delegated to `../../src/core/index.js`.
+ * 3. Future Firebase Ready: Identical to Firebase Cloud Functions handler without changing business logic.
  */
 
-import crypto from 'crypto';
-
-// Server-only Private Secret Salt (NEVER exposed to client browser / DevTools)
-const SERVER_SECRET_SALT = process.env.SYSTEM_SECURE_SALT || 'EB_SECURE_VAULT_786_NH_DIST_2026';
+import {
+  generateInvoiceSignature,
+  verifyInvoiceSignature,
+  checkBillQuota,
+  calculateSecureProfitMetrics
+} from '../../src/core/index.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -54,18 +55,18 @@ export const handler = async (event, context) => {
           headers: CORS_HEADERS,
           body: JSON.stringify({
             status: 'online',
-            version: '4.0.0',
+            version: '4.3.3',
             service: 'Easy Bill Netlify Security Engine (Layer 6)',
             serverTime: now.toISOString(),
             serverTimestamp: now.getTime(),
             environment: 'Netlify Edge Serverless',
-            quotaType: 'Free Tier Active (Zero Cost)'
+            quotaType: 'Free Tier Active (Zero Cost)',
+            architecture: 'Modular Core (Firebase Cloud Functions Ready)'
           })
         };
       }
 
-      // 2️⃣ Cryptographic Invoice Anti-Tamper Checksum
-      // Calculates a server-side HMAC hash that validates that invoice amounts and items were not forged
+      // 2️⃣ Cryptographic Invoice Anti-Tamper Checksum (Delegated to Core)
       case 'sign-invoice': {
         const { billNumber, totalAmount, date, agencyId } = payload;
         if (!billNumber || totalAmount === undefined) {
@@ -76,51 +77,54 @@ export const handler = async (event, context) => {
           };
         }
 
-        const dataToSign = `${agencyId || 'default'}|${billNumber}|${Number(totalAmount).toFixed(2)}|${date || ''}`;
-        const signature = crypto
-          .createHmac('sha256', SERVER_SECRET_SALT)
-          .update(dataToSign)
-          .digest('hex')
-          .substring(0, 16); // Short 16-char tamper-proof hash for thermal & standard print
-
+        const signed = generateInvoiceSignature({ billNumber, totalAmount, date, agencyId });
         return {
           statusCode: 200,
           headers: CORS_HEADERS,
           body: JSON.stringify({
             success: true,
-            billNumber,
-            signature: `EB-${signature.toUpperCase()}`,
-            signedAt: Date.now()
+            billNumber: signed.billNumber,
+            signature: signed.signature,
+            signedAt: signed.signedAt
           })
         };
       }
 
-      // 3️⃣ Verify Invoice Signature (Prevents customer or booker from tampering with printed bills)
+      // 3️⃣ Verify Invoice Signature (Delegated to Core)
       case 'verify-invoice': {
         const { billNumber, totalAmount, date, agencyId, signature } = payload;
-        const dataToSign = `${agencyId || 'default'}|${billNumber}|${Number(totalAmount).toFixed(2)}|${date || ''}`;
-        const expectedSignature = `EB-${crypto
-          .createHmac('sha256', SERVER_SECRET_SALT)
-          .update(dataToSign)
-          .digest('hex')
-          .substring(0, 16)
-          .toUpperCase()}`;
-
-        const isValid = expectedSignature === signature;
+        const result = verifyInvoiceSignature({ billNumber, totalAmount, date, agencyId, signature });
         return {
           statusCode: 200,
           headers: CORS_HEADERS,
-          body: JSON.stringify({
-            valid: isValid,
-            verifiedAt: Date.now()
-          })
+          body: JSON.stringify(result)
         };
       }
 
-      // 4️⃣ Server-side System Integrity Check
+      // 4️⃣ Server-side Quota & License Validation (Delegated to Core)
+      case 'check-quota': {
+        const { agency, monthlyBillsCount } = payload;
+        const quota = checkBillQuota(agency, monthlyBillsCount);
+        return {
+          statusCode: 200,
+          headers: CORS_HEADERS,
+          body: JSON.stringify(quota)
+        };
+      }
+
+      // 5️⃣ Confidential Profit & Margin Calculation (Delegated to Core)
+      case 'calculate-profit': {
+        const { items, billDiscount, taxAmount } = payload;
+        const metrics = calculateSecureProfitMetrics(items, billDiscount, taxAmount);
+        return {
+          statusCode: 200,
+          headers: CORS_HEADERS,
+          body: JSON.stringify(metrics)
+        };
+      }
+
+      // 6️⃣ Server-side System Integrity Check
       case 'verify-integrity': {
-        const domain = (event.headers?.['host'] || event.headers?.['Host'] || '').toLowerCase();
-        
         return {
           statusCode: 200,
           headers: CORS_HEADERS,

@@ -57,7 +57,8 @@ const DEFAULT_PRINT_SETTINGS = {
     showSignatureAuthorized: true,
     showSignatureCustomer: true,
     showSignatureBooker: true,
-    showAppWatermark: false
+    showAppWatermark: false,
+    thermalWidth: '80' // Default: 80mm standard desktop POS
 };
 
 // Available Templates Catalog

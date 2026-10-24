@@ -852,6 +852,15 @@ document.addEventListener('DOMContentLoaded', () => {
             Swal.fire('Cleared', 'تمام آف لائن بلز صاف کر دیے گئے', 'success');
         }
     });
+
+    // 🌐 Print Language Initializer
+    const langSel = document.getElementById('ssLanguageSelect');
+    if (langSel) {
+        langSel.value = localStorage.getItem('eb_bill_language') || (typeof myAgency !== 'undefined' && myAgency && myAgency.billLanguage) || 'en';
+        langSel.addEventListener('change', function() {
+            localStorage.setItem('eb_bill_language', this.value);
+        });
+    }
 });
 
 window.addEventListener('online', () => {
@@ -2750,13 +2759,22 @@ function printBillDirectly(b) {
     const bill = b || lastSavedBill;
     if (!bill) return;
 
-    const tplSelect = document.getElementById('ssTemplateSelect');
-    const selectedTemplate = tplSelect ? tplSelect.value : ((typeof myAgency !== 'undefined' && myAgency && myAgency.defaultTemplate) ? myAgency.defaultTemplate : 'template8');
+    function getActivePrintConfig() {
+        const tplSelect = document.getElementById('ssTemplateSelect');
+        const selectedTemplate = tplSelect ? tplSelect.value : ((typeof myAgency !== 'undefined' && myAgency && myAgency.defaultTemplate) ? myAgency.defaultTemplate : 'template8');
+        const langSelect = document.getElementById('ssLanguageSelect');
+        const selectedLang = langSelect ? langSelect.value : (localStorage.getItem('eb_bill_language') || 'en');
+        return {
+            template: selectedTemplate,
+            settings: { billLanguage: selectedLang }
+        };
+    }
 
+    const cfg = getActivePrintConfig();
     let billHTML = '';
     try {
         billHTML = (window.buildBillHTML) 
-            ? window.buildBillHTML(bill, selectedTemplate)
+            ? window.buildBillHTML(bill, cfg.template, cfg.settings)
             : buildFallbackHTML(bill);
     } catch (e) {
         billHTML = buildFallbackHTML(bill);
@@ -3015,19 +3033,26 @@ document.getElementById('outNewBillBtn').addEventListener('click', () => {
     }
 });
 
-// ============================================
+function getSelectedBillConfig() {
+    const tplSelect = document.getElementById('ssTemplateSelect');
+    const selectedTemplate = tplSelect ? tplSelect.value : ((typeof myAgency !== 'undefined' && myAgency && myAgency.defaultTemplate) ? myAgency.defaultTemplate : 'template8');
+    const langSelect = document.getElementById('ssLanguageSelect');
+    const selectedLang = langSelect ? langSelect.value : (localStorage.getItem('eb_bill_language') || 'en');
+    return {
+        template: selectedTemplate,
+        settings: { billLanguage: selectedLang }
+    };
+}
+
 // 🖨️ PRINT INVOICE & THERMAL RECEIPT
-// ============================================
 document.getElementById('outPrintBtn').addEventListener('click', () => {
     if (!lastSavedBill) return;
 
-    const tplSelect = document.getElementById('ssTemplateSelect');
-    const selectedTemplate = tplSelect ? tplSelect.value : ((typeof myAgency !== 'undefined' && myAgency && myAgency.defaultTemplate) ? myAgency.defaultTemplate : 'template8');
-
+    const cfg = getSelectedBillConfig();
     let billHTML = '';
     try {
         billHTML = (window.buildBillHTML) 
-            ? window.buildBillHTML(lastSavedBill, selectedTemplate)
+            ? window.buildBillHTML(lastSavedBill, cfg.template, cfg.settings)
             : buildFallbackHTML(lastSavedBill);
     } catch (e) {
         billHTML = buildFallbackHTML(lastSavedBill);
@@ -3043,13 +3068,11 @@ document.getElementById('outPrintBtn').addEventListener('click', () => {
 document.getElementById('outPdfBtn').addEventListener('click', () => {
     if (!lastSavedBill) return;
 
-    const tplSelect = document.getElementById('ssTemplateSelect');
-    const selectedTemplate = tplSelect ? tplSelect.value : ((typeof myAgency !== 'undefined' && myAgency && myAgency.defaultTemplate) ? myAgency.defaultTemplate : 'template8');
-
+    const cfg = getSelectedBillConfig();
     let billHTML = '';
     try {
         billHTML = (window.buildBillHTML) 
-            ? window.buildBillHTML(lastSavedBill, selectedTemplate)
+            ? window.buildBillHTML(lastSavedBill, cfg.template, cfg.settings)
             : buildFallbackHTML(lastSavedBill);
     } catch (e) {
         billHTML = buildFallbackHTML(lastSavedBill);
@@ -3079,9 +3102,8 @@ document.getElementById('outJpgBtn').addEventListener('click', async () => {
         document.body.appendChild(holder);
     }
 
-    const tplSelect = document.getElementById('ssTemplateSelect');
-    const selectedTemplate = tplSelect ? tplSelect.value : ((typeof myAgency !== 'undefined' && myAgency && myAgency.defaultTemplate) ? myAgency.defaultTemplate : 'template8');
-    const fullHTML = (window.buildBillHTML) ? window.buildBillHTML(lastSavedBill, selectedTemplate) : buildFallbackHTML(lastSavedBill);
+    const cfg = getSelectedBillConfig();
+    const fullHTML = (window.buildBillHTML) ? window.buildBillHTML(lastSavedBill, cfg.template, cfg.settings) : buildFallbackHTML(lastSavedBill);
 
     const bodyStart = fullHTML.indexOf('<body>') + 6;
     const bodyEnd = fullHTML.indexOf('</body>');
