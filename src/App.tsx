@@ -206,10 +206,9 @@ export default function App() {
       });
     }
 
-    // Detect standalone mode (already installed on device)
+    // Detect standalone mode (already running installed on device)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true ||
-      localStorage.getItem('nhpos_pwa_installed') === 'true';
+      (window.navigator as any).standalone === true;
 
     if (isStandalone) {
       setPwaInstalled(true);
@@ -368,9 +367,9 @@ export default function App() {
       }`}>
         <div className="flex items-center gap-3">
           <img
-            src="/icon-192.png"
+            src="icon-192.png"
             alt="NH POS"
-            className="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0 border border-emerald-600/30"
+            className="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0 border border-emerald-600/30 bg-[#0E0F09]"
           />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -619,12 +618,12 @@ export default function App() {
                   }
                 `}</style>
                 <img
-                  src="/nh-pos-splash.jpg"
+                  src="nh-pos-splash.jpg"
                   alt="NH POS Splash"
-                  className="absolute inset-0 w-full h-full object-cover object-center block"
+                  className="absolute inset-0 w-full h-full object-contain object-center block bg-[#0E0F09]"
                 />
-                <div className="absolute left-0 right-0 top-[74%] flex justify-center items-center z-10 text-center px-4">
-                  <div className="text-[14px] font-bold text-[#14532d] tracking-wide inline-flex items-center justify-center font-sans">
+                <div className="absolute left-0 right-0 top-[78%] flex justify-center items-center z-10 text-center px-4">
+                  <div className="text-[14px] font-bold text-[#4ade80] tracking-wide inline-flex items-center justify-center font-sans">
                     <span>System is Loading Please Wait<span className="app-running-dots"></span></span>
                   </div>
                 </div>
@@ -771,9 +770,9 @@ export default function App() {
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-[420px] z-50 bg-white dark:bg-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 shadow-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="flex items-center gap-3 min-w-0">
             <img
-              src="/icon-192.png"
+              src="icon-192.png"
               alt="NH POS"
-              className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0 border border-slate-200 dark:border-slate-800"
+              className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0 border border-slate-200 dark:border-slate-800 bg-[#0E0F09]"
             />
             <div className="min-w-0">
               <div className="font-bold text-sm text-slate-900 dark:text-white truncate flex items-center gap-1.5">
@@ -810,7 +809,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3 mb-4">
-              <img src="/icon-192.png" alt="NH POS" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
+              <img src="icon-192.png" alt="NH POS" className="w-12 h-12 rounded-xl object-cover shadow-sm bg-[#0E0F09]" />
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Install NH POS on iPhone / iPad</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">iOS Safari Instructions</p>

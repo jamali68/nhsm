@@ -9,13 +9,14 @@
     <meta property="og:description" content="Multi-tenant POS and Billing system with Customer Khata Ledger, Stock Inventory, Invoice Templates, and Payment History tracking." />
     <meta property="og:type" content="website" />
     <!-- 📱 Progressive Web App (PWA) Tags -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0E0F09" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NH POS" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <script>
       // 📱 Register Service Worker immediately in top-level head
       if ('serviceWorker' in navigator) {
@@ -64,7 +65,7 @@
       })();
     </script>
     <div id="root">
-      <div style="position:fixed; inset:0; width:100vw; height:100vh; background:#f7f6ed; z-index:999999; overflow:hidden; user-select:none;">
+      <div style="position:fixed; inset:0; width:100vw; height:100vh; background:#0E0F09; z-index:999999; overflow:hidden; user-select:none;">
         <style>
           @keyframes runDotsInit {
             0% { content: ''; }
@@ -79,9 +80,9 @@
             animation: runDotsInit 1.5s steps(5, end) infinite;
           }
         </style>
-        <img src="/nh-pos-splash.jpg" alt="NH POS Splash" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; display:block;" />
-        <div style="position:absolute; left:0; right:0; top:74%; display:flex; justify-content:center; align-items:center; z-index:10; text-align:center; padding:0 16px;">
-          <div style="font-family:'Segoe UI',Roboto,Helvetica,sans-serif; font-size:14px; font-weight:700; color:#14532d; letter-spacing:0.4px; display:inline-flex; align-items:center; justify-content:center;">
+        <img src="nh-pos-splash.jpg" alt="NH POS Splash" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; display:block; background:#0E0F09;" />
+        <div style="position:absolute; left:0; right:0; top:78%; display:flex; justify-content:center; align-items:center; z-index:10; text-align:center; padding:0 16px;">
+          <div style="font-family:'Segoe UI',Roboto,Helvetica,sans-serif; font-size:14px; font-weight:700; color:#4ade80; letter-spacing:0.4px; display:inline-flex; align-items:center; justify-content:center;">
             <span>System is Loading Please Wait<span class="init-running-dots"></span></span>
           </div>
         </div>

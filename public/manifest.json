@@ -1,15 +1,13 @@
 {
-  "id": "./",
-  "version": "4.4.0",
   "name": "NH POS — Wholesale ERP & POS",
   "short_name": "NH POS",
   "description": "Smart Business & Inventory Management, Offline Billing, Stock Tracking & Order Booker Portal",
   "start_url": "dashboard.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f7f6f0",
-  "theme_color": "#4a7c59",
-  "orientation": "any",
+  "orientation": "portrait-primary",
+  "background_color": "#0E0F09",
+  "theme_color": "#10b981",
   "categories": ["business", "finance", "productivity", "utilities"],
   "icons": [
     {
@@ -37,28 +35,28 @@
       "short_name": "New Bill",
       "description": "Create instant customer invoice or POS sale",
       "url": "bills.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Booker Orders",
       "short_name": "Orders",
       "description": "Field Booker Orders & Delivery Dispatch",
       "url": "booker-orders.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Customers Khata",
       "short_name": "Khata",
       "description": "Manage Khata Ledgers & Customer Credit",
       "url": "customers.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Stock & Inventory",
       "short_name": "Stock",
       "description": "View inventory, warehouse items and reorders",
       "url": "stock.html",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

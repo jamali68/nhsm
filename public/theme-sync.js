@@ -226,11 +226,10 @@ window.EASYBILL_VERSION = '4.4.0';
         if (window.self !== window.top) return;
 
         if (isRunningStandalone()) return;
-        if (localStorage.getItem('nhpos_pwa_installed') === 'true') return;
 
-        // Check if recently dismissed (within 4 hours)
+        // Check if recently dismissed (within 30 mins)
         const dismissedAt = localStorage.getItem('nhpos_install_dismissed_at');
-        if (dismissedAt && (Date.now() - parseInt(dismissedAt, 10)) < 4 * 60 * 60 * 1000) {
+        if (dismissedAt && (Date.now() - parseInt(dismissedAt, 10)) < 30 * 60 * 1000) {
             return;
         }
 
@@ -239,15 +238,15 @@ window.EASYBILL_VERSION = '4.4.0';
         const banner = document.createElement('div');
         banner.id = 'nhposPwaInstallBanner';
         banner.innerHTML = `
-            <div style="position:fixed; bottom:18px; left:16px; right:16px; max-width:420px; margin:0 auto; z-index:9999999; background:#ffffff; color:#0f172a; border-radius:18px; padding:12px 14px; box-shadow:0 12px 36px rgba(0,0,0,0.22), 0 0 0 1.5px rgba(21,128,61,0.25); display:flex; align-items:center; justify-content:space-between; gap:12px; font-family:'Segoe UI',Roboto,Helvetica,sans-serif; animation:nhposSlideUp 0.35s ease-out; backdrop-filter:blur(8px);">
+            <div style="position:fixed; bottom:18px; left:16px; right:16px; max-width:420px; margin:0 auto; z-index:9999999; background:#0E0F09; color:#f8fafc; border-radius:18px; padding:12px 14px; box-shadow:0 12px 36px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(16,185,129,0.35); display:flex; align-items:center; justify-content:space-between; gap:12px; font-family:'Segoe UI',Roboto,Helvetica,sans-serif; animation:nhposSlideUp 0.35s ease-out; backdrop-filter:blur(10px);">
                 <div style="display:flex; align-items:center; gap:11px; min-width:0;">
-                    <img src="/icon-192.png" alt="NH POS" style="width:44px; height:44px; border-radius:12px; object-fit:cover; flex-shrink:0; box-shadow:0 3px 10px rgba(0,0,0,0.12); border:1px solid rgba(0,0,0,0.06);">
+                    <img src="icon-192.png" alt="NH POS" style="width:44px; height:44px; border-radius:12px; object-fit:cover; flex-shrink:0; box-shadow:0 3px 10px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15);">
                     <div style="min-width:0;">
-                        <div style="font-weight:800; font-size:14px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                        <div style="font-weight:800; font-size:14px; color:#ffffff; display:flex; align-items:center; gap:6px;">
                             <span>NH POS App</span>
-                            <span style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; padding:1.5px 6px; border-radius:6px; letter-spacing:0.5px;">PWA</span>
+                            <span style="font-size:10px; font-weight:800; background:#064e3b; color:#34d399; padding:1.5px 6px; border-radius:6px; letter-spacing:0.5px; border:1px solid rgba(52,211,153,0.3);">PWA</span>
                         </div>
-                        <div style="font-size:11.5px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        <div style="font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                             فاسٹ آف لائن اور ہوم اسکرین انسٹال
                         </div>
                     </div>
