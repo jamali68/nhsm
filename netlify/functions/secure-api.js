@@ -55,7 +55,7 @@ export const handler = async (event, context) => {
           headers: CORS_HEADERS,
           body: JSON.stringify({
             status: 'online',
-            version: '4.3.3',
+            version: '4.4.0',
             service: 'Easy Bill Netlify Security Engine (Layer 6)',
             serverTime: now.toISOString(),
             serverTimestamp: now.getTime(),

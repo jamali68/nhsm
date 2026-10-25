@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NH POS — Loading...</title>
+  <script>
+    (function() {
+      var path = window.location.pathname; // e.g. "/nhsm/bills.html" or "/nhsm/dashboard.html"
+      var search = window.location.search || '';
+      var hash = window.location.hash || '';
+
+      // Break path into parts
+      var segs = path.split('/').filter(Boolean); // e.g. ["nhsm", "bills.html"]
+
+      if (segs.length >= 1) {
+        var repo = (segs[0] !== 'public' && !segs[0].endsWith('.html')) ? ('/' + segs[0]) : '';
+        var lastPart = segs[segs.length - 1];
+
+        // If target is already inside public, keep it
+        if (path.indexOf('/public/') !== -1) {
+          window.location.replace(path + search + hash);
+          return;
+        }
+
+        // If root repo path with no file specified
+        if (!lastPart || lastPart === segs[0] || !lastPart.endsWith('.html')) {
+          lastPart = 'auth.html';
+        }
+
+        // Forward to public/<filename>
+        var targetUrl = repo + '/public/' + lastPart + search + hash;
+        window.location.replace(targetUrl);
+        return;
+      }
+
+      // Fallback
+      window.location.replace('public/auth.html');
+    })();
+  </script>
+</head>
+<body style="font-family:sans-serif; text-align:center; padding-top:50px; background:#0f172a; color:#fff;">
+  <h2>NH POS — Loading Application...</h2>
+  <p style="color:#94a3b8; font-size:13px;">Please wait while we route to your workspace.</p>
+</body>
+</html>

@@ -1,38 +1,48 @@
 // ==========================================================================
-// 🚀 NH POS — TURBO SERVICE WORKER (v4.3.3)
+// 🚀 NH POS — TURBO SERVICE WORKER (v4.4.0)
 // ✅ Ultra-lean App Shell pre-caching (No network choke on install)
+// ✅ Dynamic Subpath & Scope resolution (GitHub Pages /nhsm/ & Netlify root)
 // ✅ Instant Stale-While-Revalidate caching for lightning-fast loads
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'nhpos-pwa-v4.3.3-turbo';
+const CACHE_NAME = 'nhpos-pwa-v4.4.0-turbo';
 
 // Core essential App Shell only (pre-cache in < 0.5s without bandwidth flood)
-const CORE_SHELL_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/nh-pos-splash.jpg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png',
-  '/auth.html',
-  '/dashboard.html',
-  '/auth.css',
-  '/panels.css',
-  '/dark-theme.css',
-  '/theme-sync.js',
-  '/saas-modules.js',
-  '/sidebar.js',
-  '/image-optimizer.js'
+const RELATIVE_SHELL_ASSETS = [
+  '',
+  'manifest.json',
+  'nh-pos-splash.jpg',
+  'icon-192.png',
+  'icon-512.png',
+  'apple-touch-icon.png',
+  'auth.html',
+  'dashboard.html',
+  'auth.css',
+  'panels.css',
+  'dark-theme.css',
+  'theme-sync.js',
+  'saas-modules.js',
+  'sidebar.js',
+  'image-optimizer.js'
 ];
 
-// 1️⃣ Install: Quickly cache only core shell assets
+// 1️⃣ Install: Quickly cache only core shell assets resolved against active scope
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      const promises = CORE_SHELL_ASSETS.map((asset) => {
-        return cache.add(asset).catch((err) => {
-          console.warn(`[PWA SW] Pre-cache skipped for ${asset}:`, err.message);
+      const scopeUrl = self.registration.scope;
+      const targetAssets = RELATIVE_SHELL_ASSETS.map((asset) => {
+        try {
+          return new URL(asset, scopeUrl).toString();
+        } catch (_) {
+          return asset;
+        }
+      });
+
+      const promises = targetAssets.map((assetUrl) => {
+        return cache.add(assetUrl).catch((err) => {
+          console.warn(`[PWA SW v4.4.0] Pre-cache skipped for ${assetUrl}:`, err.message);
         });
       });
       return Promise.all(promises);
@@ -47,7 +57,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => {
-          console.log('[PWA SW] Purged outdated cache:', key);
+          console.log('[PWA SW v4.4.0] Purged outdated cache:', key);
           return caches.delete(key);
         })
       );
@@ -98,7 +108,13 @@ self.addEventListener('fetch', (event) => {
           // Network slow or offline: Serve cached HTML immediately
           const cached = await caches.match(event.request);
           if (cached) return cached;
-          return (await caches.match('/dashboard.html')) || (await caches.match('/auth.html'));
+          const scopeUrl = self.registration.scope;
+          const fallbackDash = new URL('dashboard.html', scopeUrl).toString();
+          const fallbackAuth = new URL('auth.html', scopeUrl).toString();
+          return (await caches.match(fallbackDash)) || 
+                 (await caches.match(fallbackAuth)) ||
+                 (await caches.match('/dashboard.html')) ||
+                 (await caches.match('/auth.html'));
         }
       })()
     );

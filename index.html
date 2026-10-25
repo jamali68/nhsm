@@ -20,27 +20,47 @@
       // 📱 Register Service Worker immediately in top-level head
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+          var isSubpath = window.location.pathname.startsWith('/nhsm/');
+          var swPath = isSubpath ? '/nhsm/sw.js' : 'sw.js';
+          var swScope = isSubpath ? '/nhsm/' : './';
+          navigator.serviceWorker.register(swPath, { scope: swScope }).catch(function() {});
         });
       }
     </script>
   </head>
   <body>
     <script>
-      // 🚀 Auto-route: On mobile devices, standalone mode, or production hosting, route directly to top-level app!
+      // 🚀 Smart Multi-Environment Auto-Router (GitHub Pages / Netlify / Dev Server)
       (function() {
-        var isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        if (isMobile || isStandalone) {
-          window.location.replace('/dashboard.html');
+        var isGitHubPages = window.location.hostname.endsWith('github.io');
+        var path = window.location.pathname;
+        var query = window.location.search || '';
+        var hash = window.location.hash || '';
+
+        // Check if user has active session in localStorage/sessionStorage
+        var hasActiveSession = false;
+        try {
+          hasActiveSession = Boolean(localStorage.getItem('eb_user_role') || sessionStorage.getItem('eb_user_profile'));
+        } catch (_) {}
+
+        var targetFile = hasActiveSession ? 'dashboard.html' : 'auth.html';
+
+        // 🌐 GitHub Pages Environment (e.g. https://jamali68.github.io/nhsm/)
+        if (isGitHubPages) {
+          var segments = path.split('/').filter(Boolean);
+          var repoSlug = (segments.length > 0 && segments[0] !== 'public' && !segments[0].endsWith('.html')) 
+            ? segments[0] 
+            : '';
+          var prefix = repoSlug ? ('/' + repoSlug) : '';
+          
+          // In raw GitHub repository deployment, files reside in public/ folder
+          var destination = prefix + '/public/' + targetFile + query + hash;
+          window.location.replace(destination);
           return;
         }
 
-        var isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '0.0.0.0';
-        var isAISPreview = window.location.hostname.indexOf('run.app') !== -1;
-        if (!isLocalDev && !isAISPreview) {
-          window.location.replace('/dashboard.html');
-        }
+        // ⚡ Netlify / Local Dev Server (public folder mounted at root)
+        window.location.replace('/' + targetFile + query + hash);
       })();
     </script>
     <div id="root">

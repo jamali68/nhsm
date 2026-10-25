@@ -196,8 +196,11 @@ export default function App() {
       window.location.hostname.includes('run.app');
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then((reg) => {
-        console.log('[PWA] NH POS Service Worker active:', reg.scope);
+      const isSubpath = window.location.pathname.startsWith('/nhsm/');
+      const swPath = isSubpath ? '/nhsm/sw.js' : 'sw.js';
+      const swScope = isSubpath ? '/nhsm/' : './';
+      navigator.serviceWorker.register(swPath, { scope: swScope }).then((reg) => {
+        console.log('[PWA v4.4.0] NH POS Service Worker active:', reg.scope);
       }).catch((err) => {
         console.warn('[PWA] SW registration info:', err);
       });

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting to Login...</title>
+  <meta http-equiv="refresh" content="0; url=public/auth.html">
+  <script>
+    (function() {
+      var isGitHubPages = window.location.hostname.endsWith('github.io');
+      var path = window.location.pathname;
+      var query = window.location.search || '';
+      var hash = window.location.hash || '';
+
+      if (isGitHubPages && path.indexOf('/public/') === -1) {
+        var segs = path.split('/').filter(Boolean);
+        var repo = (segs.length > 0 && segs[0] !== 'public' && !segs[0].endsWith('.html')) ? ('/' + segs[0]) : '';
+        window.location.replace(repo + '/public/auth.html' + query + hash);
+      } else {
+        window.location.replace('public/auth.html' + query + hash);
+      }
+    })();
+  </script>
+</head>
+<body>
+</body>
+</html>

@@ -1,5 +1,5 @@
 // 🏷️ Central Application Version (Single source of truth)
-window.EASYBILL_VERSION = '4.3.3';
+window.EASYBILL_VERSION = '4.4.0';
 
 // 🔄 Live Version Synchronization with manifest.json
 (function syncManifestVersion() {
@@ -184,7 +184,10 @@ window.EASYBILL_VERSION = '4.3.3';
     // 📱 PWA Service Worker Registration & Live Version Deployment (Active Everywhere)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            const isSubpath = window.location.pathname.startsWith('/nhsm/');
+            const swPath = isSubpath ? '/nhsm/sw.js' : 'sw.js';
+            const swScope = isSubpath ? '/nhsm/' : './';
+            navigator.serviceWorker.register(swPath, { scope: swScope })
                 .then((registration) => {
                     // Check for updates on page load
                     try { registration.update(); } catch (_) {}
