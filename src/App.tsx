@@ -200,7 +200,7 @@ export default function App() {
       const swPath = isSubpath ? '/nhsm/sw.js' : 'sw.js';
       const swScope = isSubpath ? '/nhsm/' : './';
       navigator.serviceWorker.register(swPath, { scope: swScope }).then((reg) => {
-        console.log('[PWA v4.4.0] NH POS Service Worker active:', reg.scope);
+        console.log('[PWA v4.5.0] NH POS Service Worker active:', reg.scope);
       }).catch((err) => {
         console.warn('[PWA] SW registration info:', err);
       });
@@ -369,7 +369,7 @@ export default function App() {
           <img
             src="icon-192.png"
             alt="NH POS"
-            className="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0 border border-emerald-600/30 bg-[#0E0F09]"
+            className="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0 border border-emerald-600/30 bg-[#F9F5E4]"
           />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -620,7 +620,7 @@ export default function App() {
                 <img
                   src="nh-pos-splash.jpg"
                   alt="NH POS Splash"
-                  className="absolute inset-0 w-full h-full object-contain object-center block bg-[#0E0F09]"
+                  className="absolute inset-0 w-full h-full object-contain object-center block bg-[#F9F5E4]"
                 />
                 <div className="absolute left-0 right-0 top-[78%] flex justify-center items-center z-10 text-center px-4">
                   <div className="text-[14px] font-bold text-[#4ade80] tracking-wide inline-flex items-center justify-center font-sans">
@@ -772,7 +772,7 @@ export default function App() {
             <img
               src="icon-192.png"
               alt="NH POS"
-              className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0 border border-slate-200 dark:border-slate-800 bg-[#0E0F09]"
+              className="w-12 h-12 rounded-xl object-cover shadow-sm shrink-0 border border-slate-200 dark:border-slate-800 bg-[#F9F5E4]"
             />
             <div className="min-w-0">
               <div className="font-bold text-sm text-slate-900 dark:text-white truncate flex items-center gap-1.5">
@@ -809,7 +809,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3 mb-4">
-              <img src="icon-192.png" alt="NH POS" className="w-12 h-12 rounded-xl object-cover shadow-sm bg-[#0E0F09]" />
+              <img src="icon-192.png" alt="NH POS" className="w-12 h-12 rounded-xl object-cover shadow-sm bg-[#F9F5E4]" />
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Install NH POS on iPhone / iPad</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">iOS Safari Instructions</p>

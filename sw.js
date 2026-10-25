@@ -1,12 +1,12 @@
 // ==========================================================================
-// 🚀 NH POS — TURBO SERVICE WORKER (v4.4.0)
+// 🚀 NH POS — TURBO SERVICE WORKER (v4.5.0)
 // ✅ Ultra-lean App Shell pre-caching (No network choke on install)
 // ✅ Dynamic Subpath & Scope resolution (GitHub Pages /nhsm/ & Netlify root)
 // ✅ Instant Stale-While-Revalidate caching for lightning-fast loads
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'nhpos-pwa-v4.4.0-turbo';
+const CACHE_NAME = 'nhpos-pwa-v4.5.0-turbo';
 
 // Core essential App Shell only (pre-cache in < 0.5s without bandwidth flood)
 const RELATIVE_SHELL_ASSETS = [
@@ -15,6 +15,7 @@ const RELATIVE_SHELL_ASSETS = [
   'nh-pos-splash.jpg',
   'icon-192.png',
   'icon-512.png',
+  'icon-1024.png',
   'apple-touch-icon.png',
   'auth.html',
   'dashboard.html',
@@ -42,7 +43,7 @@ self.addEventListener('install', (event) => {
 
       const promises = targetAssets.map((assetUrl) => {
         return cache.add(assetUrl).catch((err) => {
-          console.warn(`[PWA SW v4.4.0] Pre-cache skipped for ${assetUrl}:`, err.message);
+          console.warn(`[PWA SW v4.5.0] Pre-cache skipped for ${assetUrl}:`, err.message);
         });
       });
       return Promise.all(promises);
@@ -57,7 +58,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => {
-          console.log('[PWA SW v4.4.0] Purged outdated cache:', key);
+          console.log('[PWA SW v4.5.0] Purged outdated cache:', key);
           return caches.delete(key);
         })
       );

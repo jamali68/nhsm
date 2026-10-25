@@ -7,7 +7,7 @@
 // ✅ Role-aware menu (Booker ko limited)
 // ============================================
 
-window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.4.0';
+window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
 
 (function initSidebar() {
     // Inject dark-theme.css link dynamically if not present
@@ -949,14 +949,14 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.4.0';
 
         let menuHtml = `<div class="eb-sidebar-header" style="padding: 16px 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
             <div class="eb-sidebar-brand" style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-                <img src="icon-192.png" alt="NH POS Logo" class="eb-sidebar-logo" style="width:42px; height:42px; border-radius:10px; object-fit:cover; border:1px solid rgba(255,255,255,0.2); box-shadow:0 3px 10px rgba(0,0,0,0.3); background:#0E0F09; flex-shrink:0;">
+                <img src="icon-192.png" alt="NH POS Logo" class="eb-sidebar-logo" style="width:42px; height:42px; border-radius:10px; object-fit:cover; border:1px solid rgba(255,255,255,0.2); box-shadow:0 3px 10px rgba(0,0,0,0.3); background:#F9F5E4; flex-shrink:0;">
                 <div style="min-width:0;">
                     <div class="eb-sidebar-appname" style="font-size:15px; font-weight:800; color:#fff; display:flex; align-items:center; gap:5px; line-height:1.2;">
                         <span>${isSuperAdmin ? 'NH POS Super Admin' : 'NH POS'}</span>
                         ${isSuperAdmin ? '<span style="font-size:12px;">👑</span>' : ''}
                     </div>
                     <div class="eb-sidebar-agency" style="padding-left:0; font-size:11px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${agencyTitleText}</div>
-                    <div class="eb-sidebar-version" style="padding-left:0; font-size:10px; color:#4ade80; font-weight:700;">Version ${window.EASYBILL_VERSION || '4.4.0'}</div>
+                    <div class="eb-sidebar-version" style="padding-left:0; font-size:10px; color:#4ade80; font-weight:700;">Version ${window.EASYBILL_VERSION || '4.5.0'}</div>
                 </div>
             </div>
         </div>`;
@@ -1226,7 +1226,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.4.0';
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="eb-topbar-brand">
-                        <img src="icon-192.png" alt="NH POS" style="width:30px; height:30px; border-radius:8px; object-fit:cover; border:1px solid rgba(255,255,255,0.15); background:#0E0F09; flex-shrink:0;">
+                        <img src="icon-192.png" alt="NH POS" style="width:30px; height:30px; border-radius:8px; object-fit:cover; border:1px solid rgba(255,255,255,0.15); background:#F9F5E4; flex-shrink:0;">
                         <div class="eb-topbar-icon" id="ebTopIcon" style="background: ${pageConf.color};">${pageConf.icon}</div>
                         <div class="eb-topbar-title-group">
                             <div class="eb-topbar-title" id="ebTopPageTitle">${pageConf.title}</div>
