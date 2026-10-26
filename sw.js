@@ -6,7 +6,7 @@
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'nhpos-pwa-v4.5.0-turbo';
+const CACHE_NAME = 'nhpos-pwa-v5.0.0-turbo';
 
 // Core essential App Shell only (pre-cache in < 0.5s without bandwidth flood)
 const RELATIVE_SHELL_ASSETS = [
@@ -16,6 +16,7 @@ const RELATIVE_SHELL_ASSETS = [
   'icon-192.png',
   'icon-512.png',
   'icon-1024.png',
+  'icon-maskable-512.png',
   'apple-touch-icon.png',
   'auth.html',
   'dashboard.html',

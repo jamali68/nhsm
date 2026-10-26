@@ -1226,8 +1226,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="eb-topbar-brand">
-                        <img src="icon-192.png" alt="NH POS" style="width:30px; height:30px; border-radius:8px; object-fit:cover; border:1px solid rgba(255,255,255,0.15); background:#F9F5E4; flex-shrink:0;">
-                        <div class="eb-topbar-icon" id="ebTopIcon" style="background: ${pageConf.color};">${pageConf.icon}</div>
+                        <img src="icon-192.png" alt="NH POS Logo" class="eb-topbar-logo" style="width:34px; height:34px; border-radius:9px; object-fit:cover; border:1px solid rgba(255,255,255,0.2); box-shadow:0 2px 8px rgba(0,0,0,0.25); background:#F9F5E4; flex-shrink:0;">
                         <div class="eb-topbar-title-group">
                             <div class="eb-topbar-title" id="ebTopPageTitle">${pageConf.title}</div>
                             <div class="eb-topbar-sub" id="ebTopSubtitle">${agencySubtitle}</div>
