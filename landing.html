@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NH POS & Customer Ledger — Smart Offline Billing & Inventory</title>
+    <meta name="description" content="Pakistan's smartest POS, Khata Ledger, Stock Inventory and Booker Dispatch system. Works 100% offline with instant mobile PWA install.">
+    <meta property="og:title" content="NH POS & Customer Ledger">
+    <meta property="og:description" content="Smart billing, customer credit recovery via WhatsApp, inventory management and booker orders for Retailers & Wholesalers.">
+    <meta property="og:type" content="website">
+
+    <!-- 📱 PWA Meta -->
+    <link rel="manifest" href="manifest.json?v=5.1.0">
+    <meta name="theme-color" content="#0E0F09">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=5.1.0">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5.1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=5.1.0">
+
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Anti-Badge and Theme Sync -->
+    <script src="theme-sync.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0a0f1d;
+            --bg-card: #111827;
+            --bg-card-hover: #1e293b;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --primary-light: rgba(16, 185, 129, 0.12);
+            --amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-sub: #64748b;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(16, 185, 129, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Urdu Nastaliq font styling when active */
+        html[data-lang="ur"] .ur-txt {
+            font-family: 'Noto Nastaliq Urdu', 'Segoe UI', serif;
+            line-height: 1.9;
+        }
+
+        /* Header / Navigation */
+        .landing-nav {
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            background: rgba(10, 15, 29, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+        }
+        .nav-container {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .brand-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            object-fit: cover;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+            background: #ffffff;
+        }
+        .brand-text h1 {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .brand-text p {
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: #ffffff;
+        }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .lang-switch-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .lang-switch-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-outline:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .btn-primary {
+            background: #10b981;
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 800;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 70px 20px 60px;
+            max-width: 1240px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 40px;
+            align-items: center;
+        }
+        .hero-badge-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #34d399;
+            margin-bottom: 20px;
+            letter-spacing: 0.3px;
+        }
+        .hero-badge-wrap .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+        .hero-title {
+            font-size: 44px;
+            font-weight: 800;
+            line-height: 1.18;
+            letter-spacing: -0.8px;
+            margin-bottom: 20px;
+        }
+        .hero-title .gradient-txt {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-desc {
+            font-size: 17px;
+            color: var(--text-muted);
+            line-height: 1.65;
+            margin-bottom: 32px;
+            max-width: 580px;
+        }
+        .hero-ctas {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 36px;
+        }
+        .hero-trust-bar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .trust-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .trust-item i {
+            color: var(--primary);
+        }
+
+        /* Hero Interactive Card Mockup */
+        .hero-visual {
+            position: relative;
+        }
+        .hero-card-preview {
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid var(--border-highlight);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(16, 185, 129, 0.15);
+        }
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .preview-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .stat-card-title {
+            font-size: 11.5px;
+            color: var(--text-sub);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .stat-card-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+        .stat-card-sub {
+            font-size: 11px;
+            color: #34d399;
+            margin-top: 3px;
+            font-weight: 600;
+        }
+        .sample-bill-strip {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px dashed rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        /* Section Layouts */
+        .section-wrap {
+            padding: 80px 20px;
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+        .section-header {
+            text-align: center;
+            max-width: 760px;
+            margin: 0 auto 50px;
+        }
+        .section-kicker {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        .section-title {
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            margin-bottom: 14px;
+            line-height: 1.25;
+        }
+        .section-desc {
+            font-size: 16px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Feature Cards Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 28px;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .feature-card:hover {
+            border-color: var(--border-highlight);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5), 0 0 25px rgba(16, 185, 129, 0.1);
+        }
+        .feat-icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        .feature-card h3 {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.3px;
+        }
+        .feature-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            background: rgba(255, 255, 255, 0.015);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .billing-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 40px;
+        }
+        .billing-switch {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 4px;
+            display: flex;
+            gap: 4px;
+        }
+        .billing-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .billing-btn.active {
+            background: #10b981;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+        .discount-tag {
+            font-size: 11px;
+            color: #f59e0b;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            align-items: stretch;
+        }
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 34px 28px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.25s ease;
+        }
+        .pricing-card.featured {
+            border-color: #10b981;
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(17, 24, 39, 1) 40%);
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 35px rgba(16, 185, 129, 0.2);
+            transform: scale(1.03);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 14px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .plan-header {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .plan-name {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+        .plan-tagline {
+            font-size: 13px;
+            color: var(--text-muted);
+            min-height: 38px;
+        }
+        .plan-price-wrap {
+            margin: 18px 0 6px;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        .plan-currency {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+        .plan-amount {
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: #ffffff;
+        }
+        .plan-period {
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+        .plan-features-list {
+            list-style: none;
+            margin-bottom: 30px;
+            flex-grow: 1;
+        }
+        .plan-features-list li {
+            font-size: 13.5px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 14px;
+            line-height: 1.45;
+        }
+        .plan-features-list li i {
+            color: var(--primary);
+            margin-top: 3px;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .plan-features-list li.disabled {
+            color: var(--text-sub);
+            text-decoration: line-through;
+        }
+        .plan-features-list li.disabled i {
+            color: #475569;
+        }
+
+        /* FAQ Section */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+        }
+        .faq-item h4 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .faq-item p {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* CTA Banner */
+        .cta-banner {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.3) 100%);
+            border: 1.5px solid var(--border-highlight);
+            border-radius: 24px;
+            padding: 50px 36px;
+            text-align: center;
+            margin: 60px auto;
+            max-width: 1080px;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-banner h2 {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 14px;
+        }
+        .cta-banner p {
+            font-size: 16px;
+            color: #cbd5e1;
+            max-width: 620px;
+            margin: 0 auto 30px;
+        }
+
+        /* Footer */
+        .landing-footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 20px 30px;
+            background: #070a14;
+        }
+        .footer-inner {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .footer-copy {
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+        .footer-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover {
+            color: #ffffff;
+        }
+
+        /* WhatsApp Floating Help Button */
+        .wa-float-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: #25d366;
+            color: #ffffff;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+            text-decoration: none;
+            z-index: 9999;
+            transition: all 0.25s ease;
+        }
+        .wa-float-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.55);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 960px) {
+            .hero-section {
+                grid-template-columns: 1fr;
+                padding-top: 40px;
+                text-align: center;
+            }
+            .hero-desc {
+                margin: 0 auto 28px;
+            }
+            .hero-ctas {
+                justify-content: center;
+            }
+            .hero-trust-bar {
+                justify-content: center;
+            }
+            .features-grid, .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 480px;
+                margin: 0 auto;
+            }
+            .pricing-card.featured {
+                transform: none;
+            }
+            .faq-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🧭 TOP NAVIGATION -->
+    <header class="landing-nav">
+        <div class="nav-container">
+            <a href="landing.html" class="brand-link">
+                <img src="icon-192.png" alt="NH POS Logo" class="brand-logo" onerror="this.src='apple-touch-icon.png'">
+                <div class="brand-text">
+                    <h1>NH POS</h1>
+                    <p data-en="POS & Customer Ledger" data-ur="پی او ایس و کھاتہ لیجر">POS & Customer Ledger</p>
+                </div>
+            </a>
+
+            <nav class="nav-links">
+                <a href="#features" data-en="Features" data-ur="اہم خوبیاں">Features</a>
+                <a href="#pricing" data-en="Packages & Pricing" data-ur="پیکجز اور قیمتیں">Packages</a>
+                <a href="#faq" data-en="FAQ" data-ur="عام سوالات">FAQ</a>
+                <a href="auth.html" data-en="Login" data-ur="لاگ ان">Login</a>
+            </nav>
+
+            <div class="nav-actions">
+                <button type="button" id="langToggleBtn" class="lang-switch-btn" onclick="toggleLanguage()">
+                    <span>🇵🇰</span> <span id="langBtnText">اردو</span>
+                </button>
+                <a href="auth.html" class="btn-outline" data-en="Login" data-ur="لاگ ان">
+                    <i class="fas fa-sign-in-alt"></i> <span>Login</span>
+                </a>
+                <a href="auth.html?signup=true" class="btn-primary" data-en="Start Free" data-ur="مفت شروع کریں">
+                    <i class="fas fa-bolt"></i> <span>Start Free</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 🚀 HERO SECTION -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <div class="hero-badge-wrap">
+                <span class="dot"></span>
+                <span data-en="Pakistan's Next-Gen Retail & Wholesale OS" data-ur="پاکستان کا تیز ترین آف لائن ریٹیل و ہول سیل سسٹم">Pakistan's Next-Gen Retail & Wholesale OS</span>
+            </div>
+
+            <h1 class="hero-title">
+                <span data-en="Run Your Shop & Khata" data-ur="اپنی دکان، کھاتہ اور سیلز چلائیں">Run Your Shop & Khata</span><br>
+                <span class="gradient-txt" data-en="100% Offline & Lightning Fast" data-ur="100% آف لائن اور بجلی جیسی تیزی سے">100% Offline & Lightning Fast</span>
+            </h1>
+
+            <p class="hero-desc ur-txt" data-en="A complete billing, customer credit recovery, barcode inventory, and field booker dispatch system designed specifically for General Stores, Kiryana, Mobile shops, Wholesalers, and Distribution Agencies." data-ur="کریانہ اسٹورز، جنرل مرچنٹس، موبائل شاپس اور ہول سیل ایجنسیوں کے لیے مکمل ڈیجیٹل سسٹم۔ بل بنائیں، ادھار وصول کریں، بارکوڈ اسکین کریں اور فیلڈ آرڈرز ہینڈل کریں۔">
+                A complete billing, customer credit recovery, barcode inventory, and field booker dispatch system designed specifically for General Stores, Kiryana, Mobile shops, Wholesalers, and Distribution Agencies.
+            </p>
+
+            <div class="hero-ctas">
+                <a href="auth.html?signup=true" class="btn-primary" style="padding: 13px 28px; font-size: 15px;" data-en="Create Free Account" data-ur="مفت اکاؤنٹ بنائیں">
+                    <i class="fas fa-rocket"></i> <span>Create Free Account</span>
+                </a>
+                <button type="button" class="btn-outline" onclick="window.installNHPOSApp ? window.installNHPOSApp() : (window.location.href='auth.html')" style="padding: 12px 24px;" data-en="📲 Install App (PWA)" data-ur="📲 ایپ انسٹال کریں">
+                    <i class="fas fa-download"></i> <span>Install App (PWA)</span>
+                </button>
+            </div>
+
+            <div class="hero-trust-bar">
+                <div class="trust-item">
+                    <i class="fas fa-wifi"></i>
+                    <span data-en="Works without Internet" data-ur="انٹرنیٹ کے بغیر بھی فعال">Works without Internet</span>
+                </div>
+                <div class="trust-item">
+                    <i class="fas fa-print"></i>
+                    <span data-en="Thermal & A4 Invoices" data-ur="تھرمل اور A4 پرنٹنگ">Thermal & A4 Invoices</span>
+                </div>
+                <div class="trust-item">
+                    <i class="fab fa-whatsapp"></i>
+                    <span data-en="WhatsApp Khata Reminders" data-ur="واٹس ایپ پر ادھار بل">WhatsApp Khata Reminders</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Card Mockup -->
+        <div class="hero-visual">
+            <div class="hero-card-preview">
+                <div class="preview-header">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="icon-192.png" style="width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #10b981; background:#ffffff;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 14px; color: #ffffff;">Taj Karyana & Mobile</div>
+                            <div style="font-size: 11px; color: #10b981; font-weight: 700;">🟢 Online Cloud Synced</div>
+                        </div>
+                    </div>
+                    <span style="font-size: 11px; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 3px 8px; border-radius: 6px; font-weight: 800;">FREE PLAN</span>
+                </div>
+
+                <div class="preview-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-title" data-en="Today Sales" data-ur="آج کی سیل">Today Sales</div>
+                        <div class="stat-card-val">Rs 48,650</div>
+                        <div class="stat-card-sub"><i class="fas fa-arrow-up"></i> +18% vs yesterday</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-title" data-en="Khata Recovery" data-ur="وصول طلب کھاتہ">Khata Recovery</div>
+                        <div class="stat-card-val" style="color: #fbbf24;">Rs 14,200</div>
+                        <div class="stat-card-sub" style="color: #fbbf24;"><i class="fab fa-whatsapp"></i> 6 Reminders sent</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-title" data-en="Stock Value" data-ur="اسٹاک مالیت">Stock Value</div>
+                        <div class="stat-card-val">Rs 3,85,000</div>
+                        <div class="stat-card-sub"><i class="fas fa-box"></i> 248 Items Safe</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-title" data-en="Net Profit" data-ur="خالص منافع">Net Profit</div>
+                        <div class="stat-card-val" style="color: #34d399;">Rs 9,450</div>
+                        <div class="stat-card-sub"><i class="fas fa-chart-line"></i> 19.4% Margin</div>
+                    </div>
+                </div>
+
+                <div class="sample-bill-strip">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-file-invoice" style="color:#10b981;"></i>
+                        <span><strong>Bill #STK-104</strong> · Ali Hassan Store</span>
+                    </div>
+                    <span style="font-weight: 800; color: #10b981;">Rs 3,250 Paid</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ⚡ CORE FEATURES SECTION -->
+    <section class="section-wrap" id="features">
+        <div class="section-header">
+            <div class="section-kicker" data-en="Engineered for High-Speed Retail" data-ur="کاروبار کے لیے جدید ترین ٹیکنالوجی">Engineered for High-Speed Retail</div>
+            <h2 class="section-title" data-en="Everything You Need to Run & Scale Your Business" data-ur="دکان اور ہول سیل سنبھالنے کے تمام فیچرز ایک جگہ">Everything You Need to Run & Scale Your Business</h2>
+            <p class="section-desc" data-en="Say goodbye to manual paper registers and slow desktop systems. NH POS empowers shopkeepers with speed, accuracy, and automation." data-ur="پرانے کاپی رجسٹر اور سست سافٹ ویئرز کو الوداع کہیں۔ تیز رفتار بلنگ، خودکار کھاتہ اور رئیل ٹائم حساب کتاب۔">Say goodbye to manual paper registers and slow desktop systems. NH POS empowers shopkeepers with speed, accuracy, and automation.</p>
+        </div>
+
+        <div class="features-grid">
+            <!-- Feature 1: POS Billing -->
+            <div class="feature-card">
+                <div class="feat-icon-box"><i class="fas fa-cash-register"></i></div>
+                <h3 data-en="2-Second POS Billing" data-ur="2 سیکنڈ میں بلنگ">2-Second POS Billing</h3>
+                <p class="ur-txt" data-en="Generate invoices at lightning speed. Supports barcode scanners, phone camera scanning, wholesale vs retail rates, item discounts, and thermal receipt printing (58mm/80mm)." data-ur="بجلی کی تیزی سے انوائس بنائیں۔ بارکوڈ اسکینر، موبائل کیمرہ، ہول سیل اور ریٹیل ریٹس، اور تھرمل پرنٹر سپورٹ۔">Generate invoices at lightning speed. Supports barcode scanners, phone camera scanning, wholesale vs retail rates, item discounts, and thermal receipt printing (58mm/80mm).</p>
+            </div>
+
+            <!-- Feature 2: Customer Khata -->
+            <div class="feature-card">
+                <div class="feat-icon-box"><i class="fas fa-book-open"></i></div>
+                <h3 data-en="Customer Khata & WhatsApp" data-ur="ڈیجیٹل کھاتہ اور واٹس ایپ">Customer Khata & WhatsApp</h3>
+                <p class="ur-txt" data-en="Track every rupee of customer credit and udhaar. Send automated balance reminders via WhatsApp with professional invoice PDFs attached in 1 tap." data-ur="کسٹمر کے ادھار کا مکمل اور شفاف حساب۔ ایک کلک پر واٹس ایپ کے ذریعے بیلنس یاد دہانی اور پی ڈی ایف بل بھیجیں۔">Track every rupee of customer credit and udhaar. Send automated balance reminders via WhatsApp with professional invoice PDFs attached in 1 tap.</p>
+            </div>
+
+            <!-- Feature 3: Inventory & Low Stock -->
+            <div class="feature-card">
+                <div class="feat-icon-box"><i class="fas fa-boxes-stacked"></i></div>
+                <h3 data-en="Stock & Low-Stock Alerts" data-ur="اسٹاک اور کم مال الرٹس">Stock & Low-Stock Alerts</h3>
+                <p class="ur-txt" data-en="Track stock in/out, purchase orders, cost prices, and estimated selling margins. Get instant alerts when items drop below minimum safety levels." data-ur="اسٹاک کی آمدورفت، خریداری کے ریٹس اور منافع کا ریکارڈ۔ سامان ختم ہونے سے پہلے فوری وارننگ الرٹ۔">Track stock in/out, purchase orders, cost prices, and estimated selling margins. Get instant alerts when items drop below minimum safety levels.</p>
+            </div>
+
+            <!-- Feature 4: Booker Dispatch -->
+            <div class="feature-card">
+                <div class="feat-icon-box"><i class="fas fa-motorcycle"></i></div>
+                <h3 data-en="Booker Orders & Dispatch" data-ur="فیلڈ آرڈر بکرز اور ترسیل">Booker Orders & Dispatch</h3>
+                <p class="ur-txt" data-en="Empower sales bookers to take shopkeeper orders on their mobile phones in the market. Automatically syncs with the warehouse for vehicle loading and dispatch." data-ur="مارکیٹ میں سیلز بکرز کے لیے خصوصی موبائل آرڈرنگ۔ گودام میں مال کی پیکنگ، لوڈنگ اور ڈیلیوری کا خودکار نظام۔">Empower sales bookers to take shopkeeper orders on their mobile phones in the market. Automatically syncs with the warehouse for vehicle loading and dispatch.</p>
+            </div>
+
+            <!-- Feature 5: Real-time Profit Analytics -->
+            <div class="feature-card">
+                <div class="feat-icon-box"><i class="fas fa-chart-pie"></i></div>
+                <h3 data-en="Profit & Daily Expense Tracker" data-ur="منافع اور روزانہ کے اخراجات">Profit & Daily Expense Tracker</h3>
+                <p class="ur-txt" data-en="Know your exact profit every single day. Deduct daily expenses (chai, electricity, salaries, rent) and view clear net profit figures." data-ur="ہر دن کا خالص منافع جانیں۔ چائے، بجلی، کرایہ اور تنخواہوں کے اخراجات منہا کر کے شفاف نفع رپورٹ حاصل کریں۔">Know your exact profit every single day. Deduct daily expenses (chai, electricity, salaries, rent) and view clear net profit figures.</p>
+            </div>
+
+            <!-- Feature 6: Offline PWA -->
+            <div class="feature-card">
+                <div class="feat-icon-box"><i class="fas fa-mobile-screen-button"></i></div>
+                <h3 data-en="1-Click PWA Phone Install" data-ur="بغیر انٹرنیٹ موبائل ایپ">1-Click PWA Phone Install</h3>
+                <p class="ur-txt" data-en="Installs directly onto your Android, iPhone, or Windows PC without downloading heavy APKs. Works seamlessly even when internet is completely disconnected." data-ur="اینڈرائیڈ اور آئی فون پر ہوم اسکرین ایپ کے طور پر انسٹال ہوتی ہے۔ انٹرنیٹ بند ہونے پر بھی بلنگ اور کھاتہ چلتا رہتا ہے۔">Installs directly onto your Android, iPhone, or Windows PC without downloading heavy APKs. Works seamlessly even when internet is completely disconnected.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 💎 PACKAGES & PRICING SECTION -->
+    <section class="section-wrap pricing-section" id="pricing">
+        <div class="section-header">
+            <div class="section-kicker" data-en="Transparent & Fair Pricing" data-ur="شفاف اور مناسب قیمتیں">Transparent & Fair Pricing</div>
+            <h2 class="section-title" data-en="Choose the Perfect Plan for Your Business" data-ur="اپنے کاروبار کے مطابق بہترین پیکیج منتخب کریں">Choose the Perfect Plan for Your Business</h2>
+            <p class="section-desc" data-en="Start completely free forever, or upgrade to unlock advanced Booker orders and multi-agency distribution tools." data-ur="مفت پیکیج سے فوری شروعات کریں، یا جدید بکر اور ایجنسی فیچرز کے لیے اپ گریڈ کریں۔">Start completely free forever, or upgrade to unlock advanced Booker orders and multi-agency distribution tools.</p>
+        </div>
+
+        <!-- Billing Toggle -->
+        <div class="billing-toggle-wrap">
+            <div class="billing-switch">
+                <button type="button" class="billing-btn active" id="btnMonthly" onclick="setBillingCycle('monthly')">Monthly (ماہانہ)</button>
+                <button type="button" class="billing-btn" id="btnYearly" onclick="setBillingCycle('yearly')">Yearly (سالانہ)</button>
+            </div>
+            <span class="discount-tag">🔥 2 Months Free on Yearly!</span>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- PLAN 1: FREE FOREVER -->
+            <div class="pricing-card">
+                <div class="plan-header">
+                    <h3 class="plan-name" data-en="Free Starter" data-ur="فری اسٹارٹر (مفت)">Free Starter</h3>
+                    <p class="plan-tagline" data-en="Ideal for small single-counter shops and new retail outlets." data-ur="چھوٹی دکانوں اور شروعاتی کاروبار کے لیے لائف ٹائم مفت۔">Ideal for small single-counter shops and new retail outlets.</p>
+                    <div class="plan-price-wrap">
+                        <span class="plan-currency">Rs</span>
+                        <span class="plan-amount">0</span>
+                        <span class="plan-period" data-en="/ lifetime" data-ur="/ لائف ٹائم">/ lifetime</span>
+                    </div>
+                </div>
+
+                <ul class="plan-features-list">
+                    <li><i class="fas fa-check"></i> <span data-en="1 Shop / Counter Access" data-ur="1 دکان یا کاؤنٹر">1 Shop / Counter Access</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Up to 100 Products Inventory" data-ur="100 آئٹمز تک اسٹاک">Up to 100 Products Inventory</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Fast POS Billing & Thermal Receipts" data-ur="تیز رفتار بلنگ و تھرمل پرنٹ">Fast POS Billing & Thermal Receipts</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Customer Khata Ledger (50 Customers)" data-ur="50 گاہکوں کا ادھار کھاتہ">Customer Khata Ledger (50 Customers)</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="100% Offline PWA Functionality" data-ur="مکمل آف لائن سپورٹ">100% Offline PWA Functionality</span></li>
+                    <li class="disabled"><i class="fas fa-times"></i> <span data-en="WhatsApp Invoice PDFs" data-ur="واٹس ایپ پی ڈی ایف بل">WhatsApp Invoice PDFs</span></li>
+                    <li class="disabled"><i class="fas fa-times"></i> <span data-en="Booker Orders & Dispatch" data-ur="سیلز بکر آرڈرز">Booker Orders & Dispatch</span></li>
+                </ul>
+
+                <a href="auth.html?signup=true" class="btn-outline" style="text-align: center; justify-content: center; width: 100%;" data-en="Start Free Now" data-ur="ابھی مفت شروع کریں">
+                    Start Free Now
+                </a>
+            </div>
+
+            <!-- PLAN 2: PRO RETAILER (FEATURED) -->
+            <div class="pricing-card featured">
+                <span class="popular-badge" data-en="MOST POPULAR" data-ur="سب سے مقبول">MOST POPULAR</span>
+                <div class="plan-header">
+                    <h3 class="plan-name" style="color:#34d399;" data-en="Pro Retailer" data-ur="پرو ریٹیلر">Pro Retailer</h3>
+                    <p class="plan-tagline" data-en="Best for busy general stores, marts, and mobile shops." data-ur="کامیاب دکانوں، مارٹس اور موبائل دکانوں کے لیے مکمل پیکیج۔">Best for busy general stores, marts, and mobile shops.</p>
+                    <div class="plan-price-wrap">
+                        <span class="plan-currency">Rs</span>
+                        <span class="plan-amount" id="proPrice">1,499</span>
+                        <span class="plan-period" id="proPeriod" data-en="/ month" data-ur="/ ماہانہ">/ month</span>
+                    </div>
+                </div>
+
+                <ul class="plan-features-list">
+                    <li><i class="fas fa-check"></i> <strong data-en="Unlimited Products & Bills" data-ur="لامحدود پراڈکٹس اور بلز">Unlimited Products & Bills</strong></li>
+                    <li><i class="fas fa-check"></i> <strong data-en="Unlimited Customer Khata" data-ur="لامحدود گاہکوں کا کھاتہ">Unlimited Customer Khata</strong></li>
+                    <li><i class="fas fa-check"></i> <span data-en="1-Click WhatsApp Invoices & Reminders" data-ur="واٹس ایپ پر بل اور ادھار وصولی">1-Click WhatsApp Invoices & Reminders</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Barcode & Camera Fast Scanner" data-ur="بارکوڈ اور کیمرہ اسکینر">Barcode & Camera Fast Scanner</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Real-Time Profit Margin Analytics" data-ur="خالص منافع اور اخراجات کا حساب">Real-Time Profit Margin Analytics</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Automated Daily Cloud Sync" data-ur="کلاؤڈ بیک اپ و ڈیٹا تحفظ">Automated Daily Cloud Sync</span></li>
+                    <li class="disabled"><i class="fas fa-times"></i> <span data-en="Multi-Agency Dispatch Hub" data-ur="ملٹی ایجنسی ڈسپیچ ہب">Multi-Agency Dispatch Hub</span></li>
+                </ul>
+
+                <a href="auth.html?signup=true&plan=pro" class="btn-primary" style="text-align: center; justify-content: center; width: 100%;" data-en="Upgrade to Pro" data-ur="پرو پیکیج منتخب کریں">
+                    Upgrade to Pro
+                </a>
+            </div>
+
+            <!-- PLAN 3: BUSINESS & AGENCY -->
+            <div class="pricing-card">
+                <div class="plan-header">
+                    <h3 class="plan-name" data-en="Business & Agency" data-ur="بزنس و ہول سیل ایجنسی">Business & Agency</h3>
+                    <p class="plan-tagline" data-en="Built for wholesalers, distributors, and multi-booker networks." data-ur="ہول سیلرز، ایجنسیوں اور فیلڈ بکرز کے مکمل نیٹ ورک کے لیے۔">Built for wholesalers, distributors, and multi-booker networks.</p>
+                    <div class="plan-price-wrap">
+                        <span class="plan-currency">Rs</span>
+                        <span class="plan-amount" id="bizPrice">3,499</span>
+                        <span class="plan-period" id="bizPeriod" data-en="/ month" data-ur="/ ماہانہ">/ month</span>
+                    </div>
+                </div>
+
+                <ul class="plan-features-list">
+                    <li><i class="fas fa-check"></i> <strong data-en="Everything in Pro Plan Included" data-ur="پرو کے تمام فیچرز شامل ہیں">Everything in Pro Plan Included</strong></li>
+                    <li><i class="fas fa-check"></i> <strong data-en="Full Booker Mobile Order Engine" data-ur="فیلڈ سیلز بکرز موبائل سسٹم">Full Booker Mobile Order Engine</strong></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Warehouse Dispatch & Vehicle Loading" data-ur="گودام پیکنگ و لوڈنگ ڈسپیچ">Warehouse Dispatch & Vehicle Loading</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Multi-Agency / Multi-Branch Hub" data-ur="ملٹی برانچ اور ملٹی ایجنسی لاگ ان">Multi-Agency / Multi-Branch Hub</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Unlimited Staff & Booker Accounts" data-ur="لامحدود اسٹاف اور بکر اکاؤنٹس">Unlimited Staff & Booker Accounts</span></li>
+                    <li><i class="fas fa-check"></i> <span data-en="Priority 24/7 Phone & WhatsApp Support" data-ur="ترجیحی 24/7 فون اور واٹس ایپ سپورٹ">Priority 24/7 Phone & WhatsApp Support</span></li>
+                </ul>
+
+                <a href="auth.html?signup=true&plan=business" class="btn-outline" style="text-align: center; justify-content: center; width: 100%;" data-en="Get Business Plan" data-ur="بزنس پیکیج حاصل کریں">
+                    Get Business Plan
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ❓ FAQ SECTION -->
+    <section class="section-wrap" id="faq">
+        <div class="section-header">
+            <div class="section-kicker" data-en="Got Questions?" data-ur="عام سوالات کے جوابات">Got Questions?</div>
+            <h2 class="section-title" data-en="Frequently Asked Questions" data-ur="دکانداروں کے عمومی سوالات">Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-grid">
+            <div class="faq-item">
+                <h4 data-en="Does NH POS work without internet?" data-ur="کیا یہ انٹرنیٹ کے بغیر کام کرتا ہے؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Does NH POS work without internet?</h4>
+                <p class="ur-txt" data-en="Yes, 100%! All your bills, customers, and stock are saved locally on your device. Whenever internet is available, it automatically syncs with the secure cloud." data-ur="جی ہاں، بالکل! انٹرنیٹ کے بغیر بھی تمام بل، گاہکوں کا کھاتہ اور اسٹاک نارمل چلتا ہے۔ جب بھی نیٹ کنیکٹ ہوگا ڈیٹا خود بخود محفوظ ہو جائے گا۔">Yes, 100%! All your bills, customers, and stock are saved locally on your device. Whenever internet is available, it automatically syncs with the secure cloud.</p>
+            </div>
+
+            <div class="faq-item">
+                <h4 data-en="Can I install it on my phone?" data-ur="کیا یہ موبائل پر انسٹال ہو جاتی ہے؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Can I install it on my phone?</h4>
+                <p class="ur-txt" data-en="Yes! NH POS is a Progressive Web App (PWA). Just open Chrome or Safari, click 'Install App' or 'Add to Home Screen', and it runs like a regular mobile app." data-ur="جی ہاں! یہ ایک کلک پر عام موبائل ایپ کی طرح اینڈرائیڈ اور آئی فون پر انسٹال ہو جاتی ہے اور بغیر کسی ہیوی ڈاؤنلوڈ کے چلتی ہے۔">Yes! NH POS is a Progressive Web App (PWA). Just open Chrome or Safari, click 'Install App' or 'Add to Home Screen', and it runs like a regular mobile app.</p>
+            </div>
+
+            <div class="faq-item">
+                <h4 data-en="Is the Free Plan really free forever?" data-ur="کیا فری پیکیج ہمیشہ کے لیے مفت ہے؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Is the Free Plan really free forever?</h4>
+                <p class="ur-txt" data-en="Yes, our Free Starter plan is lifetime free with up to 100 inventory items and 50 khata customers. No credit card is required to sign up." data-ur="جی ہاں، فری اسٹارٹر پیکیج لائف ٹائم مفت ہے۔ آپ بغیر کسی فیس یا کریڈٹ کارڈ کے فوراً دکان کا کام شروع کر سکتے ہیں۔">Yes, our Free Starter plan is lifetime free with up to 100 inventory items and 50 khata customers. No credit card is required to sign up.</p>
+            </div>
+
+            <div class="faq-item">
+                <h4 data-en="Which printers are supported?" data-ur="کون کون سے پرنٹرز سپورٹڈ ہیں؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Which printers are supported?</h4>
+                <p class="ur-txt" data-en="All standard USB and Bluetooth thermal receipt printers (58mm and 80mm ESC/POS) as well as regular desktop A4/A5 laser and inkjet printers." data-ur="تمام قسم کے 58mm اور 80mm تھرمل پرنٹرز (بلوٹوتھ یا یو ایس بی) اور عام کمپیوٹر کے A4 لیزر پرنٹرز مکمل سپورٹڈ ہیں۔">All standard USB and Bluetooth thermal receipt printers (58mm and 80mm ESC/POS) as well as regular desktop A4/A5 laser and inkjet printers.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 🌟 FINAL CALL TO ACTION -->
+    <div class="cta-banner">
+        <h2 data-en="Start Managing Your Shop Smarter Today" data-ur="آج ہی اپنی دکان کا ڈیجیٹل آغاز کریں">Start Managing Your Shop Smarter Today</h2>
+        <p class="ur-txt" data-en="Join hundreds of Pakistani retail and wholesale businesses who have eliminated paper errors and increased their profit recovery with NH POS." data-ur="کاپی رجسٹر اور حساب کے نقصانات کو ختم کریں۔ اب پورے اعتماد اور آسانی کے ساتھ کاروبار بڑھائیں۔">Join hundreds of Pakistani retail and wholesale businesses who have eliminated paper errors and increased their profit recovery with NH POS.</p>
+        <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap;">
+            <a href="auth.html?signup=true" class="btn-primary" style="padding: 14px 34px; font-size: 16px;" data-en="Get Started for Free" data-ur="ابھی مفت اکاؤنٹ بنائیں">
+                <i class="fas fa-rocket"></i> <span>Get Started for Free</span>
+            </a>
+            <a href="auth.html" class="btn-outline" style="padding: 13px 28px;" data-en="Sign In to Existing Account" data-ur="موجودہ اکاؤنٹ میں لاگ ان کریں">
+                <span>Sign In to Existing Account</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 🦶 FOOTER -->
+    <footer class="landing-footer">
+        <div class="footer-inner">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img src="icon-192.png" style="width:32px; height:32px; border-radius:8px; border:1px solid #10b981; background:#ffffff;">
+                <span style="font-weight:800; font-size:15px; color:#ffffff;">NH POS & Customer Ledger</span>
+            </div>
+            <div class="footer-copy">
+                &copy; 2026 NH POS System. All Rights Reserved. Built for Pakistan Retail & Wholesale.
+            </div>
+            <div class="footer-links">
+                <a href="auth.html" data-en="Login" data-ur="لاگ ان">Login</a>
+                <a href="#pricing" data-en="Pricing" data-ur="قیمتیں">Pricing</a>
+                <a href="https://wa.me/923001234567" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 🟢 FLOATING WHATSAPP HELPLINE -->
+    <a href="https://wa.me/923001234567?text=Hello%20NH%20POS%20I%20want%20to%20learn%20more%20about%20packages" target="_blank" rel="noopener" class="wa-float-btn" title="Contact on WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- ⚙️ INTERACTIVE SCRIPTS -->
+    <script>
+        // 🔄 Billing Cycle Toggle (Monthly vs Yearly Discount)
+        let currentCycle = 'monthly';
+        function setBillingCycle(cycle) {
+            currentCycle = cycle;
+            const btnM = document.getElementById('btnMonthly');
+            const btnY = document.getElementById('btnYearly');
+            const proPrice = document.getElementById('proPrice');
+            const bizPrice = document.getElementById('bizPrice');
+            const proPeriod = document.getElementById('proPeriod');
+            const bizPeriod = document.getElementById('bizPeriod');
+
+            const isUr = document.documentElement.getAttribute('data-lang') === 'ur';
+
+            if (cycle === 'yearly') {
+                btnY.classList.add('active');
+                btnM.classList.remove('active');
+                proPrice.innerText = '14,999';
+                bizPrice.innerText = '34,999';
+                proPeriod.innerText = isUr ? '/ سالانہ (2 ماہ مفت)' : '/ year (2 mo free)';
+                bizPeriod.innerText = isUr ? '/ سالانہ (2 ماہ مفت)' : '/ year (2 mo free)';
+            } else {
+                btnM.classList.add('active');
+                btnY.classList.remove('active');
+                proPrice.innerText = '1,499';
+                bizPrice.innerText = '3,499';
+                proPeriod.innerText = isUr ? '/ ماہانہ' : '/ month';
+                bizPeriod.innerText = isUr ? '/ ماہانہ' : '/ month';
+            }
+        }
+
+        // 🌐 Bilingual Language Switcher (English / Urdu)
+        let currentLang = localStorage.getItem('eb_landing_lang') || 'en';
+        function applyLandingLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('eb_landing_lang', lang);
+            document.documentElement.setAttribute('data-lang', lang);
+
+            const isUrdu = lang === 'ur';
+            document.getElementById('langBtnText').innerText = isUrdu ? 'English' : 'اردو';
+
+            document.querySelectorAll('[data-en]').forEach(el => {
+                const en = el.getAttribute('data-en');
+                const ur = el.getAttribute('data-ur');
+                if (isUrdu && ur) {
+                    el.innerText = ur;
+                } else if (en) {
+                    el.innerText = en;
+                }
+            });
+
+            // Adjust direction for headings
+            document.body.dir = isUrdu ? 'rtl' : 'ltr';
+            setBillingCycle(currentCycle);
+        }
+
+        function toggleLanguage() {
+            const next = currentLang === 'en' ? 'ur' : 'en';
+            applyLandingLanguage(next);
+        }
+
+        // Initialize saved language
+        if (currentLang === 'ur') {
+            applyLandingLanguage('ur');
+        }
+    </script>
+</body>
+</html>

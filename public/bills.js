@@ -900,33 +900,51 @@ function formatBillNo(prefix, num) {
 
 async function previewBillNo() {
     const prefix = getBillPrefix();
+    const aid = myAgencyId || localStorage.getItem('eb_active_agencyId') || 'default';
+    const storageKey = 'eb_last_counter_' + aid;
+    const displayEl = document.getElementById('billNoDisplay');
+
+    // ⚡ Instant synchronous cached preview (Zero lag, no "1" flicker)
+    let cachedCount = parseInt(localStorage.getItem(storageKey) || '0', 10);
+    if (cachedCount > 0 && (!billNo || billNo === '1' || billNo === '...')) {
+        billNo = formatBillNo(prefix, cachedCount);
+        if (displayEl) displayEl.innerText = billNo;
+    }
 
     if (!navigator.onLine) {
         const offOrders = getOfflineOrders();
-        billNo = formatBillNo(prefix, 'OFF-' + (offOrders.length + 1));
-        document.getElementById('billNoDisplay').innerText = billNo;
+        const nextOff = offOrders.length + 1;
+        billNo = formatBillNo(prefix, 'OFF-' + nextOff);
+        if (displayEl) displayEl.innerText = billNo;
         return;
     }
 
-    const counterRef = db.collection('counters').doc(myAgencyId + '_stock');
+    const counterRef = db.collection('counters').doc(aid + '_stock');
     try {
         const cDoc = await counterRef.get();
         const next = (cDoc.exists ? (cDoc.data().count || 0) : 0) + 1;
         billNo = formatBillNo(prefix, next);
+        localStorage.setItem(storageKey, String(next));
     } catch (e) {
-        billNo = formatBillNo(prefix, 1);
+        if (cachedCount > 0) {
+            billNo = formatBillNo(prefix, cachedCount);
+        } else {
+            billNo = formatBillNo(prefix, 1);
+        }
     }
-    document.getElementById('billNoDisplay').innerText = billNo;
+    if (displayEl) displayEl.innerText = billNo;
 }
 
 async function getNextLiveBillNo() {
     const prefix = getBillPrefix();
+    const aid = myAgencyId || localStorage.getItem('eb_active_agencyId') || 'default';
+    const storageKey = 'eb_last_counter_' + aid;
 
     if (!navigator.onLine) {
         return formatBillNo(prefix, 'OFF-' + Date.now().toString().slice(-4));
     }
 
-    const counterRef = db.collection('counters').doc(myAgencyId + '_stock');
+    const counterRef = db.collection('counters').doc(aid + '_stock');
     try {
         const result = await db.runTransaction(async (tx) => {
             const cDoc = await tx.get(counterRef);
@@ -934,6 +952,10 @@ async function getNextLiveBillNo() {
             tx.set(counterRef, { count: newCount, type: 'stock', updatedAt: new Date().toISOString() });
             return newCount;
         });
+        // ⚡ Cache next anticipated bill sequence for instant rendering on the next order
+        try {
+            localStorage.setItem(storageKey, String(result + 1));
+        } catch (_) {}
         return formatBillNo(prefix, result);
     } catch (e) {
         return formatBillNo(prefix, Date.now().toString().slice(-6));
@@ -3236,7 +3258,7 @@ if (logoutBtn) {
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#e74c3c',
-            confirmButtonText: 'Yes, Logout',
+            confirmButtonText: 'Yes',
             cancelButtonText: 'Cancel'
         });
         if (res.isConfirmed) {

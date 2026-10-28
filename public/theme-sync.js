@@ -24,6 +24,150 @@ window.EASYBILL_VERSION = '4.5.0';
     }
 })();
 
+// ==========================================================================
+// 🚫 PERMANENTLY SUPPRESS & REMOVE NETLIFY BADGE / DRAWER (Anti-Badge Engine)
+// ==========================================================================
+(function purgeNetlifyBadge() {
+    const styleId = 'nh-suppress-netlify-badge-styles';
+
+    function injectBlockingStyles() {
+        if (document.getElementById(styleId)) return;
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            /* 🚫 Hide all Netlify injected elements, drawer, badge and feedback widget */
+            netlify-drawer-root,
+            #netlify-drawer-root,
+            netlify-drawer,
+            .netlify-drawer,
+            .netlify-badge,
+            [data-netlify-deploy-id],
+            [class*="netlify-drawer"],
+            [class*="netlify-badge"],
+            [class*="NetlifyBadge"],
+            [id*="netlify-drawer"],
+            [id*="netlify-badge"],
+            iframe[src*="netlify"],
+            iframe[id*="netlify"],
+            div[style*="z-index"][style*="bottom:"][style*="right:"]:has(a[href*="netlify.com"]),
+            div[style*="z-index"][style*="bottom"][style*="right"]:has(svg),
+            div[style*="fixed"][style*="bottom"]:has(a[href*="netlify.com"]),
+            div[style*="fixed"][style*="bottom"]:has(a[href*="netlify"]),
+            a[href*="netlify.com"][style*="fixed"],
+            a[href*="netlify.com"][style*="absolute"],
+            a[href*="netlify.com"] {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                width: 0 !important;
+                height: 0 !important;
+                max-width: 0 !important;
+                max-height: 0 !important;
+                overflow: hidden !important;
+                position: absolute !important;
+                top: -99999px !important;
+                left: -99999px !important;
+                z-index: -99999 !important;
+            /* 🔝 SweetAlert2 Popups: ALWAYS IN FRONT OF ALL SIDEBARS & MENUS */
+            .swal2-container {
+                z-index: 99999999 !important;
+            }
+        `;
+        (document.head || document.documentElement).appendChild(style);
+    }
+    injectBlockingStyles();
+
+    function purge() {
+        // 1. Selector-based removal
+        const selectors = [
+            'netlify-drawer-root',
+            '#netlify-drawer-root',
+            'netlify-drawer',
+            '.netlify-drawer',
+            '.netlify-badge',
+            '[data-netlify-deploy-id]',
+            '[class*="netlify-drawer"]',
+            '[class*="netlify-badge"]',
+            '[class*="NetlifyBadge"]',
+            'iframe[src*="netlify"]',
+            'iframe[id*="netlify"]'
+        ];
+        try {
+            document.querySelectorAll(selectors.join(',')).forEach(el => {
+                try {
+                    if (el.shadowRoot) {
+                        try { el.shadowRoot.innerHTML = ''; } catch (_) {}
+                    }
+                    el.remove();
+                } catch (_) {
+                    el.style.setProperty('display', 'none', 'important');
+                }
+            });
+        } catch (_) {}
+
+        // 2. Text and Link-based purge for floating button
+        try {
+            const elements = document.querySelectorAll('div, a, span, button');
+            for (let i = 0; i < elements.length; i++) {
+                const el = elements[i];
+                const text = (el.innerText || el.textContent || '').trim();
+                const isNetlifyText = text === 'Powered by Netlify' || (text.includes('Powered by') && text.includes('Netlify'));
+                const isNetlifyLink = el.tagName === 'A' && el.href && (el.href.includes('netlify.com') || el.href.includes('netlify.app'));
+
+                if (isNetlifyText || (isNetlifyLink && (el.closest('[style*="fixed"], [style*="absolute"]') || (el.className && el.className.includes && el.className.includes('netlify'))))) {
+                    let container = el;
+                    // Traverse up to find the fixed/absolute floating badge container
+                    while (container.parentElement && container.parentElement !== document.body && container.parentElement !== document.documentElement) {
+                        const style = window.getComputedStyle ? window.getComputedStyle(container.parentElement) : null;
+                        if (style && (style.position === 'fixed' || style.position === 'absolute')) {
+                            container = container.parentElement;
+                            break;
+                        }
+                        container = container.parentElement;
+                    }
+                    if (container && container !== document.body && container !== document.documentElement) {
+                        try { container.remove(); } catch (_) { container.style.setProperty('display', 'none', 'important'); }
+                    } else {
+                        try { el.remove(); } catch (_) { el.style.setProperty('display', 'none', 'important'); }
+                    }
+                }
+            }
+        } catch (_) {}
+    }
+
+    // Run purge immediately
+    purge();
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            injectBlockingStyles();
+            purge();
+        });
+    }
+
+    window.addEventListener('load', () => {
+        injectBlockingStyles();
+        purge();
+    });
+
+    // Observer for late edge injections
+    try {
+        const observer = new MutationObserver(() => {
+            purge();
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+    } catch (_) {}
+
+    // Polling safety check (runs frequently during page boot)
+    let count = 0;
+    const interval = setInterval(() => {
+        purge();
+        count++;
+        if (count > 40) clearInterval(interval);
+    }, 250);
+})();
+
 (function initGlobalTheme() {
     // 🛡️ Ensure App Guard & Domain Lock is loaded across all pages
     if (!document.getElementById('eb-app-guard-script') && typeof window.EB_GUARD === 'undefined') {
@@ -439,5 +583,161 @@ window.EASYBILL_VERSION = '4.5.0';
     // Backward-compatible alias
     window.installEasyBillPWA = window.installNHPOSApp;
 })();
+
+// ==========================================================================
+// 🌟 NH POS GLOBAL BRANDED LOADER (Circular Logo + Spinning Wheel + Blurred Backdrop)
+// ==========================================================================
+(function initNHGlobalLoader() {
+    let loaderEl = null;
+    let safetyTimer = null;
+
+    function getOrCreateLoader() {
+        if (loaderEl && document.body.contains(loaderEl)) return loaderEl;
+        loaderEl = document.getElementById('nhGlobalLoader');
+        if (loaderEl) return loaderEl;
+
+        loaderEl = document.createElement('div');
+        loaderEl.id = 'nhGlobalLoader';
+        loaderEl.setAttribute('role', 'status');
+        loaderEl.setAttribute('aria-live', 'polite');
+        loaderEl.style.cssText = 'position:fixed; inset:0; width:100vw; height:100vh; background:rgba(10, 15, 29, 0.78); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); z-index:99999999; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease; user-select:none; pointer-events:none;';
+
+        loaderEl.innerHTML = `
+            <style>
+                @keyframes nhWheelSpin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes nhLogoPulse {
+                    0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.15); }
+                    50% { transform: scale(1.03); box-shadow: 0 0 30px rgba(16, 185, 129, 0.65), 0 0 55px rgba(16, 185, 129, 0.3); }
+                }
+                .nh-loader-glass-card {
+                    background: rgba(23, 32, 51, 0.90);
+                    border: 1.5px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 24px;
+                    padding: 32px 36px 28px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    max-width: 90vw;
+                    width: 310px;
+                    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.65), 0 0 35px rgba(16, 185, 129, 0.18);
+                    transform: scale(0.94);
+                    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                #nhGlobalLoader.nh-active .nh-loader-glass-card {
+                    transform: scale(1);
+                }
+                .nh-round-logo-frame {
+                    width: 86px;
+                    height: 86px;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    border: 3.5px solid #10b981;
+                    animation: nhLogoPulse 2.8s infinite ease-in-out;
+                    background: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 16px;
+                    flex-shrink: 0;
+                }
+                .nh-round-logo-frame img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    border-radius: 50%;
+                    display: block;
+                }
+                .nh-spinning-wheel {
+                    width: 38px;
+                    height: 38px;
+                    border: 3.5px solid rgba(255, 255, 255, 0.16);
+                    border-top-color: #10b981;
+                    border-right-color: #34d399;
+                    border-radius: 50%;
+                    animation: nhWheelSpin 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+                    margin-bottom: 14px;
+                    flex-shrink: 0;
+                }
+            </style>
+            <div class="nh-loader-glass-card">
+                <!-- 🛡️ Circular Round NH POS Logo -->
+                <div class="nh-round-logo-frame">
+                    <img src="icon-192.png" alt="NH POS" onerror="this.src='apple-touch-icon.png'">
+                </div>
+                <!-- 🔄 Animated Gool Gool Spinning Wheel -->
+                <div class="nh-spinning-wheel"></div>
+                <!-- 📝 Loading Text -->
+                <div id="nhLoaderHeading" style="font-family:'Segoe UI',Roboto,-apple-system,sans-serif; font-size:16px; font-weight:800; color:#ffffff; letter-spacing:0.3px; line-height:1.3;">
+                    System is Loading...
+                </div>
+                <div id="nhLoaderSubheading" style="font-family:'Segoe UI',Roboto,-apple-system,sans-serif; font-size:12px; font-weight:600; color:#6ee7b7; margin-top:5px; letter-spacing:0.2px;">
+                    براہِ کرم انتظار فرمائیں (Please wait)
+                </div>
+            </div>
+        `;
+
+        if (document.body) {
+            document.body.appendChild(loaderEl);
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (document.body && !document.getElementById('nhGlobalLoader')) {
+                    document.body.appendChild(loaderEl);
+                }
+            });
+        }
+        return loaderEl;
+    }
+
+    window.showNHLoader = function(title, subtitle) {
+        const el = getOrCreateLoader();
+        if (!el) return;
+        const h = el.querySelector('#nhLoaderHeading');
+        const s = el.querySelector('#nhLoaderSubheading');
+        if (h && title) h.innerText = title;
+        if (s && subtitle) s.innerText = subtitle;
+        el.classList.add('nh-active');
+        el.style.opacity = '1';
+        el.style.visibility = 'visible';
+        el.style.pointerEvents = 'all';
+
+        // Auto-dismiss safety timer (12s max) to guarantee UI is never frozen
+        if (safetyTimer) clearTimeout(safetyTimer);
+        safetyTimer = setTimeout(() => {
+            window.hideNHLoader();
+        }, 12000);
+    };
+
+    window.hideNHLoader = function() {
+        if (safetyTimer) clearTimeout(safetyTimer);
+        const el = document.getElementById('nhGlobalLoader');
+        if (el) {
+            el.classList.remove('nh-active');
+            el.style.opacity = '0';
+            el.style.visibility = 'hidden';
+            el.style.pointerEvents = 'none';
+        }
+        // Also hide legacy overlays if present
+        const oldDashOverlay = document.getElementById('loadingOverlay');
+        if (oldDashOverlay) {
+            oldDashOverlay.style.opacity = '0';
+            setTimeout(() => { oldDashOverlay.style.display = 'none'; }, 200);
+        }
+    };
+
+    // Auto-hide when entire window load event fires
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            // Only hide if page has not requested a persistent loader
+            if (!window.__NH_KEEP_LOADER) {
+                window.hideNHLoader();
+            }
+        }, 300);
+    });
+})();
+
 
 

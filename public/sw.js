@@ -6,26 +6,67 @@
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'nhpos-pwa-v5.0.0-turbo';
+const CACHE_NAME = 'nhpos-pwa-v5.1.0-instant';
 
-// Core essential App Shell only (pre-cache in < 0.5s without bandwidth flood)
+// Complete Offline & Instant App Shell (All modules precached for 0ms transitions)
 const RELATIVE_SHELL_ASSETS = [
   '',
   'manifest.json',
-  'nh-pos-splash.jpg',
   'icon-192.png',
   'icon-512.png',
   'icon-1024.png',
   'icon-maskable-512.png',
   'apple-touch-icon.png',
+  'favicon.ico',
+  'favicon.png',
+  'landing.html',
   'auth.html',
-  'dashboard.html',
   'auth.css',
+  'auth.js',
+  'dashboard.html',
+  'bills.html',
+  'bills.js',
+  'bills.css',
+  'bills-db.js',
+  'bill-templates.js',
+  'stock.html',
+  'stock.js',
+  'stock.css',
+  'customers.html',
+  'customers.js',
+  'customers.css',
+  'reports.html',
+  'reports.js',
+  'reports.css',
+  'expenses.html',
+  'expenses.js',
+  'profit.html',
+  'profit.js',
+  'delivery-returns.html',
+  'delivery-returns.js',
+  'delivery-returns.css',
+  'booker-orders.html',
+  'booker-orders.js',
+  'multi-agency.html',
+  'multi-agency.js',
+  'settings.html',
+  'settings.js',
+  'backup.html',
+  'backup.js',
+  'alerts.html',
+  'alerts.js',
+  'profile.html',
+  'admin.html',
+  'owner.html',
   'panels.css',
   'dark-theme.css',
   'theme-sync.js',
   'saas-modules.js',
   'sidebar.js',
+  'sync-engine.js',
+  'print-settings.js',
+  'business-categories.js',
+  'app-guard.js',
   'image-optimizer.js'
 ];
 
@@ -89,27 +130,35 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // A. Navigation (HTML Pages): Fast Network with quick Cache fallback
+  // A. Navigation (HTML Pages): Instant 0ms Cache-First with Stale-While-Revalidate
   if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       (async () => {
-        try {
-          // Fast network fetch with 2s timeout
-          const networkPromise = fetch(event.request);
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Network timeout')), 2000)
-          );
+        // 🚀 Instant load from cache (0ms lag)
+        const cached = await caches.match(event.request);
+        if (cached) {
+          // Revalidate in background without blocking UI
+          fetch(event.request)
+            .then(async (fresh) => {
+              if (fresh && fresh.status === 200) {
+                const c = await caches.open(CACHE_NAME);
+                await c.put(event.request, fresh.clone());
+              }
+            })
+            .catch(() => {});
+          return cached;
+        }
 
-          const response = await Promise.race([networkPromise, timeoutPromise]);
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        // Not in cache: fetch from network and store in cache
+        try {
+          const networkResponse = await fetch(event.request);
+          if (networkResponse && networkResponse.status === 200) {
+            const c = await caches.open(CACHE_NAME);
+            c.put(event.request, networkResponse.clone());
           }
-          return response;
+          return networkResponse;
         } catch (_) {
-          // Network slow or offline: Serve cached HTML immediately
-          const cached = await caches.match(event.request);
-          if (cached) return cached;
+          // Network offline / failure fallback
           const scopeUrl = self.registration.scope;
           const fallbackDash = new URL('dashboard.html', scopeUrl).toString();
           const fallbackAuth = new URL('auth.html', scopeUrl).toString();

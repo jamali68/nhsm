@@ -35,8 +35,11 @@
 <div class="auth-wrapper" id="authWrapper" dir="ltr">
     <div class="auth-card">
         
-        <!-- 🌐 TOP BAR: LANGUAGE TOGGLE -->
-        <div class="auth-top-bar no-print">
+        <!-- 🌐 TOP BAR: LANDING LINK & LANGUAGE TOGGLE -->
+        <div class="auth-top-bar no-print" style="display:flex; justify-content:space-between; align-items:center;">
+            <a href="landing.html" style="text-decoration:none; color:#15803d; font-size:12px; font-weight:700; display:flex; align-items:center; gap:5px; background:rgba(21,128,61,0.08); padding:5px 10px; border-radius:8px; border:1px solid rgba(21,128,61,0.2);">
+                <i class="fas fa-home"></i> <span>Packages &amp; Features</span>
+            </a>
             <div class="lang-toggle-pill" role="group" aria-label="Language Selector">
                 <button type="button" id="langEn" class="lang-btn active" title="Switch to English">
                     <span class="lang-flag">🇬🇧</span> English

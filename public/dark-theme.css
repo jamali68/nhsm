@@ -490,3 +490,44 @@ html[data-lang="en-ur"] .ur-block {
 html[data-lang="en-ur"] .ur-only {
     display: inline-block !important;
 }
+
+/* 🚫 Permanently Hide Netlify Drawer, Badges, and Feedback Overlays */
+netlify-drawer-root,
+#netlify-drawer-root,
+netlify-drawer,
+.netlify-drawer,
+.netlify-badge,
+[data-netlify-deploy-id],
+[class*="netlify-drawer"],
+[class*="netlify-badge"],
+[class*="NetlifyBadge"],
+[id*="netlify-drawer"],
+[id*="netlify-badge"],
+iframe[src*="netlify"],
+iframe[id*="netlify"],
+div[style*="z-index"][style*="bottom:"][style*="right:"]:has(a[href*="netlify.com"]),
+div[style*="z-index"][style*="bottom"][style*="right"]:has(svg),
+div[style*="fixed"][style*="bottom"]:has(a[href*="netlify.com"]),
+div[style*="fixed"][style*="bottom"]:has(a[href*="netlify"]),
+a[href*="netlify.com"][style*="fixed"],
+a[href*="netlify.com"][style*="absolute"],
+a[href*="netlify.com"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    max-width: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    top: -99999px !important;
+    left: -99999px !important;
+    z-index: -99999 !important;
+}
+
+/* 🔝 Ensure SweetAlert2 Modal is ALWAYS in front of all sidebars & overlays */
+.swal2-container {
+    z-index: 99999999 !important;
+}

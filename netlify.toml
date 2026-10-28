@@ -4,16 +4,32 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  NETLIFY_ENABLE_DRAWER = "false"
+  DRAWER_DISABLE = "true"
+
+[context.production.environment]
+  NETLIFY_ENABLE_DRAWER = "false"
+  DRAWER_DISABLE = "true"
+
+[context.deploy-preview.environment]
+  NETLIFY_ENABLE_DRAWER = "false"
+  DRAWER_DISABLE = "true"
+
+[context.branch-deploy.environment]
+  NETLIFY_ENABLE_DRAWER = "false"
+  DRAWER_DISABLE = "true"
+
 # 🛡️ Layer 6: Route API calls to Serverless Netlify Functions
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Instant Edge redirect directly to login portal
+# Instant Edge redirect directly to SaaS landing page
 [[redirects]]
   from = "/"
-  to = "/auth.html"
+  to = "/landing.html"
   status = 301
   force = true
 

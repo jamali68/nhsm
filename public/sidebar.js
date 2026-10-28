@@ -93,14 +93,21 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
         document.body.setAttribute('data-theme', savedTheme);
     }
 
-    // Global toggle function
+    // Global toggle & close functions
     function toggleSidebar() {
         const sidebar = document.getElementById('ebSidebar');
         const overlay = document.getElementById('ebSidebarOverlay');
         if (sidebar) sidebar.classList.toggle('open');
         if (overlay) overlay.classList.toggle('show');
     }
+    function closeSidebar() {
+        const sidebar = document.getElementById('ebSidebar');
+        const overlay = document.getElementById('ebSidebarOverlay');
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('show');
+    }
     window.toggleSidebar = toggleSidebar;
+    window.closeSidebar = closeSidebar;
 
     // 1️⃣ CONFIG: Menu items
     const MENU = [
@@ -173,6 +180,11 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
     // 2️⃣ CSS INJECT
     const style = document.createElement('style');
     style.textContent = `
+        /* ========== SweetAlert2 Modal: ALWAYS IN FRONT OF SIDEBAR ========== */
+        .swal2-container {
+            z-index: 99999999 !important;
+        }
+
         /* ========== SIDEBAR STYLES ========== */
         .eb-sidebar {
             position: fixed;
@@ -1162,6 +1174,39 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
         sidebar.innerHTML = menuHtml;
         document.body.appendChild(sidebar);
 
+        // 🌟 Trigger Branded NH POS Loader Instantly on Any Module Selection
+        try {
+            sidebar.querySelectorAll('a.eb-menu-item:not(.locked)').forEach(itemLink => {
+                itemLink.addEventListener('click', () => {
+                    const href = itemLink.getAttribute('href');
+                    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+                    const currentClean = (window.location.pathname.split('/').pop() || 'dashboard.html').split('?')[0];
+                    const targetClean = href.split('?')[0];
+                    if (targetClean === currentClean) return;
+                    const nameEl = itemLink.querySelector('.eb-item-en');
+                    const modTitle = nameEl ? nameEl.innerText.trim() : 'Module';
+                    if (window.showNHLoader) {
+                        window.showNHLoader('Loading ' + modTitle + '...', 'براہِ کرم انتظار فرمائیں (Please wait)');
+                    }
+                });
+            });
+
+            // Global navigation listener for buttons and cards across the system
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a[href$=".html"]');
+                if (!link) return;
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+                const currentClean = (window.location.pathname.split('/').pop() || 'dashboard.html').split('?')[0];
+                const targetClean = href.split('?')[0];
+                if (targetClean === currentClean) return;
+                if (link.closest('#ebSidebar') || link.getAttribute('data-locked') === 'true') return;
+                if (window.showNHLoader) {
+                    window.showNHLoader('Loading ' + (link.innerText ? link.innerText.trim().slice(0, 24) : 'Module') + '...', 'براہِ کرم انتظار فرمائیں (Please wait)');
+                }
+            }, true);
+        } catch (_) {}
+
         // 🔄 Sync sidebar version with manifest.json live
         if (typeof window !== 'undefined' && window.fetch) {
             fetch('manifest.json?t=' + Math.floor(Date.now() / 60000), { cache: 'default' })
@@ -1440,21 +1485,40 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
             });
         }
 
-        // Logout event
+        // Logout event (front-layer popup with Yes & Cancel)
         const logoutLink = document.getElementById('ebSidebarLogout');
         if (logoutLink) {
             logoutLink.addEventListener('click', async (e) => {
                 e.preventDefault();
+                closeSidebar();
                 const result = await Swal.fire({
                     title: 'Logout?',
+                    text: 'Are you sure you want to logout? (کیا آپ لاگ آؤٹ کرنا چاہتے ہیں؟)',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#ef4444',
-                    confirmButtonText: 'Haan',
-                    cancelButtonText: 'Cancel'
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes',
+                    cancelButtonText: 'Cancel',
+                    focusCancel: true
                 });
-                if (result.isConfirmed && typeof firebase !== 'undefined') {
-                    await firebase.auth().signOut();
+                if (result.isConfirmed) {
+                    try {
+                        if (typeof firebase !== 'undefined' && firebase.auth) {
+                            await firebase.auth().signOut();
+                        }
+                    } catch (_) {}
+                    try {
+                        if (typeof auth !== 'undefined' && auth.signOut) {
+                            await auth.signOut();
+                        }
+                    } catch (_) {}
+                    try {
+                        sessionStorage.clear();
+                        localStorage.removeItem('eb_user_profile');
+                        localStorage.removeItem('eb_user_role');
+                        localStorage.removeItem('eb_active_session');
+                    } catch (_) {}
                     window.location.href = 'auth.html';
                 }
             });

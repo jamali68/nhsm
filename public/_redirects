@@ -1,4 +1,4 @@
 # Netlify Redirects for Easy Bill Generator
 /api/*       /.netlify/functions/:splat    200
-/            /auth.html    301!
+/            /landing.html    301!
 /public/*    /:splat       301

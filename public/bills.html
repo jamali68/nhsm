@@ -339,9 +339,31 @@
                     <i class="fas fa-circle" style="font-size:5px; color:#16a34a;"></i> <span>Online</span>
                 </span>
                 <!-- 🏷️ Chota Sa Bill No Badge -->
-                <span style="font-size:10.5px; font-weight:800; background:#f1f5f9; color:#475569; padding:1.5px 6px; border-radius:5px; border:1px solid #e2e8f0; white-space:nowrap; flex-shrink:0;">
-                    Inv #<span id="billNoDisplay">1</span>
+                <span style="font-size:10.5px; font-weight:800; background:#f1f5f9; color:#0f172a; padding:1.5px 7px; border-radius:5px; border:1px solid #cbd5e1; white-space:nowrap; flex-shrink:0;">
+                    Inv #<span id="billNoDisplay" style="color:#10b981; font-weight:800;">...</span>
                 </span>
+                <script>
+                    (function initInstantBillBadge() {
+                        try {
+                            var aid = localStorage.getItem('eb_active_agencyId') || 'default';
+                            var lastNum = localStorage.getItem('eb_last_counter_' + aid);
+                            var prefix = localStorage.getItem('eb_bill_prefix_' + aid);
+                            if (prefix === null || prefix === undefined) {
+                                try {
+                                    var ag = JSON.parse(localStorage.getItem('eb_user_agency') || '{}');
+                                    prefix = ag.billPrefix || '';
+                                } catch(_) { prefix = ''; }
+                            }
+                            if (lastNum) {
+                                var el = document.getElementById('billNoDisplay');
+                                if (el) {
+                                    var p = (prefix || '').trim();
+                                    el.textContent = p ? (p.endsWith('-') || p.endsWith('/') || p.endsWith(' ') ? p + lastNum : p + '-' + lastNum) : String(lastNum);
+                                }
+                            }
+                        } catch(_) {}
+                    })();
+                </script>
                 <span id="billDateDisplay" style="display:none;"></span>
             </div>
         </div>

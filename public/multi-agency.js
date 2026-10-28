@@ -592,7 +592,8 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#e74c3c',
-        confirmButtonText: 'Yes, Logout'
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'Cancel'
     });
     if (res.isConfirmed) {
         await auth.signOut();

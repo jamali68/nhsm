@@ -793,7 +793,7 @@ document.getElementById('btnPrintReport').addEventListener('click', () => {
     const rLogout = document.getElementById('logoutBtn');
     if (rLogout) {
         rLogout.addEventListener('click', async () => {
-            const res = await Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, Logout' });
+            const res = await Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes', cancelButtonText: 'Cancel' });
             if (res.isConfirmed) {
                 await auth.signOut();
                 window.location.href = 'auth.html';
