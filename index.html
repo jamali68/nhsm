@@ -9,14 +9,14 @@
     <meta property="og:description" content="Multi-tenant POS and Billing system with Customer Khata Ledger, Stock Inventory, Invoice Templates, and Payment History tracking." />
     <meta property="og:type" content="website" />
     <!-- 📱 Progressive Web App (PWA) Tags -->
-    <link rel="manifest" href="manifest.json?v=5.0.0" />
+    <link rel="manifest" href="manifest.json?v=5.2.0" />
     <meta name="theme-color" content="#0E0F09" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NH POS" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=5.0.0" />
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5.0.0" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=5.0.0" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=5.2.0" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5.2.0" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=5.2.0" />
     <script>
       // 📱 Register Service Worker immediately in top-level head
       if ('serviceWorker' in navigator) {
@@ -66,7 +66,17 @@
           hasActiveSession = Boolean(localStorage.getItem('eb_user_role') || sessionStorage.getItem('eb_user_profile'));
         } catch (_) {}
 
-        var targetFile = hasActiveSession ? 'dashboard.html' : 'landing.html';
+        // Check if opening inside installed PWA (standalone mode)
+        var isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.navigator.standalone === true ||
+                    document.referrer.includes('android-app://') ||
+                    query.includes('source=pwa');
+
+        // 📱 Installed PWA -> Login/Signup (or Dashboard if logged in)
+        // 🌐 Web Browser -> Landing Page (or Dashboard if logged in)
+        var targetFile = isPWA
+          ? (hasActiveSession ? 'dashboard.html' : 'auth.html')
+          : (hasActiveSession ? 'dashboard.html' : 'landing.html');
 
         // 🌐 GitHub Pages Environment (e.g. https://jamali68.github.io/nhsm/)
         if (isGitHubPages) {

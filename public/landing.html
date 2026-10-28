@@ -10,13 +10,13 @@
     <meta property="og:type" content="website">
 
     <!-- 📱 PWA Meta -->
-    <link rel="manifest" href="manifest.json?v=5.1.0">
-    <meta name="theme-color" content="#0E0F09">
+    <link rel="manifest" href="manifest.json?v=5.2.0">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=5.1.0">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5.1.0">
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=5.1.0">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=5.2.0">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5.2.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=5.2.0">
 
     <!-- Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,20 +27,41 @@
     <!-- Anti-Badge and Theme Sync -->
     <script src="theme-sync.js"></script>
 
+    <script>
+        // 📱 PWA Standalone Detection: When app is installed, bypass landing page directly to Login / Dashboard
+        (function checkInstalledPWA() {
+            var isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                        window.navigator.standalone === true ||
+                        document.referrer.includes('android-app://') ||
+                        window.location.search.includes('source=pwa');
+            if (isPWA) {
+                var hasSession = false;
+                try {
+                    hasSession = Boolean(localStorage.getItem('eb_user_role') || sessionStorage.getItem('eb_user_profile'));
+                } catch (_) {}
+                window.location.replace(hasSession ? 'dashboard.html' : 'auth.html?source=pwa');
+            }
+        })();
+    </script>
+
     <style>
         :root {
-            --bg-dark: #0a0f1d;
-            --bg-card: #111827;
-            --bg-card-hover: #1e293b;
-            --primary: #10b981;
-            --primary-hover: #059669;
-            --primary-light: rgba(16, 185, 129, 0.12);
-            --amber: #f59e0b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-section-alt: #f1f5f9;
+            --primary: #059669;
+            --primary-hover: #047857;
+            --primary-light: #ecfdf5;
+            --primary-border: #a7f3d0;
+            --amber: #d97706;
+            --text-main: #0f172a;
+            --text-muted: #475569;
             --text-sub: #64748b;
-            --border: rgba(255, 255, 255, 0.08);
-            --border-highlight: rgba(16, 185, 129, 0.35);
+            --border: #e2e8f0;
+            --border-highlight: #10b981;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 18px -2px rgba(15, 23, 42, 0.07);
+            --shadow-lg: 0 20px 45px -15px rgba(15, 23, 42, 0.1);
         }
 
         * {
@@ -52,7 +73,7 @@
 
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-dark);
+            background-color: var(--bg-page);
             color: var(--text-main);
             line-height: 1.6;
             overflow-x: hidden;
@@ -65,12 +86,12 @@
             line-height: 1.9;
         }
 
-        /* Header / Navigation */
+        /* 🔝 Header / Navigation (Clean Crisp Light) */
         .landing-nav {
             position: sticky;
             top: 0;
             z-index: 999;
-            background: rgba(10, 15, 29, 0.88);
+            background: rgba(255, 255, 255, 0.94);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border);
@@ -97,28 +118,29 @@
             border-radius: 12px;
             border: 2px solid var(--primary);
             object-fit: cover;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
             background: #ffffff;
         }
         .brand-text h1 {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 800;
             letter-spacing: -0.3px;
             display: flex;
             align-items: center;
             gap: 6px;
+            color: var(--text-main);
         }
         .brand-text p {
             font-size: 11px;
             color: var(--primary);
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
         }
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 26px;
         }
         .nav-links a {
             color: var(--text-muted);
@@ -128,7 +150,7 @@
             transition: color 0.2s;
         }
         .nav-links a:hover {
-            color: #ffffff;
+            color: var(--primary);
         }
         .nav-actions {
             display: flex;
@@ -136,7 +158,7 @@
             gap: 10px;
         }
         .lang-switch-btn {
-            background: rgba(255, 255, 255, 0.06);
+            background: #ffffff;
             border: 1px solid var(--border);
             color: var(--text-main);
             padding: 7px 12px;
@@ -147,15 +169,17 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            box-shadow: var(--shadow-sm);
             transition: all 0.2s;
         }
         .lang-switch-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
+            background: #f1f5f9;
+            border-color: #cbd5e1;
         }
         .btn-outline {
-            background: transparent;
+            background: #ffffff;
             color: var(--text-main);
-            border: 1px solid var(--border);
+            border: 1px solid #cbd5e1;
             padding: 9px 18px;
             border-radius: 10px;
             font-size: 13.5px;
@@ -164,14 +188,16 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            box-shadow: var(--shadow-sm);
             transition: all 0.2s;
         }
         .btn-outline:hover {
-            border-color: rgba(255, 255, 255, 0.25);
-            background: rgba(255, 255, 255, 0.05);
+            border-color: #94a3b8;
+            background: #f8fafc;
+            color: var(--primary);
         }
         .btn-primary {
-            background: #10b981;
+            background: var(--primary);
             color: #ffffff;
             border: none;
             padding: 10px 22px;
@@ -182,17 +208,17 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
             transition: all 0.2s;
             cursor: pointer;
         }
         .btn-primary:hover {
-            background: #059669;
+            background: var(--primary-hover);
             transform: translateY(-1px);
-            box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45);
+            box-shadow: 0 6px 18px rgba(5, 150, 105, 0.45);
         }
 
-        /* Hero Section */
+        /* 🚀 Hero Section (Clean Light Presentation) */
         .hero-section {
             padding: 70px 20px 60px;
             max-width: 1240px;
@@ -208,16 +234,20 @@
             gap: 8px;
             font-size: 12.5px;
             font-weight: 700;
-            color: #34d399;
-            margin-bottom: 20px;
+            color: var(--primary);
+            margin-bottom: 18px;
             letter-spacing: 0.3px;
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            padding: 5px 12px;
+            border-radius: 20px;
         }
         .hero-badge-wrap .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
+            background: var(--primary);
+            box-shadow: 0 0 8px rgba(5, 150, 105, 0.6);
         }
         .hero-title {
             font-size: 44px;
@@ -225,14 +255,15 @@
             line-height: 1.18;
             letter-spacing: -0.8px;
             margin-bottom: 20px;
+            color: var(--text-main);
         }
         .hero-title .gradient-txt {
-            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .hero-desc {
-            font-size: 17px;
+            font-size: 16.5px;
             color: var(--text-muted);
             line-height: 1.65;
             margin-bottom: 32px;
@@ -263,18 +294,19 @@
         }
         .trust-item i {
             color: var(--primary);
+            font-size: 15px;
         }
 
-        /* Hero Interactive Card Mockup */
+        /* 📱 Hero Interactive Card Mockup (Light Slate Glass) */
         .hero-visual {
             position: relative;
         }
         .hero-card-preview {
-            background: rgba(17, 24, 39, 0.95);
-            border: 1px solid var(--border-highlight);
-            border-radius: 20px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 22px;
             padding: 24px;
-            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(16, 185, 129, 0.15);
+            box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.12), 0 0 25px rgba(5, 150, 105, 0.08);
         }
         .preview-header {
             display: flex;
@@ -291,7 +323,7 @@
             margin-bottom: 20px;
         }
         .stat-card {
-            background: rgba(255, 255, 255, 0.03);
+            background: #f8fafc;
             border: 1px solid var(--border);
             border-radius: 14px;
             padding: 14px;
@@ -305,25 +337,26 @@
             margin-bottom: 6px;
         }
         .stat-card-val {
-            font-size: 20px;
+            font-size: 21px;
             font-weight: 800;
-            color: #ffffff;
+            color: var(--text-main);
         }
         .stat-card-sub {
             font-size: 11px;
-            color: #34d399;
+            color: var(--primary);
             margin-top: 3px;
             font-weight: 600;
         }
         .sample-bill-strip {
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px dashed rgba(16, 185, 129, 0.3);
+            background: #ecfdf5;
+            border: 1px dashed rgba(5, 150, 105, 0.4);
             border-radius: 12px;
             padding: 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             font-size: 13px;
+            color: #064e3b;
         }
 
         /* Section Layouts */
@@ -351,6 +384,7 @@
             letter-spacing: -0.6px;
             margin-bottom: 14px;
             line-height: 1.25;
+            color: var(--text-main);
         }
         .section-desc {
             font-size: 16px;
@@ -358,24 +392,25 @@
             line-height: 1.6;
         }
 
-        /* Feature Cards Grid */
+        /* 🛒 Feature Cards Grid */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 24px;
         }
         .feature-card {
-            background: var(--bg-card);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 18px;
             padding: 28px;
+            box-shadow: var(--shadow-sm);
             transition: all 0.25s ease;
             position: relative;
         }
         .feature-card:hover {
-            border-color: var(--border-highlight);
+            border-color: var(--primary);
             transform: translateY(-3px);
-            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5), 0 0 25px rgba(16, 185, 129, 0.1);
+            box-shadow: 0 15px 35px -10px rgba(5, 150, 105, 0.15);
         }
         .feat-icon-box {
             width: 52px;
@@ -388,12 +423,14 @@
             justify-content: center;
             font-size: 22px;
             margin-bottom: 20px;
+            border: 1px solid var(--primary-border);
         }
         .feature-card h3 {
             font-size: 19px;
             font-weight: 700;
             margin-bottom: 10px;
             letter-spacing: -0.3px;
+            color: var(--text-main);
         }
         .feature-card p {
             font-size: 14px;
@@ -401,9 +438,9 @@
             line-height: 1.6;
         }
 
-        /* Pricing Section */
+        /* 💎 Packages & Pricing Section (Light Themed) */
         .pricing-section {
-            background: rgba(255, 255, 255, 0.015);
+            background: var(--bg-section-alt);
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
         }
@@ -415,7 +452,7 @@
             margin-bottom: 40px;
         }
         .billing-switch {
-            background: rgba(255, 255, 255, 0.08);
+            background: #e2e8f0;
             border-radius: 10px;
             padding: 4px;
             display: flex;
@@ -433,15 +470,19 @@
             transition: all 0.2s;
         }
         .billing-btn.active {
-            background: #10b981;
+            background: var(--primary);
             color: #ffffff;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35);
         }
         .discount-tag {
             font-size: 11px;
-            color: #f59e0b;
+            color: #b45309;
             font-weight: 800;
             letter-spacing: 0.3px;
+            background: #fef3c7;
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid #fde68a;
         }
 
         .pricing-grid {
@@ -451,19 +492,21 @@
             align-items: stretch;
         }
         .pricing-card {
-            background: var(--bg-card);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 22px;
             padding: 34px 28px;
             display: flex;
             flex-direction: column;
             position: relative;
+            box-shadow: var(--shadow-sm);
             transition: all 0.25s ease;
         }
         .pricing-card.featured {
-            border-color: #10b981;
-            background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(17, 24, 39, 1) 40%);
-            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 35px rgba(16, 185, 129, 0.2);
+            border-color: var(--primary);
+            border-width: 2px;
+            background: #ffffff;
+            box-shadow: 0 20px 45px -10px rgba(5, 150, 105, 0.22);
             transform: scale(1.03);
         }
         .popular-badge {
@@ -471,7 +514,7 @@
             top: -13px;
             left: 50%;
             transform: translateX(-50%);
-            background: #10b981;
+            background: var(--primary);
             color: #ffffff;
             font-size: 11px;
             font-weight: 800;
@@ -479,6 +522,7 @@
             border-radius: 20px;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3);
         }
         .plan-header {
             margin-bottom: 24px;
@@ -486,9 +530,10 @@
             border-bottom: 1px solid var(--border);
         }
         .plan-name {
-            font-size: 20px;
+            font-size: 21px;
             font-weight: 800;
             margin-bottom: 6px;
+            color: var(--text-main);
         }
         .plan-tagline {
             font-size: 13px;
@@ -510,7 +555,7 @@
             font-size: 42px;
             font-weight: 800;
             letter-spacing: -1px;
-            color: #ffffff;
+            color: var(--text-main);
         }
         .plan-period {
             font-size: 13px;
@@ -523,7 +568,7 @@
         }
         .plan-features-list li {
             font-size: 13.5px;
-            color: #e2e8f0;
+            color: #334155;
             display: flex;
             align-items: flex-start;
             gap: 10px;
@@ -537,30 +582,31 @@
             flex-shrink: 0;
         }
         .plan-features-list li.disabled {
-            color: var(--text-sub);
+            color: #94a3b8;
             text-decoration: line-through;
         }
         .plan-features-list li.disabled i {
-            color: #475569;
+            color: #cbd5e1;
         }
 
-        /* FAQ Section */
+        /* ❓ FAQ Section */
         .faq-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
         }
         .faq-item {
-            background: var(--bg-card);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 14px;
             padding: 22px;
+            box-shadow: var(--shadow-sm);
         }
         .faq-item h4 {
             font-size: 16px;
             font-weight: 700;
             margin-bottom: 8px;
-            color: #ffffff;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -571,10 +617,10 @@
             line-height: 1.6;
         }
 
-        /* CTA Banner */
+        /* 🌟 CTA Banner (Emerald Authority) */
         .cta-banner {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.3) 100%);
-            border: 1.5px solid var(--border-highlight);
+            background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%);
+            border: 1px solid #10b981;
             border-radius: 24px;
             padding: 50px 36px;
             text-align: center;
@@ -582,25 +628,37 @@
             max-width: 1080px;
             position: relative;
             overflow: hidden;
+            color: #ffffff;
+            box-shadow: 0 20px 45px -10px rgba(5, 150, 105, 0.35);
         }
         .cta-banner h2 {
             font-size: 36px;
             font-weight: 800;
             letter-spacing: -0.5px;
             margin-bottom: 14px;
+            color: #ffffff;
         }
         .cta-banner p {
             font-size: 16px;
-            color: #cbd5e1;
+            color: #d1fae5;
             max-width: 620px;
             margin: 0 auto 30px;
         }
+        .cta-banner .btn-outline {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .cta-banner .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
 
-        /* Footer */
+        /* 🦶 Footer (Clean Light Slate) */
         .landing-footer {
             border-top: 1px solid var(--border);
             padding: 40px 20px 30px;
-            background: #070a14;
+            background: #ffffff;
         }
         .footer-inner {
             max-width: 1240px;
@@ -623,35 +681,39 @@
         .footer-links a {
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 13.5px;
+            font-weight: 600;
             transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .footer-links a:hover {
-            color: #ffffff;
+            color: var(--primary);
         }
 
-        /* WhatsApp Floating Help Button */
+        /* 🟢 Floating WhatsApp Helpline (Real number 03346800959) */
         .wa-float-btn {
             position: fixed;
             bottom: 24px;
             left: 24px;
             background: #25d366;
             color: #ffffff;
-            width: 52px;
-            height: 52px;
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
-            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+            font-size: 28px;
+            box-shadow: 0 6px 22px rgba(37, 211, 102, 0.45);
             text-decoration: none;
             z-index: 9999;
             transition: all 0.25s ease;
         }
         .wa-float-btn:hover {
             transform: scale(1.08);
-            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.55);
+            box-shadow: 0 8px 26px rgba(37, 211, 102, 0.6);
         }
 
         /* Responsive Breakpoints */
@@ -704,6 +766,7 @@
                 <a href="#features" data-en="Features" data-ur="اہم خوبیاں">Features</a>
                 <a href="#pricing" data-en="Packages & Pricing" data-ur="پیکجز اور قیمتیں">Packages</a>
                 <a href="#faq" data-en="FAQ" data-ur="عام سوالات">FAQ</a>
+                <a href="https://wa.me/923346800959" target="_blank" rel="noopener"><i class="fab fa-whatsapp" style="color:#25d366;"></i> 0334-6800959</a>
                 <a href="auth.html" data-en="Login" data-ur="لاگ ان">Login</a>
             </nav>
 
@@ -711,11 +774,11 @@
                 <button type="button" id="langToggleBtn" class="lang-switch-btn" onclick="toggleLanguage()">
                     <span>🇵🇰</span> <span id="langBtnText">اردو</span>
                 </button>
-                <a href="auth.html" class="btn-outline" data-en="Login" data-ur="لاگ ان">
+                <a href="auth.html?mode=login" class="btn-outline" data-en="Login" data-ur="لاگ ان">
                     <i class="fas fa-sign-in-alt"></i> <span>Login</span>
                 </a>
-                <a href="auth.html?signup=true" class="btn-primary" data-en="Start Free" data-ur="مفت شروع کریں">
-                    <i class="fas fa-bolt"></i> <span>Start Free</span>
+                <a href="auth.html?mode=signup" class="btn-primary" data-en="Sign Up" data-ur="سائن اپ">
+                    <i class="fas fa-user-plus"></i> <span>Sign Up</span>
                 </a>
             </div>
         </div>
@@ -739,10 +802,13 @@
             </p>
 
             <div class="hero-ctas">
-                <a href="auth.html?signup=true" class="btn-primary" style="padding: 13px 28px; font-size: 15px;" data-en="Create Free Account" data-ur="مفت اکاؤنٹ بنائیں">
-                    <i class="fas fa-rocket"></i> <span>Create Free Account</span>
+                <a href="auth.html?mode=signup" class="btn-primary" style="padding: 13px 26px; font-size: 15px;" data-en="Sign Up Free" data-ur="مفت سائن اپ کریں">
+                    <i class="fas fa-user-plus"></i> <span>Sign Up Free</span>
                 </a>
-                <button type="button" class="btn-outline" onclick="window.installNHPOSApp ? window.installNHPOSApp() : (window.location.href='auth.html')" style="padding: 12px 24px;" data-en="📲 Install App (PWA)" data-ur="📲 ایپ انسٹال کریں">
+                <a href="auth.html?mode=login" class="btn-outline" style="padding: 13px 22px; font-size: 14px;" data-en="Login" data-ur="لاگ ان کریں">
+                    <i class="fas fa-sign-in-alt"></i> <span>Login</span>
+                </a>
+                <button type="button" class="btn-outline" onclick="window.installNHPOSApp ? window.installNHPOSApp() : (window.location.href='auth.html?source=pwa')" style="padding: 12px 20px; font-size: 13.5px;" data-en="📲 Install App (PWA)" data-ur="📲 ایپ انسٹال کریں">
                     <i class="fas fa-download"></i> <span>Install App (PWA)</span>
                 </button>
             </div>
@@ -763,18 +829,18 @@
             </div>
         </div>
 
-        <!-- Hero Card Mockup -->
+        <!-- Hero Card Mockup (Clean Light) -->
         <div class="hero-visual">
             <div class="hero-card-preview">
                 <div class="preview-header">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <img src="icon-192.png" style="width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #10b981; background:#ffffff;">
                         <div>
-                            <div style="font-weight: 800; font-size: 14px; color: #ffffff;">Taj Karyana & Mobile</div>
-                            <div style="font-size: 11px; color: #10b981; font-weight: 700;">🟢 Online Cloud Synced</div>
+                            <div style="font-weight: 800; font-size: 14.5px; color: var(--text-main);">Taj Karyana & Mobile</div>
+                            <div style="font-size: 11px; color: #059669; font-weight: 700;">🟢 Online Cloud Synced</div>
                         </div>
                     </div>
-                    <span style="font-size: 11px; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 3px 8px; border-radius: 6px; font-weight: 800;">FREE PLAN</span>
+                    <span style="font-size: 11px; background: #ecfdf5; color: #059669; padding: 4px 10px; border-radius: 8px; font-weight: 800; border: 1px solid #a7f3d0;">FREE PLAN</span>
                 </div>
 
                 <div class="preview-stats-grid">
@@ -785,8 +851,8 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title" data-en="Khata Recovery" data-ur="وصول طلب کھاتہ">Khata Recovery</div>
-                        <div class="stat-card-val" style="color: #fbbf24;">Rs 14,200</div>
-                        <div class="stat-card-sub" style="color: #fbbf24;"><i class="fab fa-whatsapp"></i> 6 Reminders sent</div>
+                        <div class="stat-card-val" style="color: #d97706;">Rs 14,200</div>
+                        <div class="stat-card-sub" style="color: #d97706;"><i class="fab fa-whatsapp"></i> 6 Reminders sent</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title" data-en="Stock Value" data-ur="اسٹاک مالیت">Stock Value</div>
@@ -795,17 +861,17 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title" data-en="Net Profit" data-ur="خالص منافع">Net Profit</div>
-                        <div class="stat-card-val" style="color: #34d399;">Rs 9,450</div>
+                        <div class="stat-card-val" style="color: #059669;">Rs 9,450</div>
                         <div class="stat-card-sub"><i class="fas fa-chart-line"></i> 19.4% Margin</div>
                     </div>
                 </div>
 
                 <div class="sample-bill-strip">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <i class="fas fa-file-invoice" style="color:#10b981;"></i>
+                        <i class="fas fa-file-invoice" style="color:#059669;"></i>
                         <span><strong>Bill #STK-104</strong> · Ali Hassan Store</span>
                     </div>
-                    <span style="font-weight: 800; color: #10b981;">Rs 3,250 Paid</span>
+                    <span style="font-weight: 800; color: #047857;">Rs 3,250 Paid</span>
                 </div>
             </div>
         </div>
@@ -904,8 +970,8 @@
                     <li class="disabled"><i class="fas fa-times"></i> <span data-en="Booker Orders & Dispatch" data-ur="سیلز بکر آرڈرز">Booker Orders & Dispatch</span></li>
                 </ul>
 
-                <a href="auth.html?signup=true" class="btn-outline" style="text-align: center; justify-content: center; width: 100%;" data-en="Start Free Now" data-ur="ابھی مفت شروع کریں">
-                    Start Free Now
+                <a href="auth.html?mode=signup" class="btn-outline" style="text-align: center; justify-content: center; width: 100%;" data-en="Sign Up Free" data-ur="ابھی مفت سائن اپ کریں">
+                    Sign Up Free
                 </a>
             </div>
 
@@ -913,11 +979,11 @@
             <div class="pricing-card featured">
                 <span class="popular-badge" data-en="MOST POPULAR" data-ur="سب سے مقبول">MOST POPULAR</span>
                 <div class="plan-header">
-                    <h3 class="plan-name" style="color:#34d399;" data-en="Pro Retailer" data-ur="پرو ریٹیلر">Pro Retailer</h3>
+                    <h3 class="plan-name" style="color: #059669;" data-en="Pro Retailer" data-ur="پرو ریٹیلر">Pro Retailer</h3>
                     <p class="plan-tagline" data-en="Best for busy general stores, marts, and mobile shops." data-ur="کامیاب دکانوں، مارٹس اور موبائل دکانوں کے لیے مکمل پیکیج۔">Best for busy general stores, marts, and mobile shops.</p>
                     <div class="plan-price-wrap">
                         <span class="plan-currency">Rs</span>
-                        <span class="plan-amount" id="proPrice">1,499</span>
+                        <span class="plan-amount" id="proPrice" style="color:#059669;">1,499</span>
                         <span class="plan-period" id="proPeriod" data-en="/ month" data-ur="/ ماہانہ">/ month</span>
                     </div>
                 </div>
@@ -932,8 +998,8 @@
                     <li class="disabled"><i class="fas fa-times"></i> <span data-en="Multi-Agency Dispatch Hub" data-ur="ملٹی ایجنسی ڈسپیچ ہب">Multi-Agency Dispatch Hub</span></li>
                 </ul>
 
-                <a href="auth.html?signup=true&plan=pro" class="btn-primary" style="text-align: center; justify-content: center; width: 100%;" data-en="Upgrade to Pro" data-ur="پرو پیکیج منتخب کریں">
-                    Upgrade to Pro
+                <a href="auth.html?mode=signup&plan=pro" class="btn-primary" style="text-align: center; justify-content: center; width: 100%;" data-en="Sign Up for Pro" data-ur="پرو سائن اپ کریں">
+                    Sign Up for Pro
                 </a>
             </div>
 
@@ -958,8 +1024,8 @@
                     <li><i class="fas fa-check"></i> <span data-en="Priority 24/7 Phone & WhatsApp Support" data-ur="ترجیحی 24/7 فون اور واٹس ایپ سپورٹ">Priority 24/7 Phone & WhatsApp Support</span></li>
                 </ul>
 
-                <a href="auth.html?signup=true&plan=business" class="btn-outline" style="text-align: center; justify-content: center; width: 100%;" data-en="Get Business Plan" data-ur="بزنس پیکیج حاصل کریں">
-                    Get Business Plan
+                <a href="auth.html?mode=signup&plan=business" class="btn-outline" style="text-align: center; justify-content: center; width: 100%;" data-en="Sign Up for Business" data-ur="بزنس سائن اپ کریں">
+                    Sign Up for Business
                 </a>
             </div>
         </div>
@@ -974,22 +1040,22 @@
 
         <div class="faq-grid">
             <div class="faq-item">
-                <h4 data-en="Does NH POS work without internet?" data-ur="کیا یہ انٹرنیٹ کے بغیر کام کرتا ہے؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Does NH POS work without internet?</h4>
+                <h4 data-en="Does NH POS work without internet?" data-ur="کیا یہ انٹرنیٹ کے بغیر کام کرتا ہے؟"><i class="fas fa-check-circle" style="color:#059669;"></i> Does NH POS work without internet?</h4>
                 <p class="ur-txt" data-en="Yes, 100%! All your bills, customers, and stock are saved locally on your device. Whenever internet is available, it automatically syncs with the secure cloud." data-ur="جی ہاں، بالکل! انٹرنیٹ کے بغیر بھی تمام بل، گاہکوں کا کھاتہ اور اسٹاک نارمل چلتا ہے۔ جب بھی نیٹ کنیکٹ ہوگا ڈیٹا خود بخود محفوظ ہو جائے گا۔">Yes, 100%! All your bills, customers, and stock are saved locally on your device. Whenever internet is available, it automatically syncs with the secure cloud.</p>
             </div>
 
             <div class="faq-item">
-                <h4 data-en="Can I install it on my phone?" data-ur="کیا یہ موبائل پر انسٹال ہو جاتی ہے؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Can I install it on my phone?</h4>
+                <h4 data-en="Can I install it on my phone?" data-ur="کیا یہ موبائل پر انسٹال ہو جاتی ہے؟"><i class="fas fa-check-circle" style="color:#059669;"></i> Can I install it on my phone?</h4>
                 <p class="ur-txt" data-en="Yes! NH POS is a Progressive Web App (PWA). Just open Chrome or Safari, click 'Install App' or 'Add to Home Screen', and it runs like a regular mobile app." data-ur="جی ہاں! یہ ایک کلک پر عام موبائل ایپ کی طرح اینڈرائیڈ اور آئی فون پر انسٹال ہو جاتی ہے اور بغیر کسی ہیوی ڈاؤنلوڈ کے چلتی ہے۔">Yes! NH POS is a Progressive Web App (PWA). Just open Chrome or Safari, click 'Install App' or 'Add to Home Screen', and it runs like a regular mobile app.</p>
             </div>
 
             <div class="faq-item">
-                <h4 data-en="Is the Free Plan really free forever?" data-ur="کیا فری پیکیج ہمیشہ کے لیے مفت ہے؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Is the Free Plan really free forever?</h4>
+                <h4 data-en="Is the Free Plan really free forever?" data-ur="کیا فری پیکیج ہمیشہ کے لیے مفت ہے؟"><i class="fas fa-check-circle" style="color:#059669;"></i> Is the Free Plan really free forever?</h4>
                 <p class="ur-txt" data-en="Yes, our Free Starter plan is lifetime free with up to 100 inventory items and 50 khata customers. No credit card is required to sign up." data-ur="جی ہاں، فری اسٹارٹر پیکیج لائف ٹائم مفت ہے۔ آپ بغیر کسی فیس یا کریڈٹ کارڈ کے فوراً دکان کا کام شروع کر سکتے ہیں۔">Yes, our Free Starter plan is lifetime free with up to 100 inventory items and 50 khata customers. No credit card is required to sign up.</p>
             </div>
 
             <div class="faq-item">
-                <h4 data-en="Which printers are supported?" data-ur="کون کون سے پرنٹرز سپورٹڈ ہیں؟"><i class="fas fa-check-circle" style="color:#10b981;"></i> Which printers are supported?</h4>
+                <h4 data-en="Which printers are supported?" data-ur="کون کون سے پرنٹرز سپورٹڈ ہیں؟"><i class="fas fa-check-circle" style="color:#059669;"></i> Which printers are supported?</h4>
                 <p class="ur-txt" data-en="All standard USB and Bluetooth thermal receipt printers (58mm and 80mm ESC/POS) as well as regular desktop A4/A5 laser and inkjet printers." data-ur="تمام قسم کے 58mm اور 80mm تھرمل پرنٹرز (بلوٹوتھ یا یو ایس بی) اور عام کمپیوٹر کے A4 لیزر پرنٹرز مکمل سپورٹڈ ہیں۔">All standard USB and Bluetooth thermal receipt printers (58mm and 80mm ESC/POS) as well as regular desktop A4/A5 laser and inkjet printers.</p>
             </div>
         </div>
@@ -1000,35 +1066,39 @@
         <h2 data-en="Start Managing Your Shop Smarter Today" data-ur="آج ہی اپنی دکان کا ڈیجیٹل آغاز کریں">Start Managing Your Shop Smarter Today</h2>
         <p class="ur-txt" data-en="Join hundreds of Pakistani retail and wholesale businesses who have eliminated paper errors and increased their profit recovery with NH POS." data-ur="کاپی رجسٹر اور حساب کے نقصانات کو ختم کریں۔ اب پورے اعتماد اور آسانی کے ساتھ کاروبار بڑھائیں۔">Join hundreds of Pakistani retail and wholesale businesses who have eliminated paper errors and increased their profit recovery with NH POS.</p>
         <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap;">
-            <a href="auth.html?signup=true" class="btn-primary" style="padding: 14px 34px; font-size: 16px;" data-en="Get Started for Free" data-ur="ابھی مفت اکاؤنٹ بنائیں">
-                <i class="fas fa-rocket"></i> <span>Get Started for Free</span>
+            <a href="auth.html?mode=signup" class="btn-primary" style="background:#ffffff; color:#064e3b; padding: 14px 30px; font-size: 15.5px; box-shadow:0 6px 20px rgba(0,0,0,0.15);" data-en="Sign Up Free" data-ur="مفت سائن اپ کریں">
+                <i class="fas fa-user-plus"></i> <span>Sign Up Free</span>
             </a>
-            <a href="auth.html" class="btn-outline" style="padding: 13px 28px;" data-en="Sign In to Existing Account" data-ur="موجودہ اکاؤنٹ میں لاگ ان کریں">
-                <span>Sign In to Existing Account</span>
+            <a href="auth.html?mode=login" class="btn-outline" style="padding: 13px 26px; font-size: 14.5px;" data-en="Login to Account" data-ur="اکاؤنٹ میں لاگ ان کریں">
+                <i class="fas fa-sign-in-alt"></i> <span>Login to Account</span>
+            </a>
+            <a href="https://wa.me/923346800959?text=Hello%20NH%20POS%20I%20want%20to%20learn%20more%20about%20packages" target="_blank" rel="noopener" class="btn-outline" style="padding: 13px 26px; font-size: 14.5px;" data-en="Contact on WhatsApp" data-ur="واٹس ایپ پر رابطہ کریں">
+                <i class="fab fa-whatsapp"></i> <span>WhatsApp: 0334-6800959</span>
             </a>
         </div>
     </div>
 
-    <!-- 🦶 FOOTER -->
+    <!-- 🦶 FOOTER (Clean Light Mode) -->
     <footer class="landing-footer">
         <div class="footer-inner">
             <div style="display:flex; align-items:center; gap:10px;">
-                <img src="icon-192.png" style="width:32px; height:32px; border-radius:8px; border:1px solid #10b981; background:#ffffff;">
-                <span style="font-weight:800; font-size:15px; color:#ffffff;">NH POS & Customer Ledger</span>
+                <img src="icon-192.png" style="width:34px; height:34px; border-radius:9px; border:1px solid #10b981; background:#ffffff;">
+                <span style="font-weight:800; font-size:15.5px; color:var(--text-main);">NH POS & Customer Ledger</span>
             </div>
             <div class="footer-copy">
                 &copy; 2026 NH POS System. All Rights Reserved. Built for Pakistan Retail & Wholesale.
             </div>
             <div class="footer-links">
-                <a href="auth.html" data-en="Login" data-ur="لاگ ان">Login</a>
+                <a href="auth.html?mode=login" data-en="Login" data-ur="لاگ ان">Login</a>
+                <a href="auth.html?mode=signup" data-en="Sign Up" data-ur="سائن اپ">Sign Up</a>
                 <a href="#pricing" data-en="Pricing" data-ur="قیمتیں">Pricing</a>
-                <a href="https://wa.me/923001234567" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp Support</a>
+                <a href="https://wa.me/923346800959" target="_blank" rel="noopener"><i class="fab fa-whatsapp" style="color:#25d366; font-size:16px;"></i> WhatsApp: 0334-6800959</a>
             </div>
         </div>
     </footer>
 
-    <!-- 🟢 FLOATING WHATSAPP HELPLINE -->
-    <a href="https://wa.me/923001234567?text=Hello%20NH%20POS%20I%20want%20to%20learn%20more%20about%20packages" target="_blank" rel="noopener" class="wa-float-btn" title="Contact on WhatsApp">
+    <!-- 🟢 FLOATING WHATSAPP HELPLINE (03346800959) -->
+    <a href="https://wa.me/923346800959?text=Hello%20NH%20POS%20I%20want%20to%20learn%20more%20about%20packages" target="_blank" rel="noopener" class="wa-float-btn" title="Contact 03346800959 on WhatsApp">
         <i class="fab fa-whatsapp"></i>
     </a>
 

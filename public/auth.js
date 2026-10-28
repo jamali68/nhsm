@@ -223,6 +223,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // -------------------------------------------
+    // 🔀 URL MODE (Login vs Signup) & PWA DETECTION
+    // -------------------------------------------
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'signup' || urlParams.get('signup') === 'true') {
+            tabSignup.click();
+        } else if (urlParams.get('mode') === 'login') {
+            tabLogin.click();
+        }
+
+        // Hide Landing Page button if opened inside installed PWA
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                      window.navigator.standalone === true ||
+                      document.referrer.includes('android-app://') ||
+                      urlParams.get('source') === 'pwa';
+        if (isPWA) {
+            const landingLink = document.getElementById('landingPageLink');
+            if (landingLink) landingLink.style.display = 'none';
+        }
+    } catch (_) {}
+
+    // -------------------------------------------
     // 👁️ PASSWORD TOGGLE
     // -------------------------------------------
     document.querySelectorAll('.toggle-pass').forEach(eye => {

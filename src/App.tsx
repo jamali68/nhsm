@@ -200,7 +200,7 @@ export default function App() {
       const swPath = isSubpath ? '/nhsm/sw.js' : 'sw.js';
       const swScope = isSubpath ? '/nhsm/' : './';
       navigator.serviceWorker.register(swPath, { scope: swScope }).then((reg) => {
-        console.log('[PWA v4.5.0] NH POS Service Worker active:', reg.scope);
+        console.log('[PWA v5.2.0] NH POS Service Worker active:', reg.scope);
       }).catch((err) => {
         console.warn('[PWA] SW registration info:', err);
       });

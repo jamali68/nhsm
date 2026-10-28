@@ -7,7 +7,7 @@
 // ✅ Role-aware menu (Booker ko limited)
 // ============================================
 
-window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
+window.EASYBILL_VERSION = window.EASYBILL_VERSION || '5.2.0';
 
 (function initSidebar() {
     // Inject dark-theme.css link dynamically if not present
@@ -968,7 +968,7 @@ window.EASYBILL_VERSION = window.EASYBILL_VERSION || '4.5.0';
                         ${isSuperAdmin ? '<span style="font-size:12px;">👑</span>' : ''}
                     </div>
                     <div class="eb-sidebar-agency" style="padding-left:0; font-size:11px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${agencyTitleText}</div>
-                    <div class="eb-sidebar-version" style="padding-left:0; font-size:10px; color:#4ade80; font-weight:700;">Version ${window.EASYBILL_VERSION || '4.5.0'}</div>
+                    <div class="eb-sidebar-version" style="padding-left:0; font-size:10px; color:#4ade80; font-weight:700;">Version ${window.EASYBILL_VERSION || '5.2.0'}</div>
                 </div>
             </div>
         </div>`;

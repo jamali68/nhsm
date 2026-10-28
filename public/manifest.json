@@ -1,9 +1,10 @@
 {
   "name": "NH POS — Wholesale ERP & POS",
   "short_name": "NH POS",
+  "version": "5.2.0",
   "id": "nhpos-app-v5",
   "description": "Smart Business & Inventory Management, Offline Billing, Stock Tracking & Order Booker Portal",
-  "start_url": "dashboard.html",
+  "start_url": "auth.html?source=pwa",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

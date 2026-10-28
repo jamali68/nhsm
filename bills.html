@@ -1,26 +1,1055 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Redirecting to Bills...</title>
-  <meta http-equiv="refresh" content="0; url=public/bills.html">
-  <script>
-    (function() {
-      var isGitHubPages = window.location.hostname.endsWith('github.io');
-      var path = window.location.pathname;
-      var query = window.location.search || '';
-      var hash = window.location.hash || '';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NH POS — Pro Billing & Offline Orders</title>
 
-      if (isGitHubPages && path.indexOf('/public/') === -1) {
-        var segs = path.split('/').filter(Boolean);
-        var repo = (segs.length > 0 && segs[0] !== 'public' && !segs[0].endsWith('.html')) ? ('/' + segs[0]) : '';
-        window.location.replace(repo + '/public/bills.html' + query + hash);
-      } else {
-        window.location.replace('public/bills.html' + query + hash);
-      }
-    })();
-  </script>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0E0F09">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- HTML2CANVAS (For JPG / Image receipts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- HTML5-QRCODE (For Mobile & Laptop Camera Barcode Scanning) -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <!-- Panels CSS -->
+    <link rel="stylesheet" href="panels.css">
+
+    <!-- Bills CSS -->
+    <link rel="stylesheet" href="bills.css">
+
+    <!-- Global Dark Theme & Theme Sync -->
+    <link rel="stylesheet" href="dark-theme.css">
+    <script src="theme-sync.js"></script>
+
+    <!-- Z-INDEX FIX + OFFLINE & RATE TIERS -->
+    <style>
+        .swal2-container { z-index: 999999 !important; }
+        .suggest-box { z-index: 99999; }
+        
+        /* Rate Tier Buttons */
+        .rate-tier-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 10px;
+        }
+        .rate-tier-btn {
+            flex: 1;
+            padding: 10px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .rate-tier-btn.active {
+            background: #fff;
+            color: var(--primary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .rate-tier-btn.active.wholesale {
+            color: #0284c7;
+        }
+        .rate-tier-btn.active.retail {
+            color: #16a34a;
+        }
+
+        /* Offline Sync Bar */
+        .offline-queue-bar {
+            display: none;
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .net-status-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .net-online { background: #dcfce7; color: #15803d; }
+        .net-offline { background: #fee2e2; color: #b91c1c; }
+        
+        .stock-badge {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+        .stock-ok { background: #dcfce7; color: #15803d; }
+        .stock-low { background: #fef3c7; color: #b45309; }
+        .stock-out { background: #fee2e2; color: #b91c1c; }
+
+        /* Visual Catalogue Styles */
+        .cat-card-container {
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 16px;
+            margin: 0 auto 16px;
+            max-width: 580px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            position: relative;
+        }
+        .dark-theme .cat-card-container {
+            background: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .cat-photo-frame {
+            margin: 10px auto;
+            width: 100%;
+            max-width: 380px;
+            aspect-ratio: 3 / 4;
+            max-height: 440px;
+            min-height: 320px;
+            border-radius: 18px;
+            border: 2px solid #e2e8f0;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            cursor: pointer;
+        }
+        .dark-theme .cat-photo-frame {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            border-color: #334155;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .cat-photo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+            display: block;
+            transition: transform 0.25s ease;
+        }
+        .cat-photo-frame:hover .cat-photo-img {
+            transform: scale(1.02);
+        }
+        .cat-photo-zoom-hint {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: none;
+        }
+        .cat-nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 10px 10px;
+        }
+        .cat-nav-btn {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1.5px solid #cbd5e1;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .cat-nav-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+            transform: translateY(-1px);
+        }
+        .cat-nav-btn.primary {
+            background: #0284c7;
+            color: #fff;
+            border-color: #0284c7;
+            box-shadow: 0 3px 8px rgba(2,132,199,0.3);
+        }
+        .cat-nav-btn.primary:hover {
+            background: #0369a1;
+        }
+        .dark-theme .cat-nav-btn {
+            background: #334155;
+            border-color: #475569;
+            color: #f8fafc;
+        }
+        .cat-qty-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 14px 0 8px;
+        }
+        .cat-qty-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: none;
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 24px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(220,38,38,0.22);
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .cat-qty-btn:active {
+            transform: scale(0.90);
+        }
+        .cat-qty-btn.plus {
+            background: #dcfce7;
+            color: #16a34a;
+            box-shadow: 0 4px 10px rgba(22,163,74,0.25);
+        }
+        .cat-qty-val {
+            font-size: 34px;
+            font-weight: 900;
+            color: #0f172a;
+            min-width: 80px;
+            text-align: center;
+            background: #fff;
+            border: 2px solid #cbd5e1;
+            border-radius: 14px;
+            padding: 4px 12px;
+            outline: none;
+        }
+        .dark-theme .cat-qty-val {
+            background: #0f172a;
+            color: #f8fafc;
+            border-color: #475569;
+        }
+        .cat-category-chips {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 2px 8px;
+            margin-bottom: 12px;
+            scrollbar-width: thin;
+        }
+        .cat-chip {
+            white-space: nowrap;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cat-chip.active {
+            background: #0284c7;
+            color: #fff;
+            border-color: #0284c7;
+            box-shadow: 0 2px 6px rgba(2,132,199,0.25);
+        }
+        .dark-theme .cat-chip {
+            background: #1e293b;
+            color: #94a3b8;
+            border-color: #334155;
+        }
+        .dark-theme .cat-chip.active {
+            background: #0284c7;
+            color: #fff;
+        }
+        .cat-sticky-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #0f172a;
+            color: #fff;
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 99990;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+            border-top: 1px solid #334155;
+        }
+        @media (min-width: 992px) {
+            .cat-sticky-bar {
+                margin-left: 270px;
+                width: calc(100% - 270px);
+            }
+        }
+    </style>
 </head>
 <body>
+
+<div class="panel-container" style="margin-top: 2px;">
+
+    <!-- ===== 🔙 UNIFIED COMPACT TOP BAR (SINGLE ROW: BACK, STORE NAME, ONLINE DOT, CHOTA BILL NO, 2 VIEWS, LANG) ===== -->
+    <div class="booking-top-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:4px 8px; margin-bottom:3px; box-shadow:0 1px 3px rgba(0,0,0,0.02); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px;">
+        <!-- Left: Back Button + Store Name with Green Light + Chota Sa Bill No -->
+        <div style="display:flex; align-items:center; gap:6px; min-width:0; flex-shrink:1;">
+            <button type="button" class="btn" onclick="window.history.length > 1 ? window.history.back() : window.location.href='dashboard.html'" style="background:#334155; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;" title="Go Back">
+                <i class="fas fa-arrow-left"></i> <span>Back</span>
+            </button>
+            <div style="display:inline-flex; align-items:center; gap:5px; min-width:0; overflow:hidden;">
+                <span style="font-size:12px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="agencyNameLabel">📦 Taj Karyana and Mobile Shop</span>
+                <span id="netStatusBadge" style="display:inline-flex; align-items:center; gap:3px; background:#dcfce7; color:#15803d; border:1px solid #86efac; border-radius:10px; padding:1px 5px; font-size:9.5px; font-weight:800; flex-shrink:0;">
+                    <i class="fas fa-circle" style="font-size:5px; color:#16a34a;"></i> <span>Online</span>
+                </span>
+                <!-- 🏷️ Chota Sa Bill No Badge -->
+                <span style="font-size:10.5px; font-weight:800; background:#f1f5f9; color:#0f172a; padding:1.5px 7px; border-radius:5px; border:1px solid #cbd5e1; white-space:nowrap; flex-shrink:0;">
+                    Inv #<span id="billNoDisplay" style="color:#10b981; font-weight:800;">...</span>
+                </span>
+                <script>
+                    (function initInstantBillBadge() {
+                        try {
+                            var aid = localStorage.getItem('eb_active_agencyId') || 'default';
+                            var lastNum = localStorage.getItem('eb_last_counter_' + aid);
+                            var prefix = localStorage.getItem('eb_bill_prefix_' + aid);
+                            if (prefix === null || prefix === undefined) {
+                                try {
+                                    var ag = JSON.parse(localStorage.getItem('eb_user_agency') || '{}');
+                                    prefix = ag.billPrefix || '';
+                                } catch(_) { prefix = ''; }
+                            }
+                            if (lastNum) {
+                                var el = document.getElementById('billNoDisplay');
+                                if (el) {
+                                    var p = (prefix || '').trim();
+                                    el.textContent = p ? (p.endsWith('-') || p.endsWith('/') || p.endsWith(' ') ? p + lastNum : p + '-' + lastNum) : String(lastNum);
+                                }
+                            }
+                        } catch(_) {}
+                    })();
+                </script>
+                <span id="billDateDisplay" style="display:none;"></span>
+            </div>
+        </div>
+
+        <!-- Right: The 2 Views in the same row + Lang Toggle -->
+        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+            <div id="bookingModeToggleBar" class="view-segmented-bar" style="margin:0; padding:2px; display:inline-flex; width:auto;">
+                <label class="view-tab-btn active" id="lblViewListContainer" style="padding:5px 11px; font-size:11.5px;">
+                    <input type="radio" name="billViewMode" id="radioSwitchTable" value="table" checked style="display:none;">
+                    <i class="fas fa-list-ul"></i> <span id="lblViewList">List View</span>
+                </label>
+                <label class="view-tab-btn" id="lblViewCatalogueContainer" style="padding:5px 11px; font-size:11.5px;">
+                    <input type="radio" name="billViewMode" id="radioSwitchCatalogue" value="catalogue" style="display:none;">
+                    <i class="fas fa-images"></i> <span id="lblViewCatalogue">Visual Catalogue</span>
+                </label>
+            </div>
+            <!-- 🏢 Admin Mode Badge (Shown when Admin/Owner is logged in) -->
+            <div id="adminModeBadge" style="display:none; background:#f0fdf4; color:#15803d; border:1px solid #86efac; border-radius:6px; padding:4px 9px; font-size:11px; font-weight:800; align-items:center; gap:5px;">
+                <i class="fas fa-cash-register"></i> <span>Counter POS (سیلز انوائس)</span>
+            </div>
+            <button type="button" id="btnLangToggle" style="background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; padding:5px 9px; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px; flex-shrink:0;" title="Toggle English / Urdu Language Mode">
+                <i class="fas fa-language"></i> <span id="langToggleText">English</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================
+         📱 VISUAL CATALOGUE ORDER BOOKER SECTION (Hidden by default, shown when radio selected)
+         ============================================ -->
+    <div id="catalogueOrderSection" style="display:none; padding-bottom:70px;">
+        <!-- 🏢 TOP AGENCY TITLE & BOOKER BADGE -->
+        <div class="cat-agency-header" style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 16px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div>
+                    <div style="font-size:18px; font-weight:900; color:#0f172a;" id="catAgencyTitle">🏢 Agency Order Catalogue</div>
+                    <div style="font-size:12px; color:#64748b; font-weight:700;" id="catBookerBadge">📕 Order Booker Mode</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span id="catPriceTierBadge" style="font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">🏪 Wholesale Rate</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 👤 SHOPKEEPER SELECTION CARD -->
+        <div class="cat-shopkeeper-card" style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:800; color:#334155; margin:0;">
+                    👤 Select Shopkeeper <span class="ur-sub">/ دکان دار منتخب کریں</span> <span style="color:#ef4444;">*</span>
+                </label>
+                <button type="button" id="catQuickAddCustBtn" style="background:none; border:none; color:#0284c7; font-size:11px; font-weight:bold; cursor:pointer;">
+                    <i class="fas fa-plus-circle"></i> + Add Shopkeeper <span class="ur-sub">(نیا دکان دار)</span>
+                </button>
+            </div>
+            <div style="position:relative;">
+                <input type="text" id="catCustInput" placeholder="🔍 Search shopkeeper name, shop name, or phone..." style="width:100%; height:40px; padding:8px 12px; border:2px solid #cbd5e1; border-radius:8px; font-size:13px; box-sizing:border-box;">
+                <div class="suggest-box" id="catCustSuggest"></div>
+            </div>
+            <div id="catCustInfo" style="display:none; margin-top:8px; font-size:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:8px 10px; color:#166534;">
+                <!-- Shopkeeper details & khata balance -->
+            </div>
+        </div>
+
+        <!-- 📂 CATEGORY FILTER CHIPS & SEARCH -->
+        <div style="margin-bottom:10px;">
+            <div style="position:relative; margin-bottom:8px;">
+                <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8;"></i>
+                <input type="text" id="catSearchInput" placeholder="🔍 Quick search product name, brand or barcode..." style="width:100%; height:38px; padding-left:36px; padding-right:12px; border:1.5px solid #cbd5e1; border-radius:10px; font-size:13px; box-sizing:border-box;">
+            </div>
+            <div class="cat-category-chips" id="catCategoryChips">
+                <button type="button" class="cat-chip active" data-cat="all">📂 All Products</button>
+            </div>
+        </div>
+
+        <!-- 📦 PRODUCT SHOWCASE CARD (THE CATALOGUE ITEM) -->
+        <div class="cat-card-container" id="catCard">
+            <!-- Top info: category & counter -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding:0 6px;">
+                <span id="catItemCategoryBadge" style="font-size:11px; font-weight:800; background:#f1f5f9; color:#475569; padding:3px 8px; border-radius:8px; border:1px solid #e2e8f0;">📂 General</span>
+                <span id="catCounterBadge" style="font-size:12px; font-weight:800; color:#64748b;">Product 1 of 1</span>
+            </div>
+
+            <!-- Product Title (Adjustable and prominent) -->
+            <div id="catItemTitle" style="font-size:19px; font-weight:900; color:#0f172a; text-align:center; padding:4px 6px; min-height:46px; display:flex; align-items:center; justify-content:center; line-height:1.3;">
+                Product Title
+            </div>
+
+            <!-- 🖼️ PHOTO FRAME (Portrait 3:4 Catalog Showcase) -->
+            <div class="cat-photo-frame" id="catPhotoFrame" title="Tap to view fullscreen showcase">
+                <img id="catItemImg" src="" alt="Product Photo" class="cat-photo-img" style="display:none;">
+                <div id="catPhotoPlaceholder" style="text-align:center; color:#94a3b8; padding:20px;">
+                    <i class="fas fa-box-open" style="font-size:64px; color:#cbd5e1; margin-bottom:8px;"></i>
+                    <div style="font-size:13px; font-weight:700;">No photo uploaded</div>
+                </div>
+                <span class="cat-photo-zoom-hint" id="catPhotoZoomHint" style="display:none;">
+                    <i class="fas fa-expand"></i> Tap to Fullscreen
+                </span>
+            </div>
+
+            <!-- ◀️ ▶️ NAVIGATION ARROWS (Next & Back) -->
+            <div class="cat-nav-row">
+                <button type="button" class="cat-nav-btn" id="catBtnPrev">
+                    <i class="fas fa-arrow-left"></i> <span>Back <span class="ur-sub">(پچھلا)</span></span>
+                </button>
+                <span id="catNavIndex" style="font-size:13px; font-weight:800; color:#475569;">1 / 1</span>
+                <button type="button" class="cat-nav-btn primary" id="catBtnNext">
+                    <span>Next <span class="ur-sub">(اگلا)</span></span> <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <!-- Pricing & Stock Line -->
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:#f8fafc; border-radius:12px; margin:6px 0 12px; border:1px solid #e2e8f0;">
+                <div>
+                    <span style="font-size:12px; color:#64748b; font-weight:600;">Rate: </span>
+                    <b id="catItemRate" style="color:#0284c7; font-size:18px;">Rs 0</b>
+                    <span id="catItemUnit" style="font-size:12px; color:#64748b;"> / unit</span>
+                </div>
+                <div id="catItemStockBadge">
+                    <span class="stock-badge stock-ok">Available: 0</span>
+                </div>
+            </div>
+
+            <!-- 🔢 BOOKING NUMBERS (Default 0, Minus left, Plus right) -->
+            <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:16px; padding:14px; text-align:center; margin-bottom:12px;">
+                <div style="font-size:12px; font-weight:800; color:#64748b; margin-bottom:8px;">
+                    🛒 Order Quantity <span class="ur-sub">(آرڈر بکنگ تعداد)</span>
+                </div>
+                <div class="cat-qty-row">
+                    <button type="button" id="catBtnMinus" class="cat-qty-btn" title="Decrease Qty (-)">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <input type="number" id="catItemQty" min="0" step="1" value="0" class="cat-qty-val">
+                    <button type="button" id="catBtnPlus" class="cat-qty-btn plus" title="Increase Qty (+)">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div id="catItemSubtotal" style="font-size:14px; font-weight:900; color:#15803d; margin-top:8px;">
+                    Item Total: Rs 0.00
+                </div>
+            </div>
+
+            <!-- 🎁 SCHEME SECTION -->
+            <div id="catSchemeSection">
+                <div id="catSchemeCard" style="display:none; background:linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%); border:1.5px dashed #c084fc; border-radius:14px; padding:12px 14px; margin-top:4px;">
+                    <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; color:#86198f;">
+                        <span style="font-size:20px;">🎁</span> <span>Active Scheme <span class="ur-sub">(خصوصی پروموشنل اسکیم)</span></span>
+                    </div>
+                    <div id="catSchemeLabel" style="font-size:16px; font-weight:900; color:#701a75; margin:6px 0 3px;">
+                        10 + 1 FREE
+                    </div>
+                    <div id="catSchemeTracker" style="font-size:12px; font-weight:700; color:#9333ea;">
+                        Add more units to unlock offer!
+                    </div>
+                </div>
+                <div id="catNoSchemeCard" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; text-align:center; font-size:12px; color:#64748b; margin-top:4px;">
+                    ℹ️ Standard Rate (No Scheme) <span class="ur-sub">(کوئی اضافی اسکیم نہیں)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🛒 STICKY BOTTOM BAR (Always reachable on mobile) -->
+        <div class="cat-sticky-bar" id="catStickyBar">
+            <div>
+                <div style="font-size:11px; color:#94a3b8; font-weight:700;">CURRENT BOOKING CART:</div>
+                <div style="font-size:16px; font-weight:900;">
+                    🛒 <span id="catBottomItemsCount">0</span> items (<span id="catBottomTotalUnits">0</span> units) | <span style="color:#38bdf8;">Rs <span id="catBottomTotal">0.00</span></span>
+                </div>
+            </div>
+            <button type="button" id="catBtnOpenReview" style="background:#10b981; color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:900; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 3px 10px rgba(16,185,129,0.4);">
+                <i class="fas fa-clipboard-check"></i> <span>Review & Submit <span class="ur-sub">(آرڈر بھیجیں)</span></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 📶 INDEXEDDB OFFLINE QUEUE STATUS BAR -->
+    <div id="offlineQueueBar" class="offline-queue-bar" style="display:none; background:#fef3c7; border:1.5px solid #fde68a; border-radius:10px; padding:10px 14px; margin-bottom:10px; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-database" style="color:#d97706; font-size:18px;"></i>
+            <div>
+                <div style="font-size:12.5px; font-weight:800; color:#92400e;">
+                    📦 Offline Queue (IndexedDB): <span id="offlineCount">0</span> Pending Bill(s)
+                </div>
+                <div style="font-size:11px; color:#b45309;">
+                    انٹرنیٹ بحال ہونے پر یہ بلز خود بخود کلاؤڈ پر محفوظ ہو جائیں گے۔
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <button type="button" id="viewOfflineQueueBtn" class="btn" style="background:#fff; color:#92400e; border:1.5px solid #f59e0b; padding:7px 12px; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <i class="fas fa-list-check"></i> <span>View Pending Bills</span>
+            </button>
+            <button type="button" id="syncOfflineNowBtn" class="btn" style="background:#d97706; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 5px rgba(217,119,6,0.25);">
+                <i class="fas fa-cloud-upload-alt"></i> <span>Sync All to Cloud</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== BILL FORM CARD (LIST VIEW) ===== -->
+    <div class="panel-card" id="billFormCard" style="padding-bottom:110px; padding-top:2px;">
+
+        <!-- 👤 SHOPKEEPER SELECTION BOX (Directly under the top view buttons row!) -->
+        <div class="shopkeeper-box-card" style="background:#fff; border:1.5px solid #e2e8f0; border-radius:8px; padding:5px 8px; margin-bottom:2px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; flex-wrap:wrap; gap:3px;">
+                <label style="margin:0; font-size:11px; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:4px;">
+                    👤 <span>Select Shopkeeper / Customer <span class="ur-sub">(دکان دار منتخب کریں)</span></span>
+                </label>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <!-- 🏪 Wholesale vs 🏷️ Retail Rate Switcher Inline -->
+                    <div class="rate-tier-bar" id="rateTierBarContainer" style="margin:0; display:inline-flex; gap:2px; padding:1.5px;">
+                        <button type="button" class="rate-tier-btn wholesale active" id="btnWholesaleRate" style="padding:2px 7px; font-size:10px;">
+                            <i class="fas fa-store"></i> 🏪 Wholesale
+                        </button>
+                        <button type="button" class="rate-tier-btn retail" id="btnRetailRate" style="padding:2px 7px; font-size:10px;">
+                            <i class="fas fa-tag"></i> 🏷️ Retail
+                        </button>
+                    </div>
+                    <!-- Hidden button for backward compatibility with JS click listeners -->
+                    <button type="button" id="quickAddCustBtn" style="display:none;"></button>
+                </div>
+            </div>
+            <div style="position:relative;">
+                <input type="text" id="custNameInput" placeholder="🔍 Search shopkeeper name or phone... (Blank = Counter Sale)" autocomplete="off" style="width:100%; height:32px; padding:5px 9px; border:1.5px solid #cbd5e1; border-radius:7px; font-size:12px; box-sizing:border-box;">
+                <div class="suggest-box" id="custSuggest"></div>
+            </div>
+
+            <!-- ℹ️ CUSTOMER INFO & CHIPS DISPLAY -->
+            <div class="cust-info-box" id="custInfoBox" style="margin-top:2px;"></div>
+
+            <!-- 💵 TOP PENDING KHATA & QUICK PAYMENT BAR (SHOWS AS SOON AS CUSTOMER IS SELECTED) -->
+            <div id="topCustKhataRecoveryBar" style="display:none; background:#fffbeb; border:1.5px solid #fde68a; border-radius:8px; padding:6px 10px; margin-top:3px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+                <div style="min-width:0;">
+                    <div style="font-size:10.5px; font-weight:700; color:#92400e;">💰 Pending Khata (پچھلا بقایا کھاتہ):</div>
+                    <div style="font-size:15px; font-weight:900; color:#b45309;" id="topCustKhataAmount">Rs 0.00</div>
+                </div>
+                <button type="button" id="btnTopReceivePayment" onclick="openDirectRecoveryModal()" style="background:#10b981; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:11.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(16,185,129,0.3); white-space:nowrap;">
+                    <i class="fas fa-hand-holding-dollar"></i> <span>Receive Payment <span class="ur-sub">(رقم وصول کریں)</span></span>
+                </button>
+            </div>
+
+            <!-- 👥 ORDER BOOKER HELPER NOTICE (SHOWN ONLY WHEN BOOKER HAS NOT SELECTED CUSTOMER YET - NO LOCK ICON) -->
+            <div id="bookerCustNotice" style="display:none; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:7px; padding:6px 10px; margin-top:4px; color:#475569; font-size:11.5px; font-weight:700; align-items:center; justify-content:space-between; gap:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-store" style="color:#64748b; font-size:13px;"></i>
+                    <span id="bookerNoticeText">Please select a shopkeeper above to choose items <span class="ur-sub">/ دکان دار منتخب کریں</span></span>
+                </div>
+                <button type="button" onclick="focusShopkeeperInput()" style="background:#0284c7; color:#fff; border:none; padding:3px 8px; border-radius:5px; font-size:10.5px; font-weight:bold; cursor:pointer; white-space:nowrap;">
+                    Select Shopkeeper
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================
+             📋 INTERACTIVE LIST VIEW (ORDER BOOKER PRO)
+             ============================================ -->
+        <div id="interactiveListSection" style="margin-top:2px;">
+            <!-- Hidden backward-compatibility elements -->
+            <div style="display:none;" aria-hidden="true">
+                <input type="text" id="listSearchInput">
+                <div id="listFilterTabs">
+                    <button class="list-filter-pill active" data-filter="all"></button>
+                    <button class="list-filter-pill" data-filter="offers"></button>
+                    <button class="list-filter-pill" data-filter="booked"></button>
+                </div>
+                <div id="listCategoryChips"></div>
+                <span id="listFilterCountAll"></span>
+                <span id="listFilterCountOffers"></span>
+                <span id="listFilterCountBooked"></span>
+                <span id="listProductsStats"></span>
+                <button type="button" id="toggleManualRowsBtn"></button>
+            </div>
+
+            <!-- 📦 Real-time Interactive Products List (FOR ORDER BOOKERS) -->
+            <div id="interactiveProductsContainer" style="min-height:60px; margin-top:2px; display:flex; flex-direction:column; gap:4px; width:100%; box-sizing:border-box;">
+                <!-- Product list item cards rendered here directly for bookers -->
+            </div>
+        </div>
+
+        <!-- ============================================
+             📝 ADMIN / AGENCY OWNER CLASSIC POS BILLING (ADD NEW ROW & DIRECT PRINT)
+             ============================================ -->
+        <div id="adminPosTableSection" style="margin-top:10px;">
+            <!-- 🔍 BARCODE SCANNER & CAMERA BUTTON (Admin POS Fast Billing) -->
+            <div style="background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:10px 12px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.03);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="flex:1; position:relative;">
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <i class="fas fa-barcode" style="position:absolute; left:12px; color:#64748b; font-size:16px;"></i>
+                            <input type="text" id="barcodeScanInput" placeholder="Scan Barcode or quick search..." autocomplete="off"
+                                   style="width:100%; height:42px; padding-left:38px; padding-right:10px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:13px; box-sizing:border-box;">
+                        </div>
+                        <div class="suggest-box" id="barcodeSuggest"></div>
+                    </div>
+                    <button type="button" id="openCameraBtn" class="btn" onclick="openCameraScanner()" style="background:#10b981; color:#fff; border:none; height:42px; padding:0 16px; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(16,185,129,0.3); white-space:nowrap; flex-shrink:0;">
+                        <i class="fas fa-camera"></i> <span>Camera</span>
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin-bottom:8px; padding:0 2px;">
+                <div style="font-size:15px; font-weight:900; color:#1e293b; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-boxes-stacked" style="color:#0284c7;"></i>
+                    <span>Invoice Items <span class="ur-sub">(بل میں اشیاء اور ریٹ)</span></span>
+                </div>
+            </div>
+
+            <!-- Custom Manual Item Rows (Classic Admin Table) -->
+            <div id="manualRowsWrapper" style="display:block; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;">
+                <div id="itemsRows"></div>
+                <button type="button" id="addItemRowBtn" onclick="addRow()" style="width:100%; margin-top:8px; background:#0284c7; color:#fff; border:none; padding:12px; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 8px rgba(2,132,199,0.3);">
+                    <i class="fas fa-plus-circle" style="font-size:16px;"></i> <span>+ Add New Item / Row <span class="ur-sub">(نیا آئٹم شامل کریں)</span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 💰 FINANCIAL TOTALS & KHATA RUNNING BALANCE (COUNTER / DIRECT SALE MODE) -->
+        <div class="totals-box" id="regularBillTotalsBox" style="margin-top:15px;">
+            <div class="total-row">
+                <span>Sub Total:</span>
+                <span>Rs <span id="sumSubTotal">0.00</span></span>
+            </div>
+            <div class="total-row">
+                <span>Discount (Rs):</span>
+                <input type="number" id="sumDiscount" value="0" min="0" step="0.01"
+                       style="width:100px; padding:6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right; font-weight:bold;">
+            </div>
+
+            <!-- PREVIOUS KHATA BALANCE -->
+            <div class="total-row" id="sumPrevBalanceRow" style="background:#fffbeb; padding:8px 10px; border-radius:6px; margin:4px 0;">
+                <span style="color:#b45309; font-weight:bold;">Previous Khata Balance:</span>
+                <span style="color:#b45309; font-weight:bold;">+ Rs <span id="sumPrevBalance">0.00</span></span>
+            </div>
+
+            <!-- TAX ROW -->
+            <div class="total-row">
+                <span class="tax-inline" style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="taxEnabled" style="accent-color:var(--accent);">
+                    <label for="taxEnabled" style="font-size:13px; font-weight:bold; cursor:pointer;">Tax / GST %:</label>
+                    <input type="number" id="taxRate" value="0" min="0" step="0.01" style="width:65px; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; text-align:right;">
+                </span>
+                <span>+ Rs <span id="sumTax">0.00</span></span>
+            </div>
+
+            <div class="total-row grand">
+                <span>Total Payable:</span>
+                <span>Rs <span id="sumGrand">0.00</span></span>
+            </div>
+
+            <!-- PAYMENT RECEIVED -->
+            <div class="total-row" id="sumReceivedRow" style="background:#f0fdf4; padding:8px 10px; border-radius:6px; margin:4px 0;">
+                <span style="color:#15803d; font-weight:bold;">💵 Cash Received:</span>
+                <input type="number" id="sumReceived" value="0" min="0" step="0.01"
+                       style="width:110px; padding:6px; border:2px solid #86efac; border-radius:6px; text-align:right; font-weight:800; font-size:15px; color:#15803d;">
+            </div>
+
+            <!-- NEW REMAINING KHATA BALANCE -->
+            <div class="total-row balance" id="sumBalanceRow" style="font-size:16px;">
+                <span>New Remaining Balance:</span>
+                <span>Rs <span id="sumBalance">0.00</span></span>
+            </div>
+        </div>
+
+        <!-- 📕 ORDER BOOKER KHATA & QUICK PAYMENT RECOVERY CARD (REPLACES SUBTOTAL/TAX/NET PAYABLE IN BOOKER MODE) -->
+        <div id="bookerRecoverySection" style="display:none; margin-top:12px; background:#fff; border:1.5px solid #cbd5e1; border-radius:10px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:18px;">💰</span>
+                    <div>
+                        <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Customer Khata & Payment Recovery</div>
+                        <div style="font-size:10px; color:#64748b; font-weight:600;">(دکان دار پچھلا بقایا کھاتہ اور وصولی)</div>
+                    </div>
+                </div>
+                <div id="bookerSelectedCustBadge" style="font-size:11px; font-weight:700; background:#f8fafc; border:1px solid #e2e8f0; padding:3px 8px; border-radius:6px; color:#334155;">
+                    👤 No shopkeeper selected
+                </div>
+            </div>
+
+            <!-- Balance & Recovery Row -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:8px; margin-bottom:10px;">
+                <!-- Pending Khata -->
+                <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:10px; font-weight:800; color:#92400e; text-transform:uppercase;">Pending Khata (پچھلا بقایا)</div>
+                    <div id="bookerPendingKhataDisplay" style="font-size:17px; font-weight:900; color:#b45309; margin-top:2px;">Rs 0.00</div>
+                </div>
+
+                <!-- Cash Received Input -->
+                <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:10px; font-weight:800; color:#166534; text-transform:uppercase;">Cash Received (وصول رقم)</div>
+                    <div style="display:flex; align-items:center; gap:4px; margin-top:2px;">
+                        <span style="font-size:13px; font-weight:800; color:#15803d;">Rs</span>
+                        <input type="number" id="bookerQuickReceivedInput" placeholder="0" min="0" step="1"
+                               style="width:100%; border:1px solid #86efac; background:#fff; border-radius:5px; padding:4px 6px; font-size:15px; font-weight:900; color:#15803d; text-align:right;">
+                    </div>
+                </div>
+
+                <!-- Remaining Balance -->
+                <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:10px; font-weight:800; color:#475569; text-transform:uppercase;">New Balance (نیا بقایا)</div>
+                    <div id="bookerRemainingKhataDisplay" style="font-size:17px; font-weight:900; color:#0f172a; margin-top:2px;">Rs 0.00</div>
+                </div>
+            </div>
+
+            <!-- Fast Amount Quick Chips -->
+            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:12px;">
+                <span style="font-size:10.5px; font-weight:700; color:#64748b;">⚡ Quick:</span>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(500)">+500</button>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(1000)">+1,000</button>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(2000)">+2,000</button>
+                <button type="button" class="quick-rec-chip" onclick="applyBookerQuickAmt(5000)">+5,000</button>
+                <button type="button" class="quick-rec-chip full" onclick="applyBookerQuickFullAmt()">Full Khata</button>
+                <button type="button" class="quick-rec-chip clear" onclick="applyBookerQuickAmt(0)">Reset (0)</button>
+            </div>
+
+            <!-- Booker Action Buttons (Receive Payment vs Book Field Order) -->
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <!-- 💵 Save Recovery (Works immediately without booking order!) -->
+                <button type="button" id="btnBookerSavePaymentOnly" onclick="saveBookerDirectPayment()" style="flex:1 1 200px; background:#10b981; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-size:13.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 3px 8px rgba(16,185,129,0.35);">
+                    <i class="fas fa-hand-holding-dollar" style="font-size:15px;"></i>
+                    <span>Receive Payment Only <span class="ur-sub">(صرف رقم وصول کریں)</span></span>
+                </button>
+
+                <!-- 📥 Book Field Order (When items are also selected) -->
+                <button type="button" id="btnBookerReviewSubmit" onclick="handleBookFieldOrderClick()" style="flex:1 1 200px; background:#d97706; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-size:13.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 3px 8px rgba(217,119,6,0.35);">
+                    <i class="fas fa-clipboard-check" style="font-size:15px;"></i>
+                    <span>Review & Book Order <span id="bookerCartItemsSummaryTag" style="font-size:11px; opacity:0.9;">(0 Items)</span></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 🏢 ADMIN ACTION BUTTONS (DIRECT PRINT & SAVE) -->
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;" id="billActionBtnsContainer">
+            <button type="button" class="btn-save-bill" id="saveAndPrintBillBtn" style="flex:1 1 240px; margin-top:0; min-width:200px; background:#10b981; color:#fff; border:none; padding:13px 18px; border-radius:10px; font-size:15px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 10px rgba(16,185,129,0.35);">
+                <i class="fas fa-print" style="font-size:18px;"></i> <span>🖨️ SAVE & DIRECT PRINT BILL <span class="ur-sub">(محفوظ اور پرنٹ کریں)</span></span>
+            </button>
+            <button class="btn-save-bill" id="saveBillBtn" style="flex:1 1 200px; margin-top:0; min-width:180px; background:#0284c7; color:#fff; border:none; padding:13px 16px; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 3px 8px rgba(2,132,199,0.3);">
+                <i class="fas fa-check-circle"></i> <span>💾 SAVE INVOICE ONLY <span class="ur-sub">(صرف بل محفوظ کریں)</span></span>
+            </button>
+            <button type="button" class="btn" id="adminNewBillBtn" style="flex:0 0 auto; background:#f8fafc; color:#475569; border:1.5px solid #cbd5e1; padding:12px 16px; border-radius:10px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                <i class="fas fa-redo"></i> <span>Reset / New Bill <span class="ur-sub">(نیا بل)</span></span>
+            </button>
+            <button type="button" id="bookFieldOrderBtn" style="display:none;"></button>
+        </div>
+    </div>
+
+    <!-- ===== ✅ SUCCESS SCREEN ===== -->
+    <div class="panel-card" id="successScreen" style="display:none; border-top: 4px solid var(--accent);">
+        <div style="text-align:center; padding: 15px 0 20px;">
+            <div style="font-size:60px;">✅</div>
+            <h2 style="color: var(--primary); margin: 8px 0 4px;">Invoice Created Successfully!</h2>
+            <div style="font-size: 24px; font-weight: 800; color: var(--accent);" id="ssBillNo">STK-1</div>
+            <div style="font-size: 14px; color: #64748b; margin-top: 4px;" id="ssCustomer">—</div>
+            <div id="ssOfflineBadge" style="display:none; margin-top:6px;" class="net-status-badge net-offline">
+                📦 Saved in Offline Queue
+            </div>
+        </div>
+
+        <div class="totals-box" style="margin-bottom: 20px;">
+            <div class="total-row"><span>Bill Amount:</span><span>Rs <span id="ssGrand">0.00</span></span></div>
+            <div class="total-row"><span>Previous Balance:</span><span>Rs <span id="ssPrevBalance">0.00</span></span></div>
+            <div class="total-row" style="color:#15803d; font-weight:bold;"><span>Cash Received:</span><span>Rs <span id="ssReceived">0.00</span></span></div>
+            <div class="total-row balance"><span>New Customer Balance:</span><span>Rs <span id="ssBalance">0.00</span></span></div>
+        </div>
+        
+        <!-- Print Template & Language Selector -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:13px; font-weight:bold; color:var(--primary);">🎨 Style:</span>
+                <select id="ssTemplateSelect" style="padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:13px; font-weight:bold; outline:none; background:#fff;">
+                    <option value="template8" selected>🇵🇰 Classic Wholesale Urdu Grid (Legal Half-Cut 8.5"x7")</option>
+                    <option value="template7">📦 FMCG Corporate Distribution Invoice (A4)</option>
+                    <option value="template4">⚡ Modern Minimal / Table Invoice</option>
+                    <option value="template1">🇵🇰 Urdu Classic (Nastaliq)</option>
+                    <option value="template2">📋 Traders English (Header)</option>
+                    <option value="template3">🇵🇰 Urdu + English Mix</option>
+                    <option value="template5">💎 Premium Full (All Boxes)</option>
+                    <option value="template6">🧾 Thermal POS Slip (58mm / 80mm)</option>
+                </select>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:13px; font-weight:bold; color:var(--primary);">🌐 Language (زبان و رخ):</span>
+                <select id="ssLanguageSelect" style="padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:13px; font-weight:bold; outline:none; background:#fff;">
+                    <option value="en" selected>English (Left-to-Right ➡️ LTR)</option>
+                    <option value="ur">اردو (دائیں سے بائیں ⬅️ RTL)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="output-grid">
+            <button class="output-btn" id="outPrintBtn" style="background: var(--primary);">
+                <i class="fas fa-print"></i> PRINT INVOICE
+            </button>
+            <button class="output-btn" id="outPdfBtn" style="background: #e74c3c;">
+                <i class="fas fa-file-pdf"></i> SAVE PDF
+            </button>
+            <button class="output-btn" id="outJpgBtn" style="background: #f59e0b;">
+                <i class="fas fa-image"></i> DOWNLOAD JPG
+            </button>
+            <button class="output-btn" id="outShareBtn" style="background: #10b981;">
+                <i class="fab fa-whatsapp"></i> WHATSAPP BILL
+            </button>
+        </div>
+
+        <button class="btn-new-bill" id="outNewBillBtn" style="margin-top:10px;">
+            <i class="fas fa-plus-circle"></i> 🆕 CREATE NEXT BILL
+        </button>
+    </div>
+
+</div>
+
+<!-- 🛒 FLOATING / STICKY LIST VIEW SUMMARY BAR (Same as Visual Catalogue) -->
+<div id="listStickyBottomBar" class="list-sticky-bar" style="display:none;">
+    <div>
+        <div style="font-size:11px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;" id="listStickyLabel">CURRENT BOOKING CART:</div>
+        <div style="font-size:16px; font-weight:900; line-height:1.2;">
+            🛒 <span id="listStickyCount">0</span> items (<span id="listStickyUnits">0</span> units) | <span style="color:#38bdf8;">Rs <span id="listStickyTotal">0.00</span></span>
+        </div>
+    </div>
+    <button type="button" id="listBtnOpenReview" onclick="openCatalogueReviewModal()" style="background:#10b981; color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:900; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 3px 10px rgba(16,185,129,0.4); white-space:nowrap;">
+        <i class="fas fa-clipboard-check"></i> <span id="listStickyBtnText">Review & Submit <span class="ur-sub">(آرڈر بھیجیں)</span></span>
+    </button>
+</div>
+
+<!-- 📋 ORDER REVIEW & RECHECK MODAL (Accessible from List View, Catalogue, and Form) -->
+<div id="catReviewModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); backdrop-filter:blur(3px); z-index:999999; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:18px; width:100%; max-width:540px; max-height:92vh; overflow-y:auto; box-shadow:0 20px 40px rgba(0,0,0,0.4); display:flex; flex-direction:column; position:relative;">
+        <!-- Header -->
+        <div style="padding:14px 18px; background:#0f172a; color:#fff; display:flex; justify-content:space-between; align-items:center; border-top-left-radius:18px; border-top-right-radius:18px; position:sticky; top:0; z-index:10;">
+            <div style="font-size:16px; font-weight:900; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-clipboard-check" style="color:#38bdf8;"></i> Review Booked Order <span class="ur-sub">(آرڈر ری چیک اور تصدیق)</span>
+            </div>
+            <button type="button" id="catBtnCloseReview" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer; padding:2px 8px; line-height:1;">✕</button>
+        </div>
+        
+        <div style="padding:16px; flex:1;">
+            <!-- Shopkeeper confirmation -->
+            <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:10px 14px; margin-bottom:12px; font-size:13px;">
+                <div style="font-size:11px; font-weight:800; color:#64748b; letter-spacing:0.5px; text-transform:uppercase;">SHOPKEEPER / CUSTOMER <span class="ur-sub">(دکان دار)</span>:</div>
+                <div style="font-size:15px; font-weight:900; color:#0f172a; margin-top:2px;" id="catReviewCustName">Counter Sale <span class="ur-sub">(کاؤنٹر سیل)</span></div>
+                <div style="font-size:12px; color:#475569; margin-top:2px;" id="catReviewCustDetails"></div>
+            </div>
+
+            <!-- Items Table Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-size:13px; font-weight:800; color:#334155;">
+                    📦 Booked Items & Quantities <span class="ur-sub">(بک شدہ اشیاء اور تعداد)</span>:
+                </div>
+                <span id="catReviewItemsCountBadge" style="background:#e0f2fe; color:#0369a1; font-weight:800; font-size:11.5px; padding:3px 8px; border-radius:12px;">0 items</span>
+            </div>
+
+            <!-- Items List with +/- Controls -->
+            <div id="catReviewItemsList" style="max-height:260px; overflow-y:auto; border:1.5px solid #e2e8f0; border-radius:12px; margin-bottom:14px; padding:6px; background:#f8fafc;">
+                <!-- Booked items with live +/- counters -->
+            </div>
+
+            <!-- Totals & Recovery Breakdown -->
+            <div class="totals-box" style="margin-bottom:14px; border:1.5px solid #e2e8f0; border-radius:12px; padding:10px 14px; background:#fff;">
+                <div class="total-row" style="font-size:13px;"><span>Items Subtotal:</span><span>Rs <span id="catReviewSubtotal">0.00</span></span></div>
+                <div class="total-row" id="catReviewDiscountRow" style="display:none; color:#15803d; font-size:13px;">
+                    <span>Scheme Discounts:</span>
+                    <span>- Rs <span id="catReviewDiscount">0.00</span></span>
+                </div>
+                <div class="total-row" id="catReviewPrevBalRow" style="background:#fffbeb; padding:7px 10px; border-radius:8px; margin:4px 0; border:1px solid #fde68a;">
+                    <span style="color:#b45309; font-weight:bold;">Previous Khata Balance <span class="ur-sub">(پچھلا بقایا)</span>:</span>
+                    <span style="color:#b45309; font-weight:bold;">+ Rs <span id="catReviewPrevBal">0.00</span></span>
+                </div>
+                <div class="total-row grand" style="font-size:16px;">
+                    <span>Total Payable <span class="ur-sub">(کل واجب الادا)</span>:</span>
+                    <span style="color:#0284c7;">Rs <span id="catReviewGrand">0.00</span></span>
+                </div>
+
+                <!-- 💵 CASH RECOVERY INPUT (Highlighted & Dedicated) -->
+                <div class="total-row" id="catReviewReceivedRow" style="background:#f0fdf4; padding:8px 10px; border-radius:8px; margin:6px 0; border:1.5px solid #86efac; flex-wrap:wrap; gap:6px;">
+                    <div style="flex:1; min-width:140px;">
+                        <span style="color:#15803d; font-weight:bold; font-size:13.5px; display:block;">💵 Cash Received / Recovery:</span>
+                        <span style="font-size:11px; color:#166534;">(وصول شدہ رقم / ریکوری رقم)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <span style="font-weight:900; color:#15803d;">Rs</span>
+                        <input type="number" id="catReviewReceived" value="0" min="0" step="any" placeholder="0" style="width:110px; padding:6px 8px; border:2px solid #22c55e; border-radius:8px; text-align:right; font-weight:900; font-size:15px; color:#15803d; outline:none; background:#fff;">
+                    </div>
+                </div>
+
+                <div class="total-row balance" id="catReviewBalanceRow" style="font-size:16px; margin-top:4px; border-top:1px dashed #cbd5e1; padding-top:8px;">
+                    <span>New Remaining Balance <span class="ur-sub">(نیا بقایا کھاتہ)</span>:</span>
+                    <span>Rs <span id="catReviewBalance">0.00</span></span>
+                </div>
+            </div>
+
+            <!-- Booker Notes (Optional) -->
+            <div style="margin-bottom:14px;">
+                <label style="font-size:12px; font-weight:700; color:#475569;">Delivery Notes <span class="ur-sub">(خصوصی ہدایات / ریمارکس)</span> (Optional):</label>
+                <textarea id="catReviewNotes" placeholder="Delivery instructions or notes..." style="width:100%; height:50px; padding:8px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:12px; box-sizing:border-box; margin-top:4px; resize:none;"></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button type="button" id="catBtnSubmitOrder" style="width:100%; background:#10b981; color:#fff; border:none; padding:14px; border-radius:12px; font-size:15px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 4px 14px rgba(16,185,129,0.4); letter-spacing:0.5px;">
+                    <i class="fas fa-check-circle" style="font-size:18px;"></i> <span>BOOK ORDER / CONFIRM <span class="ur-sub">(آرڈر فائنل / بک کریں)</span></span>
+                </button>
+                <button type="button" id="catBtnAddMoreItems" onclick="document.getElementById('catReviewModal').style.display='none'" style="width:100%; background:#f1f5f9; color:#334155; border:1.5px solid #cbd5e1; padding:11px; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fas fa-cart-plus" style="color:#0284c7;"></i> <span>Add More Items <span class="ur-sub">(مزید آئٹمز شامل کریں)</span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 📷 CAMERA BARCODE SCANNER MODAL -->
+<div id="cameraScannerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999999; flex-direction:column; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:14px; width:100%; max-width:460px; overflow:hidden; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+        <div style="padding:12px 16px; background:#0f172a; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:bold; font-size:15px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-camera" style="color:#10b981;"></i> Barcode Camera Scanner
+            </div>
+            <button type="button" id="closeCameraBtn" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer; padding:4px 8px;">✕</button>
+        </div>
+        <div style="padding:15px; text-align:center;">
+            <div id="scannerReader" style="width:100%; min-height:260px; background:#000; border-radius:10px; overflow:hidden; position:relative;"></div>
+            <div style="margin-top:10px; font-size:12px; color:#64748b;">
+                🎯 کیمرے کو پروڈکٹ کے بارکوڈ کے سامنے لائیں۔ بارکوڈ ملتے ہی Beep آواز آئے گی اور آئٹم خودکار شامل ہو جائے گا۔
+            </div>
+            <div id="scannerStatusText" style="margin-top:8px; font-size:13px; font-weight:bold; color:#16a34a; min-height:22px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 📦 INDEXEDDB OFFLINE BILLS QUEUE MODAL -->
+<div id="offlineQueueModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); backdrop-filter:blur(3px); z-index:999999; align-items:center; justify-content:center; padding:12px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:16px; width:100%; max-width:620px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 40px rgba(0,0,0,0.4); display:flex; flex-direction:column; position:relative;">
+        <!-- Header -->
+        <div style="padding:14px 18px; background:linear-gradient(135deg, #d97706, #b45309); color:#fff; display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:900; font-size:16px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-database"></i> <span>Offline Pending Bills (IndexedDB)</span>
+            </div>
+            <button type="button" id="closeOfflineModalBtn" style="background:none; border:none; color:#fff; font-size:22px; cursor:pointer; line-height:1; padding:4px 8px;">✕</button>
+        </div>
+
+        <div style="padding:16px;">
+            <div style="background:#fef3c7; border:1px solid #fde68a; border-radius:10px; padding:10px 12px; font-size:12.5px; color:#92400e; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-info-circle" style="font-size:16px; flex-shrink:0;"></i>
+                <span>یہ تمام بلز انٹرنیٹ نہ ہونے پر آپ کی ڈیوائس کے <b>IndexedDB</b> میں محفوظ ہو چکے ہیں۔ انٹرنیٹ بحال ہوتے ہی آپ انہیں کلاؤڈ پر بھیج سکتے ہیں۔</span>
+            </div>
+
+            <!-- List of pending bills -->
+            <div id="offlineBillsListContainer" style="max-height:50vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+                <!-- Populated dynamically via JS -->
+            </div>
+
+            <div id="offlineEmptyState" style="display:none; text-align:center; padding:30px 15px; color:#64748b;">
+                <i class="fas fa-check-circle" style="font-size:38px; color:#10b981; margin-bottom:10px;"></i>
+                <div style="font-size:15px; font-weight:800; color:#1e293b;">کوئی زیر التواء آف لائن بل نہیں ہے!</div>
+                <div style="font-size:12px; color:#94a3b8; margin-top:4px;">No pending offline bills found in local IndexedDB.</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:12px 18px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button type="button" id="clearOfflineQueueBtn" class="btn" style="background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer;">
+                <i class="fas fa-trash-alt"></i> Clear All
+            </button>
+            <div style="display:flex; gap:8px;">
+                <button type="button" id="closeOfflineModalFooterBtn" class="btn" style="background:#e2e8f0; color:#334155; border:none; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer;">
+                    Close
+                </button>
+                <button type="button" id="modalSyncOfflineBtn" class="btn" style="background:#d97706; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer; box-shadow:0 2px 6px rgba(217,119,6,0.3);">
+                    <i class="fas fa-cloud-upload-alt"></i> Sync All to Cloud
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- 🧭 SIDEBAR SYSTEM -->
+<script src="sidebar.js?v=5.2.0"></script>
+<!-- ⚡ CLOUD SYNC & FIREBASE QUOTA SAVER -->
+<script src="sync-engine.js"></script>
+<!-- 📦 INDEXEDDB OFFLINE BILLING CACHE -->
+<script src="bills-db.js?v=1.0.0"></script>
+<!-- ⚙️ PRINT ENGINE -->
+<script src="print-settings.js"></script>
+<!-- 🎨 BILL TEMPLATES -->
+<script src="bill-templates.js"></script>
+<!-- 🧾 PRO BILLING & OFFLINE ENGINE -->
+<script src="bills.js?v=5.2.0"></script>
 </body>
 </html>
