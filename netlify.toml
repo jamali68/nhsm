@@ -26,12 +26,16 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Instant Edge redirect directly to SaaS landing page
+# Instant Edge rewrite directly to SaaS landing page without mobile redirect choke
 [[redirects]]
   from = "/"
   to = "/landing.html"
-  status = 301
-  force = true
+  status = 200
+
+[[redirects]]
+  from = "/index.html"
+  to = "/landing.html"
+  status = 200
 
 # Support any requests targeted at /public/* smoothly
 [[redirects]]

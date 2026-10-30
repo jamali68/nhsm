@@ -6,11 +6,13 @@
 // ✅ Zero lag navigation with fast fallback & Anti-Corruption Guard
 // ==========================================================================
 
-const CACHE_NAME = 'nhpos-pwa-v5.2.0-instant';
+const CACHE_NAME = 'nhpos-pwa-v5.3.0-live';
 
 // Complete Offline & Instant App Shell (All modules precached for 0ms transitions)
 const RELATIVE_SHELL_ASSETS = [
-  '',
+  'landing.html',
+  'auth.html',
+  'index.html',
   'manifest.json',
   'icon-192.png',
   'icon-512.png',
@@ -19,8 +21,6 @@ const RELATIVE_SHELL_ASSETS = [
   'apple-touch-icon.png',
   'favicon.ico',
   'favicon.png',
-  'landing.html',
-  'auth.html',
   'auth.css',
   'auth.js',
   'dashboard.html',
@@ -160,12 +160,25 @@ self.addEventListener('fetch', (event) => {
         } catch (_) {
           // Network offline / failure fallback
           const scopeUrl = self.registration.scope;
-          const fallbackDash = new URL('dashboard.html', scopeUrl).toString();
+          const fallbackLanding = new URL('landing.html', scopeUrl).toString();
           const fallbackAuth = new URL('auth.html', scopeUrl).toString();
-          return (await caches.match(fallbackDash)) || 
-                 (await caches.match(fallbackAuth)) ||
-                 (await caches.match('/dashboard.html')) ||
-                 (await caches.match('/auth.html'));
+          const fallbackDash = new URL('dashboard.html', scopeUrl).toString();
+          const fallback = (await caches.match(event.request)) ||
+                           (await caches.match(fallbackLanding)) ||
+                           (await caches.match(fallbackAuth)) ||
+                           (await caches.match(fallbackDash)) || 
+                           (await caches.match('/landing.html')) ||
+                           (await caches.match('/auth.html')) ||
+                           (await caches.match('/dashboard.html')) ||
+                           (await caches.match('landing.html')) ||
+                           (await caches.match('auth.html'));
+          if (fallback) return fallback;
+
+          // Crucial: NEVER return undefined to event.respondWith(), which triggers Chrome ERR_FAILED
+          return new Response(
+            '<!DOCTYPE html><html lang="ur" dir="ltr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>NH POS</title><meta http-equiv="refresh" content="2;url=landing.html"></head><body style="font-family:sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;"><div style="padding:24px;border-radius:16px;background:#1e293b;border:1px solid #334155;max-width:320px;"><img src="icon-192.png" style="width:72px;height:72px;border-radius:50%;margin-bottom:12px;" alt="NH POS"><h3 style="margin:0 0 8px 0;color:#38bdf8;">NH POS</h3><p style="font-size:13px;color:#94a3b8;margin:0 0 16px 0;">براہِ کرم انتظار فرمائیں (Please wait...)</p><a href="landing.html" style="background:#10b981;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;display:inline-block;">Open NH POS</a></div></body></html>',
+            { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+          );
         }
       })()
     );
