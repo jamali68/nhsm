@@ -97,10 +97,15 @@ function loadStockAndAlerts() {
             populateCategoryFilter();
             renderTable();
 
+            if (window.hideNHLoader) {
+                window.hideNHLoader();
+            }
+
             // Save low stock cache for badge synchronization
             localStorage.setItem(`eb_low_stock_count_${myAgencyId}`, lowStockItems.length);
         }, (e) => {
             console.error('Stock alerts error:', e);
+            if (window.hideNHLoader) window.hideNHLoader();
         });
 }
 

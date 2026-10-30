@@ -218,6 +218,9 @@ auth.onAuthStateChanged(async (user) => {
         // Setup Role-based View & Permissions
         setupRoleBasedUI();
 
+        // ⚡ INSTANT LOCAL CACHE LOAD (Eliminates 0 0 0 delay instantly)
+        const hasCachedOrders = loadFromCache();
+
         // Setup UI handlers
         setupFilters();
         setupModals();
@@ -235,8 +238,14 @@ auth.onAuthStateChanged(async (user) => {
         listenForLiveOrders();
         setTimeout(() => { isLiveSyncActive = true; }, 1500);
 
+        // Ensure loader is closed once all fresh data is ready
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (err) {
         console.error('Booker orders hub init error:', err);
+        if (window.hideNHLoader) window.hideNHLoader();
         Swal.fire('Error', 'Initialization failed: ' + err.message, 'error');
     }
 });
@@ -495,6 +504,41 @@ async function loadCustomers() {
 }
 
 // ============================================
+// ⚡ INSTANT LOCAL CACHING ENGINE FOR ORDERS
+// ============================================
+function loadFromCache() {
+    try {
+        const agKey = myAgencyId || localStorage.getItem('eb_active_agencyId') || 'default_agency';
+        const raw = localStorage.getItem(`eb_cache_orders_${agKey}`);
+        if (raw) {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list) && list.length > 0) {
+                allOrders = list.map(sanitizeOrder);
+                renderKPIRibbon();
+                renderBookerRibbon();
+                renderOrdersTable();
+                if (window.hideNHLoader) {
+                    setTimeout(() => { window.hideNHLoader(); }, 150);
+                }
+                return true;
+            }
+        }
+    } catch (e) {
+        console.warn('Orders cache read error:', e);
+    }
+    return false;
+}
+
+function saveToCache() {
+    try {
+        const agKey = myAgencyId || localStorage.getItem('eb_active_agencyId') || 'default_agency';
+        if (agKey && Array.isArray(allOrders)) {
+            localStorage.setItem(`eb_cache_orders_${agKey}`, JSON.stringify(allOrders.slice(0, 300)));
+        }
+    } catch (e) {}
+}
+
+// ============================================
 // 📋 LOAD ORDERS & REAL-TIME LISTENER
 // ============================================
 async function loadOrders() {
@@ -517,7 +561,7 @@ async function loadOrders() {
             allOrders.push(sanitizeOrder(data));
         });
 
-        // 🔄 Also inspect 'orders' collection to ensure any orders booked there are mirrored & displayed
+        // 🔄 Inspect 'orders' collection (non-blocking sync)
         try {
             const snapOrders = await db.collection('orders')
                 .where('agencyId', '==', myAgencyId)
@@ -541,9 +585,9 @@ async function loadOrders() {
                         orderType: oData.orderType || 'field_order',
                         deliveryStatus: oData.deliveryStatus || 'pending'
                     };
-                    // Write to bills so it can be approved normally
+                    // Write to bills asynchronously in background without blocking rendering
                     try {
-                        await db.collection('bills').doc(d.id).set(billDocData);
+                        db.collection('bills').doc(d.id).set(billDocData).catch(() => {});
                     } catch (eSave) {}
                     billDocData.id = d.id;
                     allOrders.push(sanitizeOrder(billDocData));
@@ -554,6 +598,9 @@ async function loadOrders() {
         }
 
         allOrders.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+        // Save fresh orders to instant cache
+        saveToCache();
 
         // If user is a Booker: default to only showing their own orders
         if (myUser && myUser.role === 'booker') {
@@ -568,6 +615,10 @@ async function loadOrders() {
         renderKPIRibbon();
         renderBookerRibbon();
         renderOrdersTable();
+
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
 
     } catch (e) {
         console.error('Load orders error:', e);
@@ -585,6 +636,10 @@ async function loadOrders() {
             renderOrdersTable();
         } catch (err2) {
             console.error('Fallback orders load error:', err2);
+        } finally {
+            if (window.hideNHLoader) {
+                window.hideNHLoader();
+            }
         }
     }
 }

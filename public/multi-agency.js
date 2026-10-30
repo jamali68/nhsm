@@ -69,8 +69,13 @@ auth.onAuthStateChanged(async (user) => {
         // Step 2: Fetch and sync all owned agencies from Firestore
         await loadOwnedAgencies();
 
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (e) {
         console.error('Multi-Agency init error:', e);
+        if (window.hideNHLoader) window.hideNHLoader();
         Swal.fire('Error', 'Initialization failed: ' + e.message, 'error');
     }
 });
@@ -92,6 +97,9 @@ function loadFromCache() {
                 renderExecutiveMetrics();
                 renderBranchesList();
                 renderComparisonMatrix();
+                if (window.hideNHLoader) {
+                    setTimeout(() => { window.hideNHLoader(); }, 150);
+                }
             }
         }
     } catch (e) {
@@ -149,6 +157,7 @@ async function loadOwnedAgencies() {
         if (window.SaaSModules && myUser.role !== 'super-admin') {
             const isLocked = window.SaaSModules.enforcePagePaywall('multi_agency', '.panel-container', firstAgency, myUser.role, myUser);
             if (isLocked) {
+                if (window.hideNHLoader) window.hideNHLoader();
                 return;
             }
         }

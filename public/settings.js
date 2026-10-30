@@ -109,8 +109,13 @@ auth.onAuthStateChanged(async (user) => {
             if (sec) sec.scrollIntoView({ behavior: 'smooth' });
         }
 
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (e) {
         console.error('Settings init error:', e);
+        if (window.hideNHLoader) window.hideNHLoader();
     }
 });
 

@@ -108,8 +108,13 @@ auth.onAuthStateChanged(async (user) => {
         // Fetch Data & Render
         await loadAllReportData();
 
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (e) {
         console.error('Reports init error:', e);
+        if (window.hideNHLoader) window.hideNHLoader();
         Swal.fire('Error', 'Reports loading error: ' + e.message, 'error');
     }
 });

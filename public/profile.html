@@ -564,8 +564,13 @@
                 }
             }
 
+            if (window.hideNHLoader) {
+                window.hideNHLoader();
+            }
+
         } catch (error) {
             Swal.fire('Error', 'Profile load fail: ' + (error.code || error.message), 'error');
+            if (window.hideNHLoader) window.hideNHLoader();
         }
     });
 

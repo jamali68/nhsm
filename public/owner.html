@@ -304,9 +304,14 @@
 
             renderBookersList('');
 
+            if (window.hideNHLoader) {
+                window.hideNHLoader();
+            }
+
         } catch (e) {
             container.innerHTML = '<div class="error-inline">⚠️ Staff load failed: ' + e.message + '</div>';
             console.error(e);
+            if (window.hideNHLoader) window.hideNHLoader();
         }
     }
 

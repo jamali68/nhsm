@@ -301,6 +301,9 @@ function loadFromCache() {
                 populateCategoryFilter();
                 renderStats();
                 renderItems();
+                if (window.hideNHLoader) {
+                    setTimeout(() => { window.hideNHLoader(); }, 150);
+                }
                 if (parsed.timestamp) {
                     const d = new Date(parsed.timestamp);
                     document.getElementById('lastSyncTime').innerText = 'Cached: ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -352,8 +355,13 @@ async function fetchFreshStock() {
         renderStats();
         renderItems();
 
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (error) {
         console.error('Fetch fresh stock error:', error);
+        if (window.hideNHLoader) window.hideNHLoader();
         // If offline and cache exists, we keep showing cache!
         if (allItems.length === 0) {
             container.innerHTML = '<div class="error-inline">⚠️ Cloud sync failed. Check internet connection.</div>';

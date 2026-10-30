@@ -188,6 +188,9 @@ auth.onAuthStateChanged(async (user) => {
         setupReturnReasonToggle();
         setupModals();
 
+        // ⚡ INSTANT LOCAL CACHE LOAD
+        loadFromCache();
+
         // Load Core Datasets
         await Promise.all([
             loadStaff(),
@@ -198,7 +201,13 @@ auth.onAuthStateChanged(async (user) => {
             loadDamageClaims()
         ]);
 
+        saveToCache();
         updateKPIRibbon();
+
+        // 🚀 Dismiss loader once filled data is ready
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
 
         // 🚚 Setup Dedicated Role Interfaces
         setupSupplierRoleUI();
@@ -218,6 +227,7 @@ auth.onAuthStateChanged(async (user) => {
 
     } catch (err) {
         console.error('Delivery hub init error:', err);
+        if (window.hideNHLoader) window.hideNHLoader();
         Swal.fire('Error', 'Initialization failed: ' + err.message, 'error');
     }
 });
@@ -2240,6 +2250,42 @@ document.getElementById('quickStaffForm').addEventListener('submit', async funct
         Swal.fire('❌ Error', 'Staff account nahi ban saka: ' + (err.message || err.code), 'error');
     }
 });
+// ============================================
+// ⚡ INSTANT CACHE FOR DELIVERY & RETURNS
+// ============================================
+function loadFromCache() {
+    try {
+        const agKey = myAgencyId || localStorage.getItem('eb_active_agencyId') || 'default_agency';
+        const cachedRaw = localStorage.getItem(`eb_cache_delivery_${agKey}`);
+        if (cachedRaw) {
+            const parsed = JSON.parse(cachedRaw);
+            if (parsed && Array.isArray(parsed.orders) && parsed.orders.length > 0) {
+                allOrders = parsed.orders;
+                if (Array.isArray(parsed.returns)) allReturns = parsed.returns;
+                updateKPIRibbon();
+                if (window.hideNHLoader) {
+                    setTimeout(() => { window.hideNHLoader(); }, 150);
+                }
+                return true;
+            }
+        }
+    } catch (e) {
+        console.warn('Delivery cache read error:', e);
+    }
+    return false;
+}
+
+function saveToCache() {
+    try {
+        const agKey = myAgencyId || localStorage.getItem('eb_active_agencyId') || 'default_agency';
+        if (agKey && Array.isArray(allOrders)) {
+            localStorage.setItem(`eb_cache_delivery_${agKey}`, JSON.stringify({
+                orders: allOrders.slice(0, 300),
+                returns: allReturns ? allReturns.slice(0, 200) : []
+            }));
+        }
+    } catch (e) {}
+}
 
 // ============================================
 // 📊 KPI UPDATE & HISTORY ANALYSIS

@@ -119,8 +119,13 @@ auth.onAuthStateChanged(async (user) => {
         await loadCategories();
         await loadExpenses();
 
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (e) {
         console.error('Expenses init error:', e);
+        if (window.hideNHLoader) window.hideNHLoader();
         const container = document.getElementById('expenseTableContainer');
         if (container) {
             container.innerHTML = `<div class="empty-state" style="color:#ef4444;"><i class="fas fa-triangle-exclamation"></i> Error loading expenses: ${e.message}</div>`;

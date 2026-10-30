@@ -1266,9 +1266,11 @@
             // Hide Loading Overlay
             document.getElementById('loadingOverlay').style.display = 'none';
             document.getElementById('mainCard').style.display = 'block';
+            if (window.hideNHLoader) window.hideNHLoader();
 
         } catch (e) {
             console.error('Dashboard init error:', e);
+            if (window.hideNHLoader) window.hideNHLoader();
             document.getElementById('loadingText').innerText = '⚠️ Error: ' + e.message;
         }
     });

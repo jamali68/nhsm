@@ -758,8 +758,13 @@
                 loadUpgradeRequests(),
                 loadAgencies()
             ]);
+
+            if (window.hideNHLoader) {
+                window.hideNHLoader();
+            }
         } catch (e) {
             console.error('Super Admin init error:', e);
+            if (window.hideNHLoader) window.hideNHLoader();
         }
     });
 

@@ -1109,8 +1109,14 @@ auth.onAuthStateChanged(async (user) => {
             console.warn('updateLockState error:', e);
         }
 
+        // Dismiss NH POS loader once bill page UI and initial rows are ready
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (error) {
         console.error('Bills init error:', error);
+        if (window.hideNHLoader) window.hideNHLoader();
     }
 });
 

@@ -82,8 +82,13 @@ auth.onAuthStateChanged(async (user) => {
         updateBackupStatusUI();
         await loadStatsCounts();
 
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (e) {
         console.error('Backup init error:', e);
+        if (window.hideNHLoader) window.hideNHLoader();
     }
 });
 

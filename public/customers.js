@@ -151,6 +151,9 @@ function loadFromCache() {
                 allCustomers = parsed.customers;
                 renderStats();
                 renderCustomers();
+                if (window.hideNHLoader) {
+                    setTimeout(() => { window.hideNHLoader(); }, 150);
+                }
                 if (parsed.timestamp) {
                     const d = new Date(parsed.timestamp);
                     const timeEl = document.getElementById('lastCustSyncTime');
@@ -305,12 +308,16 @@ function listenCustomers() {
             saveToCache(allCustomers);
             renderStats();
             renderCustomers();
+            if (window.hideNHLoader) {
+                window.hideNHLoader();
+            }
             if (activeModalCustomer) {
                 const refreshed = allCustomers.find(c => c.id === activeModalCustomer.id);
                 if (refreshed) activeModalCustomer = refreshed;
             }
         }, (error) => {
             console.error('Customers listener error:', error);
+            if (window.hideNHLoader) window.hideNHLoader();
             if (allCustomers.length === 0) {
                 document.getElementById('customersList').innerHTML = 
                     '<div class="error-inline">⚠️ Customers load fail: ' + error.code + '</div>';

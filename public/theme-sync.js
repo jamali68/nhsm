@@ -592,7 +592,7 @@ window.EASYBILL_VERSION = '5.2.0';
     let safetyTimer = null;
 
     function getOrCreateLoader() {
-        if (loaderEl && document.body.contains(loaderEl)) return loaderEl;
+        if (loaderEl && document.contains && document.contains(loaderEl)) return loaderEl;
         loaderEl = document.getElementById('nhGlobalLoader');
         if (loaderEl) return loaderEl;
 
@@ -680,11 +680,13 @@ window.EASYBILL_VERSION = '5.2.0';
             </div>
         `;
 
-        if (document.body) {
-            document.body.appendChild(loaderEl);
-        } else {
+        const targetParent = document.body || document.documentElement;
+        if (targetParent) {
+            targetParent.appendChild(loaderEl);
+        }
+        if (!document.body) {
             document.addEventListener('DOMContentLoaded', () => {
-                if (document.body && !document.getElementById('nhGlobalLoader')) {
+                if (document.body && loaderEl.parentNode !== document.body) {
                     document.body.appendChild(loaderEl);
                 }
             });
@@ -704,11 +706,11 @@ window.EASYBILL_VERSION = '5.2.0';
         el.style.visibility = 'visible';
         el.style.pointerEvents = 'all';
 
-        // Auto-dismiss safety timer (12s max) to guarantee UI is never frozen
+        // Auto-dismiss safety timer (10s max) to guarantee UI is never frozen if offline
         if (safetyTimer) clearTimeout(safetyTimer);
         safetyTimer = setTimeout(() => {
             window.hideNHLoader();
-        }, 12000);
+        }, 10000);
     };
 
     window.hideNHLoader = function() {
@@ -726,16 +728,31 @@ window.EASYBILL_VERSION = '5.2.0';
             oldDashOverlay.style.opacity = '0';
             setTimeout(() => { oldDashOverlay.style.display = 'none'; }, 200);
         }
+        const mainCard = document.getElementById('mainCard');
+        if (mainCard && mainCard.style.display === 'none') {
+            mainCard.style.display = 'block';
+        }
     };
 
-    // Auto-hide when entire window load event fires
+    // 🚀 Auto-show loader on app pages so user never sees empty 0 0 0 skeleton
+    const curPath = window.location.pathname.toLowerCase();
+    const isPublicPage = curPath.endsWith('/landing.html') || 
+                         curPath.endsWith('/auth.html') || 
+                         curPath === '/' || 
+                         curPath === '';
+
+    if (!isPublicPage) {
+        // Show immediately while DOM and scripts are parsing
+        window.showNHLoader('System is Loading...', 'براہِ کرم انتظار فرمائیں (Please wait)');
+    }
+
+    // On public pages only, auto-hide on load
     window.addEventListener('load', () => {
-        setTimeout(() => {
-            // Only hide if page has not requested a persistent loader
-            if (!window.__NH_KEEP_LOADER) {
+        if (isPublicPage) {
+            setTimeout(() => {
                 window.hideNHLoader();
-            }
-        }, 300);
+            }, 200);
+        }
     });
 })();
 

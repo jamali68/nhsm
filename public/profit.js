@@ -108,8 +108,13 @@ auth.onAuthStateChanged(async (user) => {
         await Promise.all([loadStock(), loadCustomers()]);
         await loadBills();
 
+        if (window.hideNHLoader) {
+            window.hideNHLoader();
+        }
+
     } catch (e) {
         console.error('Profit Analytics init error:', e);
+        if (window.hideNHLoader) window.hideNHLoader();
         const container = document.getElementById('profitTableContainer');
         if (container) {
             container.innerHTML = `<div class="empty-state" style="color:#ef4444;"><i class="fas fa-triangle-exclamation"></i> Error loading profit data: ${e.message}</div>`;
